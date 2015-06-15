@@ -1,0 +1,13 @@
+{
+    "name": "mime",
+    "description": "A minimal D application.",
+    "copyright": "Copyright © 2015, freeslave",
+    "authors": ["freeslave"],
+    "targetName" : "mime",
+    "targetPath" : "lib", 
+    "targetType" : "library",
+    "dependencies": {
+        "standardpaths": "~>0.2.0"
+    },
+    "subPackages" : ["./examples/mimecache"]
+}
