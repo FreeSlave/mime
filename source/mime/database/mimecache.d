@@ -9,6 +9,7 @@ private {
     import std.traits;
     import std.bitmanip;
     import std.system;
+    import std.typecons;
     
     import std.stdio;
 }
@@ -52,6 +53,10 @@ void readMimeCache(string fileName)
 {
     static void swapByteOrder(T)(ref T t) {
         t = swapEndian(t);
+    }
+    
+    static auto parseWeightAndFlags(uint value) {
+        return tuple(value & 0xFF, (value & 0x100) != 0);
     }
     
     T readValue(T)(uint offset) {
@@ -98,8 +103,8 @@ void readMimeCache(string fileName)
             uint offset = startOffset + count.sizeof + i*uint.sizeof*3;
             uint entryOffset = readValue!uint(offset);
             uint mimeTypeOffset = readValue!uint(offset + uint.sizeof);
-            uint weightAndFlags = readValue!uint(offset + uint.sizeof*2);
-            writefln("%s: %s. MimeType: %s", name, readString(entryOffset), readString(mimeTypeOffset));
+            auto weightAndFlags = parseWeightAndFlags(readValue!uint(offset + uint.sizeof*2));
+            writefln("%s: %s. MimeType: %s. Weight: %s. Cs: %s", name, readString(entryOffset), readString(mimeTypeOffset), weightAndFlags[0], weightAndFlags[1]);
         }
     }
     
@@ -130,7 +135,26 @@ void readMimeCache(string fileName)
     
     auto aliasCount = readValue!uint(header.aliasListOffset);
     writeln("Alias count: ", aliasCount);
-    printEntries(header.aliasListOffset, aliasCount, "Alias");
+    for (uint i=0; i<aliasCount; ++i) {
+        uint offset = header.aliasListOffset + aliasCount.sizeof + i*uint.sizeof*2;
+        uint entryOffset = readValue!uint(offset);
+        uint mimeTypeOffset = readValue!uint(offset + uint.sizeof);
+        writefln("Alias: %s. MimeType: %s", readString(entryOffset), readString(mimeTypeOffset));
+    }
+    
+    auto parentListCount = readValue!uint(header.parentListOffset);
+    writeln("Parent list count: ", parentListCount);
+    for (uint i=0; i<parentListCount; ++i) {
+        uint offset = header.parentListOffset + parentListCount.sizeof + i*uint.sizeof*2;
+        uint mimeTypeOffset = readValue!uint(offset);
+        uint parentsOffset = readValue!uint(offset + uint.sizeof);
+        
+        uint parentCount = readValue!uint(parentsOffset);
+        for (uint j=0; j<parentCount; ++j) {
+            uint parentMimeTypeOffset = readValue!uint(parentsOffset + parentCount.sizeof + j*uint.sizeof);
+            writefln("MimeType: %s. Parent: %s", readString(mimeTypeOffset), readString(parentMimeTypeOffset));
+        }
+    }
     
     auto rootCount = readValue!uint(header.reverseSuffixTreeOffset);
     writeln("Root count: ", rootCount);

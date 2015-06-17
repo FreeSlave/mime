@@ -81,4 +81,6 @@ struct MimeType
     
 private:
     string _name;
+    string _icon;
+    string _genericIcon;
 }
