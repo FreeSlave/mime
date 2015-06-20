@@ -77,7 +77,9 @@ void readMimeCache(string fileName)
         return cast(const(char)[])mmaped[offset..end];
     }
     
-    
+    auto readString2(uint offset, uint length) {
+        return cast(const(char)[])mmaped[offset..offset+length];
+    }
     
     enforce(mmaped.length > MimeCacheHeader.sizeof);
     auto header = readValue!MimeCacheHeader(0);
@@ -182,4 +184,41 @@ void readMimeCache(string fileName)
     }
     
     lookupLeaf(firstRootOffset, rootCount);
+    
+    auto matchCount = readValue!uint(header.magicListOffset);
+    auto maxExtent = readValue!uint(header.magicListOffset + uint.sizeof);
+    auto firstMatchOffset = readValue!uint(header.magicListOffset + uint.sizeof*2);
+    writeln("Match count: ", matchCount);
+    writeln("Max Extent: ", maxExtent);
+    writeln("First match offset: ", firstMatchOffset);
+    
+    for (uint i=0; i<matchCount; ++i) {
+        uint matchOffset = firstMatchOffset + i*uint.sizeof*4;
+        uint priority = readValue!uint(matchOffset);
+        uint mimeTypeOffset = readValue!uint(matchOffset + uint.sizeof);
+        uint matchletCount = readValue!uint(matchOffset + uint.sizeof*2);
+        uint firstMatchletOffset = readValue!uint(matchOffset + uint.sizeof*3);
+        
+        writefln("Priority: %s. MimeType: %s. Matchletcount: %s", priority, readString(mimeTypeOffset), matchletCount);
+        
+        for (uint j=0; j<matchletCount; ++j) {
+            uint matchletOffset = firstMatchletOffset + j*uint.sizeof*8;
+            uint rangeStart = readValue!uint(matchletOffset);
+            uint rangeLength = readValue!uint(matchletOffset + uint.sizeof);
+            uint wordSize = readValue!uint(matchletOffset + uint.sizeof*2);
+            uint valueLength = readValue!uint(matchletOffset + uint.sizeof*3);
+            uint value = readValue!uint(matchletOffset + uint.sizeof*4);
+            uint mask = readValue!uint(matchletOffset + uint.sizeof*5);
+            uint childrenCount = readValue!uint(matchletOffset + uint.sizeof*6);
+            uint firstChildOffset = readValue!uint(matchletOffset + uint.sizeof*7);
+            
+            writefln("Range start: %s. Range length: %s. Word size: %s. Value length: %s.", rangeStart, rangeLength, wordSize, valueLength);
+            if (wordSize == 1) {
+                auto s = readString2(value, valueLength);
+                writeln("Value: ", s);
+            } else {
+                
+            }
+        }
+    }
 }
