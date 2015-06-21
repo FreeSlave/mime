@@ -6,11 +6,13 @@ private {
     import std.algorithm;
     import std.bitmanip;
     import std.exception;
+    import std.path;
     import std.range;
     import std.string;
     import std.system;
     import std.traits;
     import std.typecons;
+    import std.uni;
     import std.utf;
     
     import std.stdio;
@@ -37,11 +39,21 @@ private void swapByteOrder(T)(ref T t) {
     t = swapEndian(t);
 }
 
-alias Tuple!(const(char)[], "aliasName", const(char)[], "mimeType") AliasEntry;
-alias Tuple!(const(char)[], "mimeType", uint, "parentsOffset") ParentEntry;
-alias Tuple!(ubyte, "weight", bool, "cs") WeightAndCs;
-alias Tuple!(const(char)[], "glob", const(char)[], "mimeType", ubyte, "weight", bool, "cs") GlobEntry;
-alias Tuple!(const(char)[], "mimeType", const(char)[], "iconName") IconEntry;
+private {
+    alias Tuple!(const(char)[], "aliasName", const(char)[], "mimeType") AliasEntry;
+    alias Tuple!(const(char)[], "mimeType", uint, "parentsOffset") ParentEntry;
+    alias Tuple!(ubyte, "weight", bool, "cs") WeightAndCs;
+    alias Tuple!(const(char)[], "glob", const(char)[], "mimeType", ubyte, "weight", bool, "cs") GlobEntry;
+    alias Tuple!(const(char)[], "literal", const(char)[], "mimeType", ubyte, "weight", bool, "cs") LiteralEntry;
+    alias Tuple!(const(char)[], "mimeType", const(char)[], "iconName") IconEntry;
+    alias Tuple!(const(char)[], "mimeType", uint, "weight", bool, "cs") MimeTypeEntry;
+    alias Tuple!(uint, "priority", const(char)[], "mimeType", uint, "matchletCount", uint, "firstMatchletOffset") MatchEntry;
+    alias Tuple!(uint, "rangeStart", uint, "rangeLength", 
+                 uint, "wordSize", uint, "valueLength", 
+                 uint, "value", uint, "mask", 
+                 uint, "childrenCount", uint, "firstChildOffset") MatchletEntry;
+    
+}
 
 private auto parseWeightAndFlags(uint value) {
     return WeightAndCs(value & 0xFF, (value & 0x100) != 0);
@@ -79,8 +91,6 @@ class MimeCache
         enforce(mmaped.length >= header.namespaceListOffset + uint.sizeof, "Invalid namespace list offset");
     }
     
-    
-    
     auto aliases() {
         auto aliasCount = readValue!uint(header.aliasListOffset);
         enforce(mmaped.length >= header.aliasListOffset + aliasCount.sizeof + aliasCount * uint.sizeof * 2, "Failed to read alias list");
@@ -88,15 +98,6 @@ class MimeCache
                 .map!(i => header.aliasListOffset + aliasCount.sizeof + i*uint.sizeof*2)
                 .map!(offset => AliasEntry(readString(readValue!uint(offset)), readString(readValue!uint(offset+uint.sizeof))))
                 .assumeSorted!(function(a,b) { return a.aliasName < b.aliasName; });
-    }
-    
-    auto parentEntries() {
-        auto parentListCount = readValue!uint(header.parentListOffset);
-        enforce(mmaped.length >= header.parentListOffset + parentListCount.sizeof + parentListCount*uint.sizeof*2, "Failed to read parent list");
-        return iota(parentListCount)
-                .map!(i => header.parentListOffset + parentListCount.sizeof + i*uint.sizeof*2)
-                .map!(offset => ParentEntry(readString(readValue!uint(offset)), readValue!uint(offset+uint.sizeof)))
-                .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
     }
     
     auto parents(const(char)[] mimeType) {
@@ -121,12 +122,25 @@ class MimeCache
         enforce(mmaped.length >= header.globListOffset + globCount.sizeof + globCount*uint.sizeof*3, "Failed to read globs");
         return iota(globCount)
                 .map!(i => header.globListOffset + globCount.sizeof + i*uint.sizeof*3)
-                .map!( delegate(offset) { 
+                .map!(delegate(offset) { 
                     auto glob = readString(readValue!uint(offset));
                     auto mimeType = readString(readValue!uint(offset+uint.sizeof));
                     auto weightAndCs = parseWeightAndFlags(readValue!uint(offset+uint.sizeof*2));
                     return GlobEntry(glob, mimeType, weightAndCs.weight, weightAndCs.cs);
                 });
+    }
+    
+    auto literals() {
+        auto literalCount = readValue!uint(header.literalListOffset);
+        enforce(mmaped.length >= header.literalListOffset + literalCount.sizeof + literalCount*uint.sizeof*3, "Failed to read literals");
+        return iota(literalCount)
+                .map!(i => header.literalListOffset + literalCount.sizeof + i*uint.sizeof*3)
+                .map!(delegate(offset) { 
+                    auto literal = readString(readValue!uint(offset));
+                    auto mimeType = readString(readValue!uint(offset+uint.sizeof));
+                    auto weightAndCs = parseWeightAndFlags(readValue!uint(offset+uint.sizeof*2));
+                    return LiteralEntry(literal, mimeType, weightAndCs.weight, weightAndCs.cs);
+                }).assumeSorted!(function(a,b) { return sicmp(a.literal, b.literal) < 0; });
     }
     
     auto icons() {
@@ -137,31 +151,89 @@ class MimeCache
         return commonIcons(header.genericIconsListOffset);
     }
     
+    const(char)[] findIcon(const(char)[] mimeType) {
+        auto icon = icons().equalRange(IconEntry(mimeType, null));
+        return icon.empty ? null : icon.front.iconName;
+    }
+    
+    const(char)[] findGenericIcon(const(char)[] mimeType) {
+        auto icon = genericIcons().equalRange(IconEntry(mimeType, null));
+        return icon.empty ? null : icon.front.iconName;
+    }
+    
+    const(char)[] findByFileName(const(char)[] name) {
+        auto mimeType = findByLiteral(name);
+        if (mimeType.empty) {
+            mimeType = findBySuffx(name);
+        }
+        if (mimeType.empty) {
+            mimeType = findByGlob(name);
+        }
+        return mimeType;
+    }
+    
+    const(char)[] findByGlob(const(char)[] name) {
+        const(char)[] mimeType;
+        uint weight = 0;
+        foreach(glob; globs) {
+            bool match;
+            if (glob.cs) {
+                match = globMatch!(std.path.CaseSensitive.yes)(name, glob.glob);
+            } else {
+                match = globMatch!(std.path.CaseSensitive.no)(name, glob.glob);
+            }
+            if (match) {
+                if (!mimeType.empty) {
+                    if (glob.weight > weight) {
+                        mimeType = glob.mimeType;
+                        weight = glob.weight;
+                    }
+                } else {
+                    mimeType = glob.mimeType;
+                    weight = glob.weight;
+                }
+            }
+        }
+        return mimeType;
+    }
+    
+    const(char)[] findByLiteral(const(char)[] name) {
+        auto literal = literals().equalRange(LiteralEntry(name, null, 0, false));
+        return literal.empty ? null : literal.front.mimeType;
+    }
+    
     const(char)[] findBySuffx(const(char)[] name) {
         auto rootCount = readValue!uint(header.reverseSuffixTreeOffset);
         auto firstRootOffset = readValue!uint(header.reverseSuffixTreeOffset + rootCount.sizeof);
         
-        const(char)[][] variants;
+        MimeTypeEntry bestMatch;
         
-        lookupLeaf(firstRootOffset, rootCount, name.toUTF32.retro, delegate(const(char)[] mimeType) {
-            writeln(mimeType);
+        //how to handle case-sensitive / case-insensitive variants?
+        lookupLeaf(firstRootOffset, rootCount, name.retro, delegate(MimeTypeEntry entry) {
+            if (bestMatch.mimeType.empty) {
+                bestMatch = entry;
+            } else if (entry.mimeType.length > bestMatch.mimeType.length) {
+                bestMatch = entry;
+            } else if (entry.mimeType != bestMatch.mimeType) {
+                //what to do if weights are equal? Also spec says that magic data should be used if the same pattern is provided by two or more MIME types.
+                if (entry.weight > bestMatch.weight) {
+                    bestMatch = entry;
+                }
+            }
         });
         
-        return null;
+        return bestMatch.mimeType;
     }
     
     
 private:
-    void lookupLeaf(Range)(uint offset, uint count, Range name, void delegate (const(char)[]) sink) {
-        if (name.empty) {
-            return;
-        }
+    void lookupLeaf(Range)(uint offset, uint count, Range name, void delegate (MimeTypeEntry) sink) {
         
         for (uint i=0; i<count; ++i) {
             dchar character = cast(dchar)readValue!uint(offset);
             
             if (character) {
-                if (character == name.front) {
+                if (!name.empty && character == name.front) {
                     uint childrenCount = readValue!uint(offset + uint.sizeof);
                     uint firstChildOffset = readValue!uint(offset + uint.sizeof*2);
                     
@@ -172,11 +244,20 @@ private:
                 }
             } else {
                 uint mimeTypeOffset = readValue!uint(offset + uint.sizeof);
-                uint weightAndFlags = readValue!uint(offset + uint.sizeof*2);
-                sink(readString(mimeTypeOffset));
+                auto weightAndCs = readValue!uint(offset + uint.sizeof*2).parseWeightAndFlags;
+                sink(MimeTypeEntry(readString(mimeTypeOffset), weightAndCs.weight, weightAndCs.cs));
             }
             offset += uint.sizeof * 3;
         }
+    }
+    
+    auto parentEntries() {
+        auto parentListCount = readValue!uint(header.parentListOffset);
+        enforce(mmaped.length >= header.parentListOffset + parentListCount.sizeof + parentListCount*uint.sizeof*2, "Failed to read parent list");
+        return iota(parentListCount)
+                .map!(i => header.parentListOffset + parentListCount.sizeof + i*uint.sizeof*2)
+                .map!(offset => ParentEntry(readString(readValue!uint(offset)), readValue!uint(offset+uint.sizeof)))
+                .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
     }
 
     auto commonIcons(uint iconsListOffset) {
