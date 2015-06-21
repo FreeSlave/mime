@@ -4,17 +4,21 @@ private {
     import std.mmfile;
     
     import std.algorithm;
-    
-    import std.exception;
-    import std.traits;
     import std.bitmanip;
+    import std.exception;
+    import std.range;
+    import std.string;
     import std.system;
+    import std.traits;
     import std.typecons;
+    import std.utf;
     
     import std.stdio;
+    
+    import std.c.string;
 }
 
-struct MimeCacheHeader
+private struct MimeCacheHeader
 {
     ushort majorVersion;
     ushort minorVersion;
@@ -29,24 +33,180 @@ struct MimeCacheHeader
     uint genericIconsListOffset;
 }
 
-struct GlobEntry
-{
-    uint globOffset;
-    uint mimeTypeOffset;
-    uint weightAndFlags;
+private void swapByteOrder(T)(ref T t) {
+    t = swapEndian(t);
 }
 
-struct AliasEntry
-{
-    uint aliasOffset;
-    uint mimeTypeOffset;
+alias Tuple!(const(char)[], "aliasName", const(char)[], "mimeType") AliasEntry;
+alias Tuple!(const(char)[], "mimeType", uint, "parentsOffset") ParentEntry;
+alias Tuple!(ubyte, "weight", bool, "cs") WeightAndCs;
+alias Tuple!(const(char)[], "glob", const(char)[], "mimeType", ubyte, "weight", bool, "cs") GlobEntry;
+alias Tuple!(const(char)[], "mimeType", const(char)[], "iconName") IconEntry;
+
+private auto parseWeightAndFlags(uint value) {
+    return WeightAndCs(value & 0xFF, (value & 0x100) != 0);
 }
 
-struct LiteralEntry
+class MimeCache
 {
-    uint literalOffset;
-    uint mimeTypeOffset;
-    uint weightAndFlags;
+    this(string fileName) {
+        mmaped = new MmFile(fileName);
+        enforce(mmaped.length > MimeCacheHeader.sizeof, "mime cache file is invalid");
+        
+        header = readValue!MimeCacheHeader(0);
+        static if (endian == Endian.littleEndian) {
+            swapByteOrder(header.majorVersion);
+            swapByteOrder(header.minorVersion);
+            swapByteOrder(header.aliasListOffset);
+            swapByteOrder(header.parentListOffset);
+            swapByteOrder(header.literalListOffset);
+            swapByteOrder(header.reverseSuffixTreeOffset);
+            swapByteOrder(header.globListOffset);
+            swapByteOrder(header.magicListOffset);
+            swapByteOrder(header.namespaceListOffset);
+            swapByteOrder(header.iconsListOffset);
+            swapByteOrder(header.genericIconsListOffset);
+        }
+        
+        enforce(header.majorVersion == 1 && header.minorVersion == 2, "Unsupported mime cache format version");
+        
+        enforce(mmaped.length >= header.aliasListOffset + uint.sizeof, "Invalid alias list offset");
+        enforce(mmaped.length >= header.parentListOffset + uint.sizeof, "Invalid parent list offset");
+        enforce(mmaped.length >= header.literalListOffset + uint.sizeof, "Invalid literal list offset");
+        enforce(mmaped.length >= header.reverseSuffixTreeOffset + uint.sizeof * 2, "Invalid reverse suffix tree offset");
+        enforce(mmaped.length >= header.globListOffset + uint.sizeof, "Invalid glob list offset");
+        enforce(mmaped.length >= header.magicListOffset + uint.sizeof * 3, "Invalid magic list offset");
+        enforce(mmaped.length >= header.namespaceListOffset + uint.sizeof, "Invalid namespace list offset");
+    }
+    
+    
+    
+    auto aliases() {
+        auto aliasCount = readValue!uint(header.aliasListOffset);
+        enforce(mmaped.length >= header.aliasListOffset + aliasCount.sizeof + aliasCount * uint.sizeof * 2, "Failed to read alias list");
+        return iota(aliasCount)
+                .map!(i => header.aliasListOffset + aliasCount.sizeof + i*uint.sizeof*2)
+                .map!(offset => AliasEntry(readString(readValue!uint(offset)), readString(readValue!uint(offset+uint.sizeof))))
+                .assumeSorted!(function(a,b) { return a.aliasName < b.aliasName; });
+    }
+    
+    auto parentEntries() {
+        auto parentListCount = readValue!uint(header.parentListOffset);
+        enforce(mmaped.length >= header.parentListOffset + parentListCount.sizeof + parentListCount*uint.sizeof*2, "Failed to read parent list");
+        return iota(parentListCount)
+                .map!(i => header.parentListOffset + parentListCount.sizeof + i*uint.sizeof*2)
+                .map!(offset => ParentEntry(readString(readValue!uint(offset)), readValue!uint(offset+uint.sizeof)))
+                .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
+    }
+    
+    auto parents(const(char)[] mimeType) {
+        auto parentEntry = parentEntries().equalRange(ParentEntry(mimeType, 0));
+        uint parentsOffset, parentCount;
+        
+        if (parentEntry.empty) {
+            parentsOffset = 0;
+            parentCount = 0;
+        } else {
+            parentsOffset = parentEntry.front.parentsOffset;
+            parentCount = readValue!uint(parentsOffset);
+        }
+        enforce(mmaped.length >= parentsOffset + parentCount.sizeof + parentCount*uint.sizeof, "Failed to read parents");
+        return iota(parentCount)
+                .map!(i => parentsOffset + parentCount.sizeof + i*uint.sizeof)
+                .map!(offset => readString(readValue!uint(offset)));
+    }
+    
+    auto globs() {
+        auto globCount = readValue!uint(header.globListOffset);
+        enforce(mmaped.length >= header.globListOffset + globCount.sizeof + globCount*uint.sizeof*3, "Failed to read globs");
+        return iota(globCount)
+                .map!(i => header.globListOffset + globCount.sizeof + i*uint.sizeof*3)
+                .map!( delegate(offset) { 
+                    auto glob = readString(readValue!uint(offset));
+                    auto mimeType = readString(readValue!uint(offset+uint.sizeof));
+                    auto weightAndCs = parseWeightAndFlags(readValue!uint(offset+uint.sizeof*2));
+                    return GlobEntry(glob, mimeType, weightAndCs.weight, weightAndCs.cs);
+                });
+    }
+    
+    auto icons() {
+        return commonIcons(header.iconsListOffset);
+    }
+    
+    auto genericIcons() {
+        return commonIcons(header.genericIconsListOffset);
+    }
+    
+    const(char)[] findBySuffx(const(char)[] name) {
+        auto rootCount = readValue!uint(header.reverseSuffixTreeOffset);
+        auto firstRootOffset = readValue!uint(header.reverseSuffixTreeOffset + rootCount.sizeof);
+        
+        const(char)[][] variants;
+        
+        lookupLeaf(firstRootOffset, rootCount, name.toUTF32.retro, delegate(const(char)[] mimeType) {
+            writeln(mimeType);
+        });
+        
+        return null;
+    }
+    
+    
+private:
+    void lookupLeaf(Range)(uint offset, uint count, Range name, void delegate (const(char)[]) sink) {
+        if (name.empty) {
+            return;
+        }
+        
+        for (uint i=0; i<count; ++i) {
+            dchar character = cast(dchar)readValue!uint(offset);
+            
+            if (character) {
+                if (character == name.front) {
+                    uint childrenCount = readValue!uint(offset + uint.sizeof);
+                    uint firstChildOffset = readValue!uint(offset + uint.sizeof*2);
+                    
+                    auto save = name.save;
+                    save.popFront;
+                    
+                    lookupLeaf(firstChildOffset, childrenCount, save, sink);
+                }
+            } else {
+                uint mimeTypeOffset = readValue!uint(offset + uint.sizeof);
+                uint weightAndFlags = readValue!uint(offset + uint.sizeof*2);
+                sink(readString(mimeTypeOffset));
+            }
+            offset += uint.sizeof * 3;
+        }
+    }
+
+    auto commonIcons(uint iconsListOffset) {
+        auto iconCount = readValue!uint(iconsListOffset);
+        enforce(mmaped.length >= iconsListOffset + iconCount.sizeof + iconCount*uint.sizeof*2, "Failed to read icons");
+        return iota(iconCount)
+                .map!(i => iconsListOffset + iconCount.sizeof + i*uint.sizeof*2)
+                .map!(offset => IconEntry(readString(readValue!uint(offset)), readString(readValue!uint(offset+uint.sizeof))))
+                .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
+    }
+    
+    T readValue(T)(uint offset) {
+        T value = *(cast(const(T)*)mmaped[offset..(offset+T.sizeof)].ptr);
+        static if (isIntegral!T && endian == Endian.littleEndian) {
+            swapByteOrder(value);
+        }
+        return value;
+    }
+    
+    auto readString(uint offset) {
+        auto cstr = cast(const(char*))mmaped[offset..mmaped.length].ptr;
+        return fromStringz(cstr);
+    }
+    
+    auto readString(uint offset, uint length) {
+        return cast(const(char)[])mmaped[offset..offset+length];
+    }
+    
+    MmFile mmaped;
+    MimeCacheHeader header;
 }
 
 void readMimeCache(string fileName)

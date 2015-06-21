@@ -31,15 +31,11 @@ module mime.mimetype;
 struct MimeType
 {   
     this(string name) {
-        this.name = name;
+        _name = name;
     }
     
     @nogc @safe string name() nothrow const {
         return _name;
-    }
-    
-    @safe string name(string newName) nothrow {
-        return _name = newName;
     }
     
     @nogc @safe const(string)[] patterns() nothrow const {
@@ -56,11 +52,11 @@ struct MimeType
     }
     
     @nogc @safe const(string)[] aliases() nothrow const {
-        return null;
+        return _aliases;
     }
     
-    @nogc @safe const(string)[] subclassOf() nothrow const {
-        return null;
+    @nogc @safe const(string)[] parents() nothrow const {
+        return _parents;
     }
     
     //@nogc @safe const(MimeComment)[] comments() nothrow const;
@@ -79,8 +75,19 @@ struct MimeType
         return null;
     }
     
+package:
+    @safe void addAlias(string alias_) nothrow {
+        _aliases ~= alias_;
+    }
+    
+    @safe void addParent(string parent) nothrow {
+        _parents ~= parent;
+    }
+    
 private:
     string _name;
     string _icon;
     string _genericIcon;
+    string[] _aliases;
+    string[] _parents;
 }

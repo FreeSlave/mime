@@ -9,5 +9,5 @@
     "dependencies": {
         "standardpaths": "~>0.2.0"
     },
-    "subPackages" : ["./examples/mimecache"]
+    "subPackages" : ["./examples/mimecache", "./examples/mimedatabase"]
 }
