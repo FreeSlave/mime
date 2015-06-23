@@ -5,21 +5,17 @@ import mime.common;
 private {
     import std.algorithm;
     import std.conv;
-    import std.path;
     import std.range;
-    import std.stdio;
     import std.string;
     import std.traits;
     import std.typecons;
 }
 
-alias mimePathsBuilder!"globs2" mimeGlobsPaths;
-
 @nogc @safe bool isNoGlobs(string str) pure nothrow {
     return str == "__NOGLOBS__";
 }
 
-alias Tuple!(uint, "weight", string, "typeName", string, "pattern", bool, "caseSensitive") GlobLine;
+alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseSensitive") GlobLine;
 
 @trusted auto globsFileReader(Range)(Range byLine) if(is(ElementType!Range : string))
 {
@@ -42,26 +38,26 @@ alias Tuple!(uint, "weight", string, "typeName", string, "pattern", bool, "caseS
                     }
                 }
             } else {
-                throw new Exception("Malformed globs file: type and pattern must be presented");
+                throw new Exception("Malformed globs file: mime type and pattern must be presented");
             }
         }
         
-        if (third.length) { //globs version 2
-            string type = second;
-            string pattern = third;
+        if (!third.empty) { //globs version 2
+            auto type = second;
+            auto pattern = third;
             uint weight = pattern.isNoGlobs ? 0 : parse!uint(first);
             
             auto flags = fourth.splitter(','); //The fourth field contains a list of comma-separated flags
             bool cs = !flags.empty && flags.front == "cs";
             return GlobLine(weight, type, pattern, cs);
         } else { //globs version 1
-            string type = first;
-            string pattern = third;
+            auto type = first;
+            auto pattern = third;
             return GlobLine(0, type, pattern, false);
         }
     });
 }
 
 @trusted auto globsFileReader(string fileName) {
-    return globsFileReader(File(fileName, "r").byLine().map!(s => s.idup));
+    return globsFileReader(fileReader(fileName));
 }

@@ -4,25 +4,13 @@ import mime.common;
 
 private {
     import std.algorithm;
-    import std.path;
     import std.range;
-    import std.stdio;
     import std.string;
     import std.traits;
     import std.typecons;
 }
 
-alias mimePathsBuilder!"icons" mimeIconsPaths;
-
-@trusted auto mimeGenericIconsPaths(Range)(Range mimePaths) if(is(ElementType!Range : string)) {
-    return mimePaths.map!(p => buildPath(p, "generic-icons"));
-}
-
-@trusted auto mimeGenericIconsPaths() {
-    return mimeIconsPaths(mimePaths());
-}
-
-alias Tuple!(string, "typeName", string, "iconName") IconLine;
+alias Tuple!(string, "mimeType", string, "iconName") IconLine;
 
 @trusted auto iconsFileReader(Range)(Range byLine) if(is(ElementType!Range : string))
 {
@@ -37,5 +25,5 @@ alias Tuple!(string, "typeName", string, "iconName") IconLine;
 }
 
 @trusted auto iconsFileReader(string fileName) {
-    return iconsFileReader(File(fileName, "r").byLine().map!(s => s.idup));
+    return iconsFileReader(fileReader(fileName));
 }

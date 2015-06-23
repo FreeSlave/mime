@@ -8,7 +8,8 @@ void main(string[] args)
         writefln("Usage: %s <mimecache file>", args[0]);
     } else {
         string fileName = args[1];
-        auto mimeCache = new MimeCache(fileName);
+        readMimeCache(fileName);
+//         auto mimeCache = new MimeCache(fileName);
 //         foreach(aliasEntry; mimeCache.aliases) {
 //             writefln("%s => %s", aliasEntry.aliasName, aliasEntry.mimeType);
 //         }
@@ -33,8 +34,8 @@ void main(string[] args)
 //             writefln("%s: %s. Weight: %s, cs: %s", literalEntry.mimeType, literalEntry.literal, literalEntry.weight, literalEntry.cs);
 //         }
         
-        if (args.length > 2) {
-            writeln(mimeCache.findByFileName(args[2]));
-        }
+//         if (args.length > 2) {
+//             writeln(mimeCache.findByFileName(args[2]));
+//         }
     }
 }
