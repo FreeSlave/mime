@@ -6,32 +6,36 @@ private {
     import std.algorithm;
     import std.bitmanip;
     import std.conv;
+    import std.file;
     import std.range;
     import std.string;
     import std.traits;
     import std.typecons;
 }
 
-alias Tuple!(uint, "ident", uint, "startOffset", ushort, "valueLength", string, "value", string, "mask", uint, "wordSize", uint, "rangeLength") MagicLine;
+alias Tuple!(uint, "indent", uint, "startOffset", ushort, "valueLength", const(char)[], "value", const(char)[], "mask", uint, "wordSize", uint, "rangeLength") MagicLine;
 
-private struct MagicRange(Range)
+
+private struct MagicRange
 {
-    this(Range byLine) {
-        _byLine = byLine;
+    this(const(char)[] content) {
+        _content = content;
     }
     
     @property auto front() {
-        string header = _byLine.front;
-        if (!header.empty && header.startsWith("[")) {
-            auto result = findSplitBefore(header[1..$], "]");
+        if (_content.startsWith("[")) {
+            _content = _content[1..$];
+            
+            auto result = findSplit(_content[0..$], "]\n");
             if (!result[1].empty) {
+                _content = result[2];
+                
                 auto sectionResult = findSplit(result[0], ":");
                 if (!sectionResult[1].empty) {
                     uint priority = parse!uint(sectionResult[0]);
                     auto mimeType = sectionResult[2];
-                    _byLine.popFront();
-                    return tuple!("priority", "mimeType", "line")
-                                 (priority, mimeType, _byLine.until!(s => s.startsWith("[")).map!(s => parseMagicLine(s)) );
+                    return tuple!("priority", "mimeType", "lines")
+                                 (priority, mimeType, parseMagicLines());
                 }
             }
         }
@@ -39,27 +43,31 @@ private struct MagicRange(Range)
     }
     
     void popFront() {
-        //make sure input range is in the end of the section
-        auto untilLine = _byLine.until!(s => s.startsWith("["));
-        while(!untilLine.empty) {
-            untilLine.popFront();
-        }
+        
     }
     
     @property bool empty() {
-        return _byLine.empty();
+        return _content.length <= 1;
     }
     
 private:
-    MagicLine parseMagicLine(string str) {
+    auto parseMagicLines() {
+        MagicLine[] lines;
+        while(!_content.empty && !_content.startsWith("[")) {
+            lines ~= parseMagicLine();
+        }
+        return lines;
+    }
+    
+    MagicLine parseMagicLine() {
         //Ugly code!
         
-        auto strSplit = findSplit(str, ">");
+        auto strSplit = findSplit(_content, ">");
         if (strSplit[1].empty) {
             throw new Exception("Missing '>' character in magic line");
         }
         
-        auto indent = parse!uint(strSplit[0]);
+        auto indent = strSplit[0].empty ? 0 : parse!uint(strSplit[0]);
         
         strSplit = findSplit(strSplit[2], "=");
         if (strSplit[1].empty) {
@@ -79,13 +87,14 @@ private:
                 auto value = valueStr[0..valueLength];
                 valueStr = valueStr[valueLength..$];
                 
-                string mask;
+                const(char)[] mask;
                 uint wordSize;
                 uint rangeLength;
                 if (!valueStr.empty && valueStr.front == '&') {
                     valueStr.popFront();
                     if (valueStr.length >= valueLength) {
                         mask = valueStr[0..valueLength];
+                        valueStr = valueStr[valueLength..$];
                     } else {
                         throw new Exception("Failed to read mask in magic line");
                     }
@@ -98,6 +107,10 @@ private:
                     valueStr.popFront();
                     rangeLength = parse!uint(valueStr);
                 }
+                if (valueStr.startsWith("\n")) {
+                    valueStr.popFront();
+                }
+                _content = valueStr;
                 return MagicLine(indent, startOffset, valueLength, value, mask, wordSize, rangeLength);
                 //actually should check if the rest of string has symbols and ignore the whole line in this case.
             } else {
@@ -109,23 +122,25 @@ private:
         
     }
     
-    Range _byLine;
+    const(char)[] _content;
 }
 
-private auto magicRange(Range)(Range byLine) {
-    return MagicRange!Range(byLine);
+private auto magicRange(const(char)[] data) {
+    return MagicRange(data);
 }
 
-@trusted auto magicFileReader(Range)(Range byLine) if(is(ElementType!Range : string))
+@trusted auto magicFileReader(const(void)[] data)
 {
-    if (byLine.empty || !equal(byLine.front, "MIME-Magic\0\n")) {
+    enum mimeMagic = "MIME-Magic\0\n";
+    auto content = cast(const(char)[])data;
+    if (!content.startsWith(mimeMagic)) {
         throw new Exception("Not mime magic file");
     }
-    byLine.popFront();
-    return magicRange(byLine);
+    content = content[mimeMagic.length..$];
+    return magicRange(content);
 }
 
 @trusted auto magicFileReader(string fileName) {
-    return magicFileReader(fileReader(fileName));
+    return magicFileReader(std.file.read(fileName));
 }
 
