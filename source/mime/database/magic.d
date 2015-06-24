@@ -15,54 +15,38 @@ private {
 
 alias Tuple!(uint, "indent", uint, "startOffset", ushort, "valueLength", const(char)[], "value", const(char)[], "mask", uint, "wordSize", uint, "rangeLength") MagicLine;
 
-
-private struct MagicRange
+private struct MagicLines
 {
     this(const(char)[] content) {
-        _content = content;
+        _current = content;
     }
     
     @property auto front() {
-        if (_content.startsWith("[")) {
-            _content = _content[1..$];
-            
-            auto result = findSplit(_content[0..$], "]\n");
-            if (!result[1].empty) {
-                _content = result[2];
-                
-                auto sectionResult = findSplit(result[0], ":");
-                if (!sectionResult[1].empty) {
-                    uint priority = parse!uint(sectionResult[0]);
-                    auto mimeType = sectionResult[2];
-                    return tuple!("priority", "mimeType", "lines")
-                                 (priority, mimeType, parseMagicLines());
-                }
-            }
-        }
-        throw new Exception("Error parsing magic section");
+        const(char)[] copy = _current;
+        return parseLine(copy);
     }
     
     void popFront() {
-        
+        parseLine(_current);
     }
     
-    @property bool empty() {
-        return _content.length <= 1;
+    bool empty() const {
+        return _current.empty || _current.startsWith("[");
+    }
+    
+    MagicLines save() const {
+        return MagicLines(_current);
     }
     
 private:
-    auto parseMagicLines() {
-        MagicLine[] lines;
-        while(!_content.empty && !_content.startsWith("[")) {
-            lines ~= parseMagicLine();
-        }
-        return lines;
+    auto current() {
+        return _current;
     }
     
-    MagicLine parseMagicLine() {
+    auto parseLine(ref const(char)[] current) {
         //Ugly code!
         
-        auto strSplit = findSplit(_content, ">");
+        auto strSplit = findSplit(current, ">");
         if (strSplit[1].empty) {
             throw new Exception("Missing '>' character in magic line");
         }
@@ -107,26 +91,71 @@ private:
                     valueStr.popFront();
                     rangeLength = parse!uint(valueStr);
                 }
+                //actually should check if the rest of string has symbols and ignore the whole line in this case.
                 if (valueStr.startsWith("\n")) {
                     valueStr.popFront();
                 }
-                _content = valueStr;
+                current = valueStr;
                 return MagicLine(indent, startOffset, valueLength, value, mask, wordSize, rangeLength);
-                //actually should check if the rest of string has symbols and ignore the whole line in this case.
             } else {
                 throw new Exception("Failed to read value in magic line");
             }
         } else {
             throw new Exception("Failed to read value length in magic line");
         }
-        
     }
     
-    const(char)[] _content;
+    const(char)[] _current;
 }
 
-private auto magicRange(const(char)[] data) {
-    return MagicRange(data);
+alias Tuple!(uint, "priority", const(char)[], "mimeType", MagicLines, "lines") MagicSection;
+
+private struct MagicRange
+{
+    this(const(char)[] content) {
+        _current = content;
+    }
+    
+    //Should use caching?
+    @property auto front() {
+        auto current = _current;
+        if (current.startsWith("[")) {
+            current = current[1..$];
+            
+            auto result = findSplit(current[0..$], "]\n");
+            if (!result[1].empty) {
+                current = result[2];
+                
+                auto sectionResult = findSplit(result[0], ":");
+                if (!sectionResult[1].empty) {
+                    uint priority = parse!uint(sectionResult[0]);
+                    auto mimeType = sectionResult[2];
+                    return MagicSection(priority, mimeType, MagicLines(current));
+                }
+            }
+        }
+        throw new Exception("Error parsing magic section");
+    }
+    
+    void popFront() {
+        //Ugly! Need to call front again and foreach over the subrange. Caching would solve the first problem.
+        auto result = front();
+        while(!result.lines.empty) {
+            result.lines.popFront();
+        }
+        _current = result.lines.current();
+    }
+    
+    @property bool empty() const {
+        return _current.empty;
+    }
+    
+    MagicRange save() const {
+        return MagicRange(_current);
+    }
+    
+private:
+    const(char)[] _current;
 }
 
 @trusted auto magicFileReader(const(void)[] data)
@@ -136,8 +165,7 @@ private auto magicRange(const(char)[] data) {
     if (!content.startsWith(mimeMagic)) {
         throw new Exception("Not mime magic file");
     }
-    content = content[mimeMagic.length..$];
-    return magicRange(content);
+    return MagicRange(content[mimeMagic.length..$]);
 }
 
 @trusted auto magicFileReader(string fileName) {
