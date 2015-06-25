@@ -1,5 +1,10 @@
 module mime.mimetype;
 
+private {
+    import std.algorithm;
+    import std.range;
+}
+
 // struct MagicMatch
 // {
 //     enum Type {
@@ -30,8 +35,11 @@ module mime.mimetype;
 
 struct MimeType
 {   
-    this(string name) {
+    @trusted this(string name) nothrow {
         _name = name;
+        _icon = name.replace("/", "-");
+        auto topLevel = name.findSplit("/")[0];
+        _genericIcon = topLevel ~ "-x-generic";
     }
     
     @nogc @safe string name() nothrow const {
@@ -40,15 +48,6 @@ struct MimeType
     
     @nogc @safe const(string)[] patterns() nothrow const {
         return null;
-    }
-    @nogc @safe bool globDeleteAll() nothrow const {
-        return false;
-    }
-    
-    //@nogc @safe const(MagicMatch)[] magicMatches() nothrow const;
-    
-    @nogc @safe bool magicDeleteAll() nothrow const {
-        return false;
     }
     
     @nogc @safe const(string)[] aliases() nothrow const {
@@ -59,20 +58,40 @@ struct MimeType
         return _parents;
     }
     
-    //@nogc @safe const(MimeComment)[] comments() nothrow const;
-    @nogc @safe string acronym() nothrow const {
-        return null;
-    }
-    @nogc @safe string expandedAcronym() nothrow const {
-        return null;
+    @nogc @safe string icon() nothrow const {
+        return _icon;
     }
     
-    @nogc @safe string iconName() nothrow const {
-        return null;
+    @nogc @safe string icon(string iconName) nothrow {
+        _icon = iconName;
+        return _icon;
     }
     
-    @nogc @safe string genericIconName() nothrow const {
-        return null;
+    @nogc @safe string genericIcon() nothrow const {
+        return _genericIcon;
+    }
+    
+    @nogc @safe string genericIcon(string iconName) nothrow {
+        _genericIcon = iconName;
+        return _genericIcon;
+    }
+    
+    @nogc @safe string namespaceUri() nothrow const {
+        return _namespaceUri;
+    }
+    
+    @nogc @safe string namespaceUri(string uri) nothrow {
+        _namespaceUri = uri;
+        return _namespaceUri;
+    }
+    
+    @nogc @safe string localName() nothrow const {
+        return _localName;
+    }
+    
+    @nogc @safe string localName(string name) nothrow {
+        _localName = name;
+        return _localName;
     }
     
 package:
@@ -90,4 +109,6 @@ private:
     string _genericIcon;
     string[] _aliases;
     string[] _parents;
+    string _namespaceUri;
+    string _localName;
 }

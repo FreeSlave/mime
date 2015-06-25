@@ -1,76 +1,107 @@
 module mime.mimedatabase;
 
 private {
-    import std.mmfile;
-    
     import std.algorithm;
-    
-    import std.exception;
-    import std.traits;
     import std.bitmanip;
+    import std.exception;
+    import std.file;
+    import std.path;
+    import std.range;
+    import std.stdio;
     import std.system;
+    import std.traits;
     import std.typecons;
     
-    import std.stdio;
+    import mime.common;
+    
+    import mime.database.aliases;
+    import mime.database.globs;
+    import mime.database.icons;
+    import mime.database.magic;
+    import mime.database.namespaces;
+    import mime.database.subclasses;
 }
 
 import mime.mimetype;
 
-private static void swapByteOrder(T)(ref T t) {
-    t = swapEndian(t);
-}
-
-struct MimeCacheHeader
-{
-    ushort majorVersion;
-    ushort minorVersion;
-    uint aliasListOffset;
-    uint parentListOffset;
-    uint literalListOffset;
-    uint reverseSuffixTreeOffset;
-    uint globListOffset;
-    uint magicListOffset;
-    uint namespaceListOffset;
-    uint iconsListOffset;
-    uint genericIconsListOffset;
+private auto fileReader(string fileName) {
+    return File(fileName, "r").byLine().map!(s => s.idup);
 }
 
 class MimeDatabase
 {
-    this(in string[] mimePaths) {
-        update(mimePaths);
-    }
-    
-    this(string mimeCachePath) {
+    this(string mimePath) {
         
-    }
-    
-    void update(in string[] mimePaths) {
-        _mimePaths = mimePaths;
-        update();
-    }
-    
-    void update() {
+        if (mimePath.empty) {
+            throw new Exception("empty path given");
+        }
         
+        auto aliasesPath = buildPath(mimePath, "aliases");
+        try {
+            auto aliases = aliasesFileReader(fileReader(aliasesPath));
+            foreach(aliasLine; aliases) {
+                auto mimeType = ensureMimeType(aliasLine.mimeType);
+                mimeType.addAlias(aliasLine.aliasName);
+                _aliases[aliasLine.aliasName] = aliasLine.mimeType;
+            }
+        } catch(ErrnoException e) {
+            
+        }
+        
+        auto subclassesPath = buildPath(mimePath, "subclasses");
+        try {
+            auto subclasses = subclassesFileReader(fileReader(subclassesPath));
+            foreach(subclassLine; subclasses) {
+                auto mimeType = ensureMimeType(subclassLine.mimeType);
+                mimeType.addParent(subclassLine.parent);
+            }
+        } catch(ErrnoException e) {
+            
+        }
+        
+        auto iconsPath = buildPath(mimePath, "icons");
+        try {
+            auto icons = iconsFileReader(fileReader(iconsPath));
+            foreach(iconLine; icons) {
+                auto mimeType = ensureMimeType(iconLine.mimeType);
+                mimeType.icon = iconLine.iconName;
+            }
+        } catch(ErrnoException e) {
+            
+        }
+        
+        auto genericIconsPath = buildPath(mimePath, "generic-icons");
+        try {
+            auto icons = iconsFileReader(fileReader(genericIconsPath));
+            foreach(iconLine; icons) {
+                auto mimeType = ensureMimeType(iconLine.mimeType);
+                mimeType.icon = iconLine.iconName;
+            }
+        } catch(ErrnoException e) {
+            
+        }
+        
+        auto namespacesPath = buildPath(mimePath, "XMLnamespaces");
+        try {
+            auto namespaces = namespacesFileReader(fileReader(namespacesPath));
+            foreach(namespaceLine; namespaces) {
+                auto mimeType = ensureMimeType(namespaceLine.mimeType);
+                mimeType.localName = namespaceLine.localName;
+                mimeType.namespaceUri = namespaceLine.namespaceUri;
+            }
+        } catch(ErrnoException e) {
+            
+        }
     }
     
-    const(string)[] mimePaths() const {
-        return _mimePaths;
-    }
-    
-    const(MimeType)* mimeType(string name) const {
+    @nogc @safe const(MimeType)* mimeType(string name) nothrow const {
         auto mType = name in _mimeTypes;
         if (mType) {
             return mType;
         } else {
-            auto mimeNames = name in _aliases;
-            if (mimeNames) {
-                foreach(mimeName; *mimeNames) {
-                    mType = mimeName in _mimeTypes;
-                    if (mType) {
-                        return mType;
-                    }
-                }
+            auto mimeName = name in _aliases;
+            if (mimeName) {
+                return *mimeName in _mimeTypes;
             }
         }
         return null;
@@ -84,9 +115,13 @@ class MimeDatabase
         return null;
     }
     
+    @nogc @trusted auto byMimeType() nothrow const {
+        return _mimeTypes.byValue();
+    }
+    
 private:
     
-    MimeType* ensureMimeType(const(char)[] name) {
+    @trusted MimeType* ensureMimeType(const(char)[] name) nothrow {
         MimeType* mimeType = name in _mimeTypes;
         if (mimeType) {
             return mimeType;
@@ -97,9 +132,7 @@ private:
         }
     }
     
-    const(string)[] _mimePaths;
-    MmFile mmaped;
     MimeType[const(char)[]] _mimeTypes;
-    string[][string] _aliases;
+    string[string] _aliases;
 }
 

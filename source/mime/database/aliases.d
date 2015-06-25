@@ -18,10 +18,10 @@ alias Tuple!(string, "aliasName", string, "mimeType") AliasLine;
             splitted.popFront();
             if (!splitted.empty) {
                 auto mimeType = splitted.front;
-                return AliasLine(mimeType, parent);
+                return AliasLine(aliasName, mimeType);
             }
         }
-        throw Exception("Malformed aliases file: must be 2 words per line");
+        throw new Exception("Malformed aliases file: must be 2 words per line");
     });
 }
 

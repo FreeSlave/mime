@@ -21,6 +21,6 @@ alias Tuple!(string, "mimeType", string, "parent") SubclassLine;
                 return SubclassLine(mimeType, parent);
             }
         }
-        throw Exception("Malformed subclasses file: must be 3 words per line");
+        throw new Exception("Malformed subclasses file: must be 3 words per line");
     });
 }

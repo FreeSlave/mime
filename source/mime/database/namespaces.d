@@ -1,4 +1,4 @@
-module mime.database.namespace;
+module mime.database.namespaces;
 
 private {
     import std.algorithm;
@@ -25,6 +25,6 @@ alias Tuple!(string, "namespaceUri", string, "localName", string, "mimeType") Na
                 }
             }
         }
-        throw Exception("Malformed namespaces file: must be 3 words per line");
+        throw new Exception("Malformed namespaces file: must be 3 words per line");
     });
 }
