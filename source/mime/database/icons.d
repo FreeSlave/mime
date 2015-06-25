@@ -1,7 +1,5 @@
 module mime.database.icons;
 
-import mime.common;
-
 private {
     import std.algorithm;
     import std.range;
@@ -22,8 +20,4 @@ alias Tuple!(string, "mimeType", string, "iconName") IconLine;
             return IconLine(result[0], result[2]);
         }
     });
-}
-
-@trusted auto iconsFileReader(string fileName) {
-    return iconsFileReader(fileReader(fileName));
 }

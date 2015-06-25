@@ -184,17 +184,24 @@ class MimeCache
                                            readValue!uint(offset+uint.sizeof*3)));
     }
     
-//     auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) {
-//         return iota(matchletCount)
-//                 .map!(i => firstMatchletOffset + i*uint.sizeof*8)
-//                 .map!(delegate(offset) {
-//                     uint rangeStart = readValue!uint(offset);
-//                     uint rangeLength = readValue!uint(offset);
-//                     uint wordSize = readValue!uint(offset);
-//                     uint valueLength = readValue!uint(offset);
-//                     return 0;
-//                 });
-//     }
+    auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) {
+        return iota(matchletCount)
+                .map!(i => firstMatchletOffset + i*uint.sizeof*8)
+                .map!(delegate(offset) {
+                    uint rangeStart = readValue!uint(offset);
+                    uint rangeLength = readValue!uint(offset+uint.sizeof);
+                    uint wordSize = readValue!uint(offset+uint.sizeof*2);
+                    uint valueLength = readValue!uint(offset+uint.sizeof*3);
+                    
+                    uint valueOffset = readValue!uint(offset+uint.sizeof*4);
+                    const(char)[] value = readString(valueOffset, valueLength);
+                    uint maskOffset = readValue!uint(offset+uint.sizeof*5);
+                    const(char)[] mask = maskOffset ? readString(maskOffset, valueLength) : null;
+                    uint childrenCount = readValue!uint(offset+uint.sizeof*6);
+                    uint firstChildOffset = readValue!uint(offset+uint.sizeof*7);
+                    return MatchletEntry(rangeStart, rangeLength, wordSize, valueLength, value, mask, childrenCount, firstChildOffset);
+                });
+    }
     
     const(char)[] findIcon(const(char)[] mimeType) {
         auto icon = icons().equalRange(IconEntry(mimeType, null));
@@ -333,93 +340,4 @@ private:
     
     MmFile mmaped;
     MimeCacheHeader header;
-}
-
-void readMimeCache(string fileName)
-{
-    static void swapByteOrder(T)(ref T t) {
-        t = swapEndian(t);
-    }
-    
-    static auto parseWeightAndFlags(uint value) {
-        return tuple(value & 0xFF, (value & 0x100) != 0);
-    }
-    
-    T readValue(T)(uint offset) {
-        T value = *(cast(const(T)*)mmaped[offset..(offset+T.sizeof)].ptr);
-        static if (isIntegral!T && endian == Endian.littleEndian) {
-            swapByteOrder(value);
-        }
-        return value;
-    }
-    
-    auto mmaped = new MmFile(fileName);
-    
-    auto readString(uint offset) {
-        uint end = offset;
-        while(mmaped[end]) {
-            end++;
-        }
-        return cast(const(char)[])mmaped[offset..end];
-    }
-    
-    auto readString2(uint offset, uint length) {
-        return cast(const(char)[])mmaped[offset..offset+length];
-    }
-    
-    enforce(mmaped.length > MimeCacheHeader.sizeof);
-    auto header = readValue!MimeCacheHeader(0);
-    static if (endian == Endian.littleEndian) {
-        swapByteOrder(header.majorVersion);
-        swapByteOrder(header.minorVersion);
-        swapByteOrder(header.aliasListOffset);
-        swapByteOrder(header.parentListOffset);
-        swapByteOrder(header.literalListOffset);
-        swapByteOrder(header.reverseSuffixTreeOffset);
-        swapByteOrder(header.globListOffset);
-        swapByteOrder(header.magicListOffset);
-        swapByteOrder(header.namespaceListOffset);
-        swapByteOrder(header.iconsListOffset);
-        swapByteOrder(header.genericIconsListOffset);
-    }
-    
-    writeln("Major version: ", header.majorVersion);
-    writeln("Minor version: ", header.minorVersion);
-    
-    auto matchCount = readValue!uint(header.magicListOffset);
-    auto maxExtent = readValue!uint(header.magicListOffset + uint.sizeof);
-    auto firstMatchOffset = readValue!uint(header.magicListOffset + uint.sizeof*2);
-    writeln("Match count: ", matchCount);
-    writeln("Max Extent: ", maxExtent);
-    writeln("First match offset: ", firstMatchOffset);
-    
-    for (uint i=0; i<matchCount; ++i) {
-        uint matchOffset = firstMatchOffset + i*uint.sizeof*4;
-        uint priority = readValue!uint(matchOffset);
-        uint mimeTypeOffset = readValue!uint(matchOffset + uint.sizeof);
-        uint matchletCount = readValue!uint(matchOffset + uint.sizeof*2);
-        uint firstMatchletOffset = readValue!uint(matchOffset + uint.sizeof*3);
-        
-        writefln("Priority: %s. MimeType: %s. Matchletcount: %s", priority, readString(mimeTypeOffset), matchletCount);
-        
-        for (uint j=0; j<matchletCount; ++j) {
-            uint matchletOffset = firstMatchletOffset + j*uint.sizeof*8;
-            uint rangeStart = readValue!uint(matchletOffset);
-            uint rangeLength = readValue!uint(matchletOffset + uint.sizeof);
-            uint wordSize = readValue!uint(matchletOffset + uint.sizeof*2);
-            uint valueLength = readValue!uint(matchletOffset + uint.sizeof*3);
-            uint value = readValue!uint(matchletOffset + uint.sizeof*4);
-            uint mask = readValue!uint(matchletOffset + uint.sizeof*5);
-            uint childrenCount = readValue!uint(matchletOffset + uint.sizeof*6);
-            uint firstChildOffset = readValue!uint(matchletOffset + uint.sizeof*7);
-            
-            writefln("Range start: %s. Range length: %s. Word size: %s. Value length: %s.", rangeStart, rangeLength, wordSize, valueLength);
-            auto s = readString2(value, valueLength);
-            writefln("Value: '%s'", s);
-            
-            if (mask) {
-                writefln("Mask: %s('%s')", mask, readString2(mask, valueLength));
-            }
-        }
-    }
 }

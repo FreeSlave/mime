@@ -1,7 +1,5 @@
 module mime.database.globs;
 
-import mime.common;
-
 private {
     import std.algorithm;
     import std.conv;
@@ -56,8 +54,4 @@ alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseS
             return GlobLine(0, type, pattern, false);
         }
     });
-}
-
-@trusted auto globsFileReader(string fileName) {
-    return globsFileReader(fileReader(fileName));
 }

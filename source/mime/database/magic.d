@@ -1,7 +1,5 @@
 module mime.database.magic;
 
-import mime.common;
-
 private {
     import std.algorithm;
     import std.bitmanip;
@@ -166,9 +164,5 @@ private:
         throw new Exception("Not mime magic file");
     }
     return MagicRange(content[mimeMagic.length..$]);
-}
-
-@trusted auto magicFileReader(string fileName) {
-    return magicFileReader(std.file.read(fileName));
 }
 
