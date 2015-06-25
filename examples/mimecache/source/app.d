@@ -1,6 +1,6 @@
 import std.stdio;
 import std.string;
-import mime.database.mimecache;
+import mime.mimecache;
 
 void main(string[] args)
 {
@@ -8,8 +8,13 @@ void main(string[] args)
         writefln("Usage: %s <mimecache file>", args[0]);
     } else {
         string fileName = args[1];
-        readMimeCache(fileName);
-//         auto mimeCache = new MimeCache(fileName);
+        
+        auto mimeCache = new MimeCache(fileName);
+        
+        foreach(namespaceEntry; mimeCache.namespaces) {
+            writefln("Uri: %s, Local name: %s, MimeType: %s", namespaceEntry.namespaceUri, namespaceEntry.localName, namespaceEntry.mimeType);
+        }
+        
 //         foreach(aliasEntry; mimeCache.aliases) {
 //             writefln("%s => %s", aliasEntry.aliasName, aliasEntry.mimeType);
 //         }

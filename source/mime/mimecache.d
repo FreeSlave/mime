@@ -46,12 +46,14 @@ private {
     alias Tuple!(const(char)[], "glob", const(char)[], "mimeType", ubyte, "weight", bool, "cs") GlobEntry;
     alias Tuple!(const(char)[], "literal", const(char)[], "mimeType", ubyte, "weight", bool, "cs") LiteralEntry;
     alias Tuple!(const(char)[], "mimeType", const(char)[], "iconName") IconEntry;
+    alias Tuple!(const(char)[], "namespaceUri", const(char)[], "localName", const(char)[], "mimeType") NamespaceEntry;
     alias Tuple!(const(char)[], "mimeType", uint, "weight", bool, "cs") MimeTypeEntry;
     alias Tuple!(uint, "priority", const(char)[], "mimeType", uint, "matchletCount", uint, "firstMatchletOffset") MatchEntry;
     alias Tuple!(uint, "rangeStart", uint, "rangeLength", 
                  uint, "wordSize", uint, "valueLength", 
-                 uint, "value", uint, "mask", 
-                 uint, "childrenCount", uint, "firstChildOffset") MatchletEntry;
+                 const(char)[], "value", const(char)[], "mask", 
+                 uint, "childrenCount", uint, "firstChildOffset") //what are these?
+    MatchletEntry;
     
 }
 
@@ -155,6 +157,44 @@ class MimeCache
     auto genericIcons() {
         return commonIcons(header.genericIconsListOffset);
     }
+    
+    auto namespaces() {
+        auto namespaceCount = readValue!uint(header.namespaceListOffset);
+        enforce(mmaped.length >= header.namespaceListOffset + namespaceCount.sizeof + namespaceCount*uint.sizeof*3, "Failed to read namespaces");
+        return iota(namespaceCount)
+                .map!(i => header.namespaceListOffset + namespaceCount.sizeof + i*uint.sizeof*3)
+                .map!(offset => NamespaceEntry(readString(readValue!uint(offset)), 
+                                               readString(readValue!uint(offset+uint.sizeof)), 
+                                               readString(readValue!uint(offset+uint.sizeof*2))))
+                .assumeSorted!(function(a,b) { return a.namespaceUri < b.namespaceUri; });
+    }
+    
+    auto magicMatches() {
+        auto matchCount = readValue!uint(header.magicListOffset);
+        auto maxExtent = readValue!uint(header.magicListOffset + uint.sizeof); //what is it? Spec does not say anything
+        auto firstMatchOffset = readValue!uint(header.magicListOffset + uint.sizeof*2);
+        
+        enforce(mmaped.length >= firstMatchOffset + matchCount*uint.sizeof*4);
+        
+        return iota(matchCount)
+                .map!(i => firstMatchOffset + i*uint.sizeof*4)
+                .map!(offset => MatchEntry(readValue!uint(offset), 
+                                           readString(readValue!uint(offset+uint.sizeof)), 
+                                           readValue!uint(offset+uint.sizeof*2), 
+                                           readValue!uint(offset+uint.sizeof*3)));
+    }
+    
+//     auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) {
+//         return iota(matchletCount)
+//                 .map!(i => firstMatchletOffset + i*uint.sizeof*8)
+//                 .map!(delegate(offset) {
+//                     uint rangeStart = readValue!uint(offset);
+//                     uint rangeLength = readValue!uint(offset);
+//                     uint wordSize = readValue!uint(offset);
+//                     uint valueLength = readValue!uint(offset);
+//                     return 0;
+//                 });
+//     }
     
     const(char)[] findIcon(const(char)[] mimeType) {
         auto icon = icons().equalRange(IconEntry(mimeType, null));
@@ -374,17 +414,11 @@ void readMimeCache(string fileName)
             uint firstChildOffset = readValue!uint(matchletOffset + uint.sizeof*7);
             
             writefln("Range start: %s. Range length: %s. Word size: %s. Value length: %s.", rangeStart, rangeLength, wordSize, valueLength);
-            if (wordSize == 1) {
-                auto s = readString2(value, valueLength);
-                writeln("Value: ", s);
-            } else {
-                
-            }
-            writeln("Children count: ", childrenCount);
-            for (uint k=0; k<childrenCount; ++k) {
-                uint offset = firstChildOffset + k*uint.sizeof*3;
-                uint character = readValue!uint(offset);
-                writeln(character);
+            auto s = readString2(value, valueLength);
+            writefln("Value: '%s'", s);
+            
+            if (mask) {
+                writefln("Mask: %s('%s')", mask, readString2(mask, valueLength));
             }
         }
     }

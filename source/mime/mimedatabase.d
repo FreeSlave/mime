@@ -80,7 +80,7 @@ class MimeDatabase
         return null;
     }
     
-    const(MimeType)* mimeTypeForData(void[] data) const {
+    const(MimeType)* mimeTypeForData(const(void)[] data) const {
         return null;
     }
     
