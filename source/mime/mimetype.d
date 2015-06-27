@@ -33,6 +33,13 @@ private {
 //     @nogc @safe string locale() nothrow const;
 // }
 
+struct MimePattern
+{
+    string pattern;
+    uint weight;
+    bool caseSensitive;
+}
+
 struct MimeType
 {   
     @trusted this(string name) nothrow {
@@ -46,8 +53,8 @@ struct MimeType
         return _name;
     }
     
-    @nogc @safe const(string)[] patterns() nothrow const {
-        return null;
+    @nogc @safe const(MimePattern)[] patterns() nothrow const {
+        return _patterns;
     }
     
     @nogc @safe const(string)[] aliases() nothrow const {
@@ -103,6 +110,10 @@ package:
         _parents ~= parent;
     }
     
+    @safe void addPattern(string pattern, uint weight, bool cs) nothrow {
+        _patterns ~= MimePattern(pattern, weight, cs);
+    }
+    
 private:
     string _name;
     string _icon;
@@ -111,4 +122,5 @@ private:
     string[] _parents;
     string _namespaceUri;
     string _localName;
+    MimePattern[] _patterns;
 }

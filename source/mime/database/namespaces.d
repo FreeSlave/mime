@@ -11,7 +11,7 @@ private {
 alias Tuple!(string, "namespaceUri", string, "localName", string, "mimeType") NamespaceLine;
 
 @trusted auto namespacesFileReader(Range)(Range byLine) if(is(ElementType!Range : string)) {
-    return byLine.map!(function(string line) {
+    return byLine.filter!(s => !s.empty).map!(function(string line) {
         auto splitted = line.splitter;
         if (!splitted.empty) {
             auto namespaceUri = splitted.front;

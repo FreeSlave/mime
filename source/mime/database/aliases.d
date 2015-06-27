@@ -11,7 +11,7 @@ private {
 alias Tuple!(string, "aliasName", string, "mimeType") AliasLine;
 
 @trusted auto aliasesFileReader(Range)(Range byLine) if(is(ElementType!Range : string)) {
-    return byLine.map!(function(string line) {
+    return byLine.filter!(s => !s.empty).map!(function(string line) {
         auto splitted = line.splitter;
         if (!splitted.empty) {
             auto aliasName = splitted.front;

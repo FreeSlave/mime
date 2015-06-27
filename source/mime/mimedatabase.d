@@ -24,8 +24,21 @@ private {
 
 import mime.mimetype;
 
-private auto fileReader(string fileName) {
+private @trusted auto fileReader(string fileName) {
     return File(fileName, "r").byLine().map!(s => s.idup);
+}
+
+private @nogc @trusted bool hasGlobMatchSymbols(string s) nothrow pure {
+    static @nogc @safe bool isGlobMatchSymbol(char c) nothrow pure {
+        return c == '*' || c == '?' || c == '[';
+    }
+    
+    for (size_t i=0; i<s.length; ++i) {
+        if (isGlobMatchSymbol(s[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 class MimeDatabase
@@ -75,7 +88,7 @@ class MimeDatabase
             auto icons = iconsFileReader(fileReader(genericIconsPath));
             foreach(iconLine; icons) {
                 auto mimeType = ensureMimeType(iconLine.mimeType);
-                mimeType.icon = iconLine.iconName;
+                mimeType.genericIcon = iconLine.iconName;
             }
         } catch(ErrnoException e) {
             
@@ -91,6 +104,17 @@ class MimeDatabase
             }
         } catch(ErrnoException e) {
             
+        }
+        
+        auto globsPath = buildPath(mimePath, "globs2");
+        try {
+            setGlobs(globsFileReader(fileReader(globsPath)));
+        } catch(ErrnoException e) {
+            try {
+                globsPath = buildPath(mimePath, "globs");
+            } catch(ErrnoException e2) {
+                setGlobs(globsFileReader(fileReader(globsPath)));
+            }
         }
     }
     
@@ -121,6 +145,34 @@ class MimeDatabase
     
 private:
     
+    void setGlobs(Range)(Range globs) {
+        foreach(globLine; globs) {
+            if (globLine.pattern.empty) {
+                continue;
+            }
+            auto mimeType = ensureMimeType(globLine.mimeType);
+            mimeType.addPattern(globLine.pattern, globLine.weight, globLine.caseSensitive);
+            
+            if (globLine.pattern.startsWith("*") && !globLine.pattern[1..$].hasGlobMatchSymbols) {
+                addGlob(globLine, _suffixes);
+            } else if (globLine.pattern.hasGlobMatchSymbols) {
+                addGlob(globLine, _otherGlobs);
+            } else {
+                addGlob(globLine, _literals);
+            }
+        }
+    }
+    
+    @trusted void addGlob(const GlobLine globLine, ref GlobLine[][string] globs) {
+        auto globLinesPtr = globLine.pattern in globs;
+        if (globLinesPtr) {
+            auto globLines = *globLinesPtr;
+            globLines ~= globLine;
+        } else {
+            globs[globLine.pattern] = [globLine];
+        }
+    }
+    
     @trusted MimeType* ensureMimeType(const(char)[] name) nothrow {
         MimeType* mimeType = name in _mimeTypes;
         if (mimeType) {
@@ -134,5 +186,9 @@ private:
     
     MimeType[const(char)[]] _mimeTypes;
     string[string] _aliases;
+    
+    GlobLine[][string] _suffixes;
+    GlobLine[][string] _literals;
+    GlobLine[][string] _otherGlobs;
 }
 

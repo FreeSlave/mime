@@ -14,6 +14,7 @@ void main(string[] args)
             writeln("Parents: ", mimeType.parents);
             writeln("Icon: ", mimeType.icon);
             writeln("Generic icon: ", mimeType.genericIcon);
+            writeln("Patterns: ", mimeType.patterns);
             writeln();
         }
     }
