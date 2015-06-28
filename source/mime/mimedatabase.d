@@ -153,23 +153,22 @@ private:
             auto mimeType = ensureMimeType(globLine.mimeType);
             mimeType.addPattern(globLine.pattern, globLine.weight, globLine.caseSensitive);
             
-            if (globLine.pattern.startsWith("*") && !globLine.pattern[1..$].hasGlobMatchSymbols) {
-                addGlob(globLine, _suffixes);
+            if (globLine.pattern.startsWith("*.") && globLine.pattern.length > 2 && !globLine.pattern[2..$].hasGlobMatchSymbols) {
+                addGlob(globLine, _suffixes, globLine.pattern[1..$]);
             } else if (globLine.pattern.hasGlobMatchSymbols) {
-                addGlob(globLine, _otherGlobs);
+                addGlob(globLine, _otherGlobs, globLine.pattern);
             } else {
-                addGlob(globLine, _literals);
+                addGlob(globLine, _literals, globLine.pattern);
             }
         }
     }
     
-    @trusted void addGlob(const GlobLine globLine, ref GlobLine[][string] globs) {
-        auto globLinesPtr = globLine.pattern in globs;
+    @trusted void addGlob(const GlobLine globLine, ref GlobLine[][string] globs, string key) {
+        auto globLinesPtr = key in globs;
         if (globLinesPtr) {
-            auto globLines = *globLinesPtr;
-            globLines ~= globLine;
+            *globLinesPtr ~= globLine;
         } else {
-            globs[globLine.pattern] = [globLine];
+            globs[key] = [globLine];
         }
     }
     

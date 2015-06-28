@@ -147,7 +147,7 @@ class MimeCache
                     auto mimeType = readString(readValue!uint(offset+uint.sizeof));
                     auto weightAndCs = parseWeightAndFlags(readValue!uint(offset+uint.sizeof*2));
                     return LiteralEntry(literal, mimeType, weightAndCs.weight, weightAndCs.cs);
-                }).assumeSorted!(function(a,b) { return sicmp(a.literal, b.literal) < 0; });
+                }).assumeSorted!(function(a,b) { return a.literal < b.literal; });
     }
     
     auto icons() {
@@ -214,6 +214,7 @@ class MimeCache
     }
     
     const(char)[] findByFileName(const(char)[] name) {
+        name = name.baseName;
         auto mimeType = findByLiteral(name);
         if (mimeType.empty) {
             mimeType = findBySuffx(name);
@@ -224,6 +225,40 @@ class MimeCache
         return mimeType;
     }
     
+    const(char)[] findByData(const(void)[] data) {
+        auto content = cast(const(char)[])data;
+        auto bestPriority = uint.min;
+        typeof(return) mimeType;
+        
+        foreach(magicMatch; magicMatches()) {
+            foreach(magicMatchlet; magicMatchlets(magicMatch.matchletCount, magicMatch.firstMatchletOffset)) {
+                //currently implemented only for simple cases with wordSize == 1
+                if (magicMatchlet.wordSize == 1 && magicMatchlet.mask.length == 0 && magicMatchlet.rangeStart + magicMatchlet.value.length <= content.length) {
+                    if (content[magicMatchlet.rangeStart..$].startsWith(magicMatchlet.value)) {
+                        if (magicMatch.priority > bestPriority) {
+                            bestPriority = magicMatch.priority;
+                            mimeType = magicMatch.mimeType;
+                        }
+                    }
+                }
+            }
+        }
+        return mimeType;
+    }
+    
+    const(char)[] findByFile(const(char)[] name) {
+        auto mimeType = findByFileName(name);
+        if (mimeType.empty) {
+            void[] data;
+            collectException(std.file.read(name), data);
+            if (data.length) {
+                mimeType = findByData(data);
+            }
+        }
+        return mimeType;
+    }
+    
+private:
     const(char)[] findByGlob(const(char)[] name) {
         const(char)[] mimeType;
         uint weight = 0;
@@ -250,8 +285,15 @@ class MimeCache
     }
     
     const(char)[] findByLiteral(const(char)[] name) {
-        auto literal = literals().equalRange(LiteralEntry(name, null, 0, false));
-        return literal.empty ? null : literal.front.mimeType;
+        //Case-sensitive match is always preferred
+        auto csLiteral = literals().equalRange(LiteralEntry(name, null, 0, false));
+        if (csLiteral.empty) {
+            //Try case-insensitive match. toLower should work for this since all case-insensitive literals in mime.cache are stored in lower form.
+            auto ciLiteral = literals().equalRange(LiteralEntry(name.toLower, null, 0, false));
+            return ciLiteral.empty ? null : ciLiteral.front.mimeType;
+        } else {
+            return csLiteral.front.mimeType;
+        }
     }
     
     const(char)[] findBySuffx(const(char)[] name) {
@@ -260,8 +302,7 @@ class MimeCache
         
         MimeTypeEntry bestMatch;
         
-        //how to handle case-sensitive / case-insensitive variants?
-        lookupLeaf(firstRootOffset, rootCount, name.retro, delegate(MimeTypeEntry entry) {
+        void checkMatch(MimeTypeEntry entry) {
             if (bestMatch.mimeType.empty) {
                 bestMatch = entry;
             } else if (entry.mimeType.length > bestMatch.mimeType.length) {
@@ -272,27 +313,28 @@ class MimeCache
                     bestMatch = entry;
                 }
             }
-        });
+        }
+        
+        lookupLeaf(firstRootOffset, rootCount, name, &checkMatch, std.string.CaseSensitive.yes);
+        
+        if (bestMatch.mimeType.empty) {
+            lookupLeaf(firstRootOffset, rootCount, name, &checkMatch, std.string.CaseSensitive.no);
+        }
         
         return bestMatch.mimeType;
     }
     
-    
-private:
-    void lookupLeaf(Range)(uint offset, uint count, Range name, void delegate (MimeTypeEntry) sink) {
+    void lookupLeaf(uint offset, uint count, const(char)[] name, void delegate (MimeTypeEntry) sink, std.string.CaseSensitive sense) {
         
         for (uint i=0; i<count; ++i) {
-            dchar character = cast(dchar)readValue!uint(offset);
+            auto character = readValue!dchar(offset);
             
             if (character) {
-                if (!name.empty && character == name.front) {
+                if ( !name.empty && (sense ? character == name.back : character.toLower == name.back.toLower )) {
                     uint childrenCount = readValue!uint(offset + uint.sizeof);
                     uint firstChildOffset = readValue!uint(offset + uint.sizeof*2);
                     
-                    auto save = name.save;
-                    save.popFront;
-                    
-                    lookupLeaf(firstChildOffset, childrenCount, save, sink);
+                    lookupLeaf(firstChildOffset, childrenCount, name[0..$-1], sink, sense);
                 }
             } else {
                 uint mimeTypeOffset = readValue!uint(offset + uint.sizeof);
@@ -323,7 +365,7 @@ private:
     
     T readValue(T)(uint offset) {
         T value = *(cast(const(T)*)mmaped[offset..(offset+T.sizeof)].ptr);
-        static if (isIntegral!T && endian == Endian.littleEndian) {
+        static if (endian == Endian.littleEndian && (isIntegral!T || isSomeChar!T) ) {
             swapByteOrder(value);
         }
         return value;

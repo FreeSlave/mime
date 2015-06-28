@@ -1,46 +1,30 @@
 import std.stdio;
 import std.string;
 import mime.mimecache;
+import std.range;
 
 void main(string[] args)
 {
-    if (args.length < 2) {
-        writefln("Usage: %s <mimecache file>", args[0]);
+    if (args.length < 3) {
+        writefln("Usage: %s <mimecache file> <files...>", args[0]);
     } else {
-        string fileName = args[1];
+        string mimeCacheFile = args[1];
+        string[] files = args[2..$];
         
-        auto mimeCache = new MimeCache(fileName);
+        auto mimeCache = new MimeCache(mimeCacheFile);
         
-        foreach(namespaceEntry; mimeCache.namespaces) {
-            writefln("Uri: %s, Local name: %s, MimeType: %s", namespaceEntry.namespaceUri, namespaceEntry.localName, namespaceEntry.mimeType);
+        foreach(fileToCheck; files) {
+            auto mimeType = mimeCache.findByFile(fileToCheck);
+            if (mimeType.empty) {
+                writefln("%s: could not determine MIME-type\n", fileToCheck);
+            } else {
+                auto icon = mimeCache.findIcon(mimeType);
+                auto genericIcon = mimeCache.findGenericIcon(mimeType);
+                auto parents = mimeCache.parents(mimeType);
+                
+                writefln("%s: %s. Parents: %s", fileToCheck, mimeType, parents);
+                writeln();
+            }
         }
-        
-//         foreach(aliasEntry; mimeCache.aliases) {
-//             writefln("%s => %s", aliasEntry.aliasName, aliasEntry.mimeType);
-//         }
-//         
-//         foreach(parentEntry; mimeCache.parentEntries) {
-//             writefln("%s: %s", parentEntry.mimeType, mimeCache.parents(parentEntry.mimeType));
-//         }
-//         
-//         foreach(globEntry; mimeCache.globs) {
-//             writefln("%s: %s. Weight: %s, cs: %s", globEntry.mimeType, globEntry.glob, globEntry.weight, globEntry.cs);
-//         }
-//         
-//         foreach(iconEntry; mimeCache.icons) {
-//             writefln("%s: %s", iconEntry.mimeType, iconEntry.iconName);
-//         }
-//         
-//         foreach(iconEntry; mimeCache.genericIcons) {
-//             writefln("%s: %s", iconEntry.mimeType, iconEntry.iconName);
-//         }
-        
-//         foreach(literalEntry; mimeCache.literals) {
-//             writefln("%s: %s. Weight: %s, cs: %s", literalEntry.mimeType, literalEntry.literal, literalEntry.weight, literalEntry.cs);
-//         }
-        
-//         if (args.length > 2) {
-//             writeln(mimeCache.findByFileName(args[2]));
-//         }
     }
 }
