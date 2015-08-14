@@ -399,9 +399,11 @@ final class MimeCache
     @trusted auto findAllByData(const(void)[] data) const {
         auto content = cast(const(char)[])data;
         
+        alias Tuple!(const(char)[], "mimeType", uint, "weight", MatchletEntry, "matchlet") MM;
+        
         return magicMatches()
             .map!(magicMatch => magicMatchlets(magicMatch.matchletCount, magicMatch.firstMatchletOffset)
-                .map!(magicMatchlet => tuple!("mimeType", "weight", "matchlet")(magicMatch.mimeType, magicMatch.weight, magicMatchlet)) )
+                .map!(magicMatchlet => MM(magicMatch.mimeType, magicMatch.weight, magicMatchlet)) )
             .joiner()
             .filter!(delegate(magic) {
                 auto magicMatchlet = magic.matchlet;
