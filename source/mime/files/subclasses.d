@@ -1,4 +1,4 @@
-module mime.database.subclasses;
+module mime.files.subclasses;
 
 private {
     import std.algorithm;

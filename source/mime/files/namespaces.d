@@ -1,4 +1,4 @@
-module mime.database.namespaces;
+module mime.files.namespaces;
 
 private {
     import std.algorithm;

@@ -1,4 +1,4 @@
-module mime.database.magic;
+module mime.files.magic;
 
 private {
     import std.algorithm;

@@ -1,8 +1,8 @@
 {
     "name": "mime",
-    "description": "A minimal D application.",
-    "copyright": "Copyright © 2015, freeslave",
-    "authors": ["freeslave"],
+    "description": "Shared MIME-info Database specification implementation",
+    "copyright": "Copyright © 2015, Roman Chistokhodov",
+    "authors": ["Roman Chistokhodov"],
     "targetName" : "mime",
     "targetPath" : "lib", 
     "targetType" : "library",

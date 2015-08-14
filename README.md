@@ -1,8 +1,25 @@
 # Mime
 
-It's not ready yet.
-There will be [Shared MIME-info database](http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html) implementation in D.
+[Shared MIME-info database](http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html) specification implementation in D programming language.
 
+## Examples
+
+### MimeCache
+
+Run to detect mime type of README.md or other file using mime.cache file:
+
+    dub run mime:mimecache -- /usr/share/mime/mime.cache README.md
+
+### MimeDatabase
+
+Print short information on all found MIME types.
+
+    dub run mime:mimedatabase -- --printDatabase=true
+
+Run to detect mime types of files.
+
+    dub run mime:mimedatabase -- --file=README.md --file=source --file=.gitignore --file=lib/libmime.a
+    
 ## TODO
 
 1. Implement MIME type detection from file contents (via magic).
@@ -29,3 +46,6 @@ MimeType matters:
 1. Should MimeType be class or struct?
 2. Should MimeType be independent from database it was read from?
 3. Should MimeType always preserve all information if it was loaded from xml source?
+
+Should MimeDatabse detect MIME types for non-regular files? (inode/directory, etc.)
+Should MimeDatabse distinguish between text and binary data (text/plain vs application/octet-stream) when could not determine MIME type?

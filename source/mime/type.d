@@ -1,4 +1,6 @@
-module mime.mimetype;
+module mime.type;
+
+import mime.common;
 
 private {
     import std.algorithm;
@@ -112,6 +114,10 @@ package:
     
     @safe void addPattern(string pattern, uint weight, bool cs) nothrow {
         _patterns ~= MimePattern(pattern, weight, cs);
+    }
+    
+    @safe void clearPatterns() nothrow {
+        _patterns = [];
     }
     
 private:

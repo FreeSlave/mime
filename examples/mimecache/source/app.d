@@ -1,7 +1,9 @@
+import std.file;
 import std.stdio;
 import std.string;
-import mime.mimecache;
 import std.range;
+
+import mime.cache;
 
 void main(string[] args)
 {
@@ -14,7 +16,7 @@ void main(string[] args)
         auto mimeCache = new MimeCache(mimeCacheFile);
         
         foreach(fileToCheck; files) {
-            auto mimeType = mimeCache.findByFile(fileToCheck);
+            auto mimeType = mimeCache.findOneByFile(fileToCheck, read(fileToCheck, 256));
             if (mimeType.empty) {
                 writefln("%s: could not determine MIME-type\n", fileToCheck);
             } else {

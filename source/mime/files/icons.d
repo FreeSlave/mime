@@ -1,4 +1,4 @@
-module mime.database.icons;
+module mime.files.icons;
 
 private {
     import std.algorithm;

@@ -1,4 +1,4 @@
-module mime.database.aliases;
+module mime.files.aliases;
 
 private {
     import std.algorithm;
