@@ -37,7 +37,7 @@ private struct MimeCacheHeader
     uint genericIconsListOffset;
 }
 
-private @nogc @safe void swapByteOrder(T)(ref T t) nothrow pure  {
+private @safe void swapByteOrder(T)(ref T t) nothrow pure  {
     t = swapEndian(t);
 }
 
