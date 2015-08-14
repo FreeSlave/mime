@@ -587,7 +587,7 @@ private:
                 .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
     }
     
-    @trusted T readValue(T)(uint offset) const {
+    @trusted T readValue(T)(size_t offset) const {
         T value = *(cast(const(T)*)_data[offset..(offset+T.sizeof)].ptr);
         static if (endian == Endian.littleEndian && (isIntegral!T || isSomeChar!T) ) {
             swapByteOrder(value);
@@ -595,12 +595,12 @@ private:
         return value;
     }
     
-    @trusted auto readString(uint offset) const {
+    @trusted auto readString(size_t offset) const {
         auto cstr = cast(const(char*))_data[offset.._data.length].ptr;
         return fromStringz(cstr);
     }
     
-    @trusted auto readString(uint offset, uint length) const {
+    @trusted auto readString(size_t offset, uint length) const {
         return cast(const(char)[])_data[offset..offset+length];
     }
     
