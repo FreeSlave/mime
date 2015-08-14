@@ -1,4 +1,5 @@
 module mime.files.globs;
+import mime.common;
 
 private {
     import std.algorithm;

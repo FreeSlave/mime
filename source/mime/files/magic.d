@@ -1,4 +1,5 @@
 module mime.files.magic;
+import mime.common;
 
 private {
     import std.algorithm;
