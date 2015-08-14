@@ -2,6 +2,7 @@
     "name": "mime",
     "description": "Shared MIME-info Database specification implementation",
     "copyright": "Copyright © 2015, Roman Chistokhodov",
+    "license" : "BSL-1.0", 
     "authors": ["Roman Chistokhodov"],
     "targetName" : "mime",
     "targetPath" : "lib", 
