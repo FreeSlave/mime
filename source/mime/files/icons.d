@@ -1,4 +1,16 @@
+/**
+ * Parsing mime/icons and mime/generic-icons files.
+ * Authors: 
+ *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
+ * License: 
+ *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Copyright:
+ *  Roman Chistokhodov, 2015
+ */
+
 module mime.files.icons;
+
+public import mime.files.exception;
 
 private {
     import std.algorithm;
@@ -8,14 +20,22 @@ private {
     import std.typecons;
 }
 
+///Represents one line in icons file.
 alias Tuple!(string, "mimeType", string, "iconName") IconLine;
 
+/**
+ * Parse mime/icons or mime/generic-icons file by line ignoring empty lines and comments.
+ * Returns:
+ *  Range of IconLine tuples.
+ * Throws:
+ *  MimeFileException on parsing error.
+ */
 @trusted auto iconsFileReader(Range)(Range byLine) if(is(ElementType!Range : string))
 {
     return byLine.filter!(s => !s.empty).map!(function(string line) {
         auto result = findSplit(line, ":");
         if (result[1].empty) {
-            throw new Exception("Malformed icons file");
+            throw new MimeFileException("Malformed icons file", line);
         } else {
             return IconLine(result[0], result[2]);
         }

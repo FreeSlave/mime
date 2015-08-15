@@ -2,6 +2,16 @@
 
 [Shared MIME-info database](http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html) specification implementation in D programming language.
 
+## Generating documentation
+
+Ddoc:
+
+    dub build --build=docs
+    
+Ddox:
+
+    dub build --build=ddox
+
 ## Examples
 
 ### MimeCache

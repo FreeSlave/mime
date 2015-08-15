@@ -5,10 +5,10 @@
  * License: 
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
- *  Roman Chistokhodov 2015
+ *  Roman Chistokhodov, 2015
  */
 
-module mime.mimedatabase;
+module mime.database;
 
 import mime.type;
 import mime.common;
@@ -53,8 +53,17 @@ private @nogc @trusted bool hasGlobMatchSymbols(string s) nothrow pure {
     return false;
 }
 
-class MimeDatabase
+///Represents shared MIME database.
+final class MimeDatabase
 {
+    /**
+     * Read shared MIME database from mimePaths, skipping non-existing directories.
+     * mimePaths should be given in the order from the most preferable to the least preferable path.
+     * Information from more preferable path wins over less preferable.
+     * Throws:
+     *  MimeFileException if error occured while reading some of database files.
+     *  Exception if mimePaths is empty or one of mime.cache files is invalid.
+     */
     @trusted this(in string[] mimePaths) {
         
         if (mimePaths.empty) {
@@ -71,7 +80,9 @@ class MimeDatabase
             auto typesPath = buildPath(mimePath, "types");
             try {
                 foreach(line; File(typesPath, "r").byLine()) {
-                    ensureMimeType(line);
+                    if (line.length) {
+                        ensureMimeType(line);
+                    }
                 }
             } catch(ErrnoException e) {
                 
@@ -154,6 +165,11 @@ class MimeDatabase
         }
     }
     
+    /**
+     * Get MimeType by name.
+     * Returns:
+     *  Pointer to MimeType with given name or null if not found.
+     */
     @nogc @safe const(MimeType)* mimeType(const(char)[] name) nothrow const {
         auto mType = name in _mimeTypes;
         if (mType) {
@@ -167,6 +183,11 @@ class MimeDatabase
         return null;
     }
     
+    /**
+     * Detect MimeType by fileName.
+     * Returns:
+     *  Pointer to the most preferred MimeType for this fileName or null if no alternatives found.
+     */
     const(MimeType)* mimeTypeForFileName(string fileName) const {
         foreach(mimeCache; byMimeCache()) {
             auto mimeTypeName = mimeCache.findOneByFileName(fileName);
@@ -180,6 +201,11 @@ class MimeDatabase
         return null;
     }
     
+    /**
+     * Detect MimeType by data using magic rules.
+     * Returns:
+     *  Pointer to the most preferred MimeType for this data or null if no alternatives found.
+     */
     const(MimeType)* mimeTypeForData(const(void)[] data) const {
         foreach(mimeCache; byMimeCache()) {
             auto mimeTypeName = mimeCache.findOneByData(data);
@@ -206,6 +232,13 @@ class MimeDatabase
         return null;
     }
     
+    /**
+     * Detect MimeType by name of file.
+     * If could not detect by name, it checks if the given name refers to the directory (all platforms), character device, blockdevice or fifo (posix only), returning the corresponding inode MimeType.
+     * If the given name is regular file, it reads the file and tries to detect MimeType using available magic rules.
+     * Returns:
+     *  Pointer to the most preferred MimeType for this name or null if no alternatives found.
+     */
     const(MimeType)* mimeTypeForFile(string name) const {
         auto type = mimeTypeForFileName(name);
         if (type) {
@@ -244,10 +277,20 @@ class MimeDatabase
         return null;
     }
     
+    /**
+     * Iterate through the MIME types presented in database.
+     * Returns:
+     *  Range of MimeType pointers.
+     */
     @nogc @trusted auto byMimeType() nothrow const {
         return _mimeTypes.byValue();
     }
     
+    /**
+     * Iterate through mime.cache files from the most preferable to the least.
+     * Returns:
+     *  Range of MimeCache objects.
+     */
     @nogc @trusted auto byMimeCache() nothrow const {
         return _caches.retro;
     }
