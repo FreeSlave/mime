@@ -282,8 +282,15 @@ final class MimeDatabase
      * Returns:
      *  Range of MimeType pointers.
      */
-    @nogc @trusted auto byMimeType() nothrow const {
-        return _mimeTypes.byValue();
+    
+    static if( __VERSION__ >= 2067 ) {
+        @nogc @trusted auto byMimeType() nothrow const {
+            return _mimeTypes.byValue();
+        }
+    } else {
+        @nogc @trusted auto byMimeType() const {
+            return _mimeTypes.byValue();
+        }
     }
     
     /**
@@ -291,10 +298,15 @@ final class MimeDatabase
      * Returns:
      *  Range of MimeCache objects.
      */
-    @nogc @trusted auto byMimeCache() nothrow const {
-        return _caches.retro;
+    static if( __VERSION__ >= 2067 ) {
+        @nogc @trusted auto byMimeCache() const {
+            return _caches.retro;
+        }
+    } else {
+        @nogc @trusted auto byMimeCache() const {
+            return _caches.retro;
+        }
     }
-    
 private:
     
     @trusted void setGlobs(Range)(Range globs) {
