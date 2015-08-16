@@ -47,8 +47,18 @@ private struct MimeCacheHeader
     uint genericIconsListOffset;
 }
 
-private @safe void swapByteOrder(T)(ref T t) nothrow pure  {
-    t = swapEndian(t);
+private @nogc @trusted void swapByteOrder(T)(ref T t) nothrow pure  {
+    
+    static if( __VERSION__ < 2067 ) { //swapEndian was not @nogc
+        ubyte[] bytes = (cast(ubyte*)&t)[0..T.sizeof];
+        for (size_t i=0; i<bytes.length/2; ++i) {
+            ubyte tmp = bytes[i];
+            bytes[i] = bytes[T.sizeof-1-i];
+            bytes[T.sizeof-1-i] = tmp;
+        }
+    } else {
+        t = swapEndian(t);
+    }
 }
 
 ///Alias entry in mime cache.
@@ -551,33 +561,39 @@ private:
         return matches.map!(match => MimeTypeAlternative(match.mimeType, match.weight));
     }
     
-    @trusted void lookupLeaf(uint offset, uint count, const(char[]) originalName, const(char)[] name, void delegate (MimeTypeEntry) sink, const(char)[] suffix = null) const {
+    @trusted void lookupLeaf(const uint startOffset, const uint count, const(char[]) originalName, const(char[]) name, void delegate (MimeTypeEntry) sink, const(char[]) suffix = null, const bool wasCaseMismatch = false) const {
         
         for (uint i=0; i<count; ++i) {
+            const uint offset = startOffset + i * uint.sizeof * 3;
             auto character = readValue!dchar(offset);
             
             if (character) {
-                if (character.toLower == name.back.toLower) {
-                    uint childrenCount = readValue!uint(offset + uint.sizeof);
-                    uint firstChildOffset = readValue!uint(offset + uint.sizeof*2);
-                    
-                    lookupLeaf(firstChildOffset, childrenCount, originalName, name[0..$-1], sink, cast(char)character ~ suffix);
+                if (name.length) {
+                    dchar back = name.back;
+                    if (character.toLower == back.toLower) {
+                        uint childrenCount = readValue!uint(offset + uint.sizeof);
+                        uint firstChildOffset = readValue!uint(offset + uint.sizeof*2);
+                        const(char)[] currentName = name;
+                        currentName.popBack();
+                        bool caseMismatch = character != back;
+                        lookupLeaf(firstChildOffset, childrenCount, originalName, currentName, sink, originalName[currentName.length..$], caseMismatch);
+                    }
                 }
             } else {
                 uint mimeTypeOffset = readValue!uint(offset + uint.sizeof);
                 auto weightAndCs = readValue!uint(offset + uint.sizeof*2).parseWeightAndFlags;
                 
                 auto mimeTypeEntry = MimeTypeEntry(readString(mimeTypeOffset), weightAndCs.weight, weightAndCs.cs, suffix);
+                
                 //if case sensitive make sure that file name ends with suffix
                 if (weightAndCs.cs) {
-                    if (originalName.endsWith(suffix)) {
+                    if (!wasCaseMismatch) {
                         sink(mimeTypeEntry);
                     }
                 } else {
                     sink(mimeTypeEntry);
                 }
             }
-            offset += uint.sizeof * 3;
         }
     }
     
@@ -599,7 +615,7 @@ private:
                 .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
     }
     
-    @trusted T readValue(T)(size_t offset) const {
+    @nogc @trusted T readValue(T)(size_t offset) const nothrow {
         T value = *(cast(const(T)*)_data[offset..(offset+T.sizeof)].ptr);
         static if (endian == Endian.littleEndian && (isIntegral!T || isSomeChar!T) ) {
             swapByteOrder(value);
@@ -607,12 +623,12 @@ private:
         return value;
     }
     
-    @trusted auto readString(size_t offset) const {
+    @nogc @trusted auto readString(size_t offset) const nothrow {
         auto cstr = cast(const(char*))_data[offset.._data.length].ptr;
-        return fromStringz(cstr);
+        return fromCString(cstr);
     }
     
-    @trusted auto readString(size_t offset, uint length) const {
+    @nogc @trusted auto readString(size_t offset, uint length) const nothrow {
         return cast(const(char)[])_data[offset..offset+length];
     }
     

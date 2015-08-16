@@ -16,15 +16,16 @@ void main(string[] args)
         auto mimeCache = new MimeCache(mimeCacheFile);
         
         foreach(fileToCheck; files) {
-            auto mimeType = mimeCache.findOneByFile(fileToCheck, read(fileToCheck, 256));
-            if (mimeType.empty) {
+            auto mimeTypes = mimeCache.findAllByFileName(fileToCheck);
+            if (mimeTypes.empty) {
                 writefln("%s: could not determine MIME-type\n", fileToCheck);
             } else {
-                auto icon = mimeCache.findIcon(mimeType);
-                auto genericIcon = mimeCache.findGenericIcon(mimeType);
-                auto parents = mimeCache.parents(mimeType);
-                
-                writefln("%s: %s. Parents: %s", fileToCheck, mimeType, parents);
+                writefln("Alternatives for %s:", fileToCheck);
+                foreach(mimeType; mimeTypes) {
+                    auto parents = mimeCache.parents(mimeType.mimeType);
+                    
+                    writefln("%s: %s. Priority: %s. Parents: %s", fileToCheck, mimeType.mimeType, mimeType.weight, parents);
+                }
                 writeln();
             }
         }
