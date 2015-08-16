@@ -18,10 +18,15 @@ Ddox:
 
 ### MimeCache
 
-Run to detect mime type of README.md or other file using mime.cache file:
+Run to detect mime type of README.md or other files using mime.cache:
 
-    dub run mime:mimecache -- /usr/share/mime/mime.cache README.md lib/libmime.a Makefile CMakeLists.txt test.c test.C test.cpp test.xml
+    dub run mime:mimecache -- --mimecache=/usr/share/mime/mime.cache README.md lib/libmime.a Makefile CMakeLists.txt test.c test.C test.cpp test.xml
 
+Run to detect mime type of files using using mime.cache including its magic rules.
+    
+    dub run mime:mimecache -- --useMagic --mimecache=/usr/share/mime/mime.cache examples/mimecache/bin/mimecache lib/libmime.a
+
+    
 ### MimeDatabase
 
 Print short information on all found MIME types.

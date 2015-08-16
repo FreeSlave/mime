@@ -410,6 +410,35 @@ final class MimeCache
         return mimeType;
     }
     
+    private @trusted bool checkMagic(const(MatchletEntry) magicMatchlet, const(char)[] content) const  {
+        
+        bool check = false;
+        if (magicMatchlet.mask.length == 0 && magicMatchlet.rangeStart + magicMatchlet.value.length <= content.length) {
+            if (magicMatchlet.wordSize == 1) {
+                check = content[magicMatchlet.rangeStart..$].startsWith(magicMatchlet.value);
+            } 
+            //not sure how to deal with for now
+            /+else if (magicMatchlet.wordSize && (magicMatchlet.wordSize % 2 == 0) && (magicMatchlet.valueLength % magicMatchlet.wordSize == 0)) {
+                static if (endian == Endian.littleEndian) {
+                    check = content[magicMatchlet.rangeStart..$].byChar.startsWith(magicMatchlet.value.byChar.retro.chunks(magicMatchlet.wordSize).joiner);
+                } else {
+                    check = content[magicMatchlet.rangeStart..$].startsWith(magicMatchlet.value);
+                }
+            }+/
+        }
+        if(check) {
+            if (magicMatchlet.childrenCount) {
+                foreach(childMatchlet; magicMatchlets(magicMatchlet.childrenCount, magicMatchlet.firstChildOffset)) {
+                    check = check && checkMagic(childMatchlet, content);
+                    if (!check) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return check;
+    }
+    
     /**
      * Find all MIME type alternatives for data.
      * Params:
@@ -425,13 +454,8 @@ final class MimeCache
             .map!(magicMatch => magicMatchlets(magicMatch.matchletCount, magicMatch.firstMatchletOffset)
                 .map!(magicMatchlet => MM(magicMatch.mimeType, magicMatch.weight, magicMatchlet)) )
             .joiner()
-            .filter!(delegate(magic) {
-                auto magicMatchlet = magic.matchlet;
-                if (magicMatchlet.wordSize == 1 && magicMatchlet.mask.length == 0 && magicMatchlet.rangeStart + magicMatchlet.value.length <= content.length) {
-                    return content[magicMatchlet.rangeStart..$].startsWith(magicMatchlet.value);
-                }
-                return false;
-            }).map!(magic => MimeTypeAlternative(magic.mimeType, magic.weight));
+            .filter!(magic => checkMagic(magic.matchlet, content))
+            .map!(magic => MimeTypeAlternative(magic.mimeType, magic.weight));
     }
     
     /**
