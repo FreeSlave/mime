@@ -564,7 +564,7 @@ private:
     @trusted void lookupLeaf(const uint startOffset, const uint count, const(char[]) originalName, const(char[]) name, void delegate (MimeTypeEntry) sink, const(char[]) suffix = null, const bool wasCaseMismatch = false) const {
         
         for (uint i=0; i<count; ++i) {
-            const uint offset = startOffset + i * uint.sizeof * 3;
+            const size_t offset = startOffset + i * uint.sizeof * 3;
             auto character = readValue!dchar(offset);
             
             if (character) {
