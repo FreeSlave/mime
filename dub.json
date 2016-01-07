@@ -7,8 +7,7 @@
     "targetName" : "mime",
     "targetPath" : "lib", 
     "targetType" : "library",
-    "dependencies-posix": {
-        "standardpaths": "~>0.2.0"
+    "dependencies": {
     },
     "subPackages" : ["./examples/mimecache", "./examples/mimedatabase", "./examples/magic"]
 }

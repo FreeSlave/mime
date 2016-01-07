@@ -1,55 +1,64 @@
+import std.algorithm;
 import std.file;
+import std.path;
 import std.stdio;
 import std.string;
 import std.range;
 import std.getopt;
 
 import mime.cache;
+import mime.detectors.cache;
+import mime.paths;
 
-void main(string[] args)
+int main(string[] args)
 {
-    string mimeCacheFile;
     string[] files;
     bool useMagic;
     getopt(args, 
-           "mimecache", "Set mimecache file to use", &mimeCacheFile,
-           "useMagic", "Use magic rules to get mime type alternatives", &useMagic,
+           "useMagic", "Use magic rules to get mime type", &useMagic,
           );
     
     files = args[1..$];
     
-    if (!mimeCacheFile.length || !files.length) {
-        writefln("Usage: %s --mimecache=<mimecache file> <files...> [--useMagic]", args[0]);
-    } else {
-        auto mimeCache = new MimeCache(mimeCacheFile);
-        
-        foreach(fileToCheck; files) {
-            writefln("Alternatives for %s by file name:", fileToCheck);
-            auto mimeTypes = mimeCache.findAllByFileName(fileToCheck);
-            if (mimeTypes.empty) {
-                writefln("No alternatives for %s", fileToCheck);
+    MimeCache[] mimeCaches;
+    
+    foreach (mimePath; mimePaths()) {
+        string mimeCachePath = buildPath(mimePath, "mime.cache");
+        if (mimeCachePath.exists) {
+            try {
+                auto mimeCache = new MimeCache(mimeCachePath);
+                mimeCaches ~= mimeCache;
             }
-            
-            foreach(mimeType; mimeTypes) {
-                auto parents = mimeCache.parents(mimeType.mimeType);
-                writefln("%s: %s. Priority: %s. Parents: %s", fileToCheck, mimeType.mimeType, mimeType.weight, parents);
+            catch(Exception e) {
+                stderr.writefln("Could not read cache from %s: %s", mimeCachePath, e.msg);
             }
-            if (useMagic) {
-                writefln("Alternatives for %s by file data:", fileToCheck);
-                
-                try {
-                    void[] data = std.file.read(fileToCheck, 256);
-                    foreach(mimeType; mimeCache.findAllByData(data)) {
-                        auto parents = mimeCache.parents(mimeType.mimeType);
-                        writefln("%s: %s. Priority: %s. Parents: %s", fileToCheck, mimeType.mimeType, mimeType.weight, parents);
-                    }
-                }
-                catch (Exception e) {
-                    stderr.writefln("Could not get MIME-type: %s", e.msg);
-                }
-            }
-            
-            writeln();
         }
     }
+    
+    if (!mimeCaches.length) {
+        stderr.writeln("Could not find any mime cache files");
+        return 1;
+    }
+    
+    writeln("Using mime cache files: ", mimeCaches.map!(cache => cache.fileName));
+    
+    auto mimeDetector = new MimeDetectorFromCache(mimeCaches);
+    
+    if (!files.length) {
+        writeln("No files given");
+    }
+    
+    foreach(fileToCheck; files) {
+        auto mimeType = mimeDetector.mimeTypeNameForFileName(fileToCheck);
+        auto alternatives = mimeDetector.mimeTypeNamesForFileName(fileToCheck);
+        
+        if (mimeType.length) {
+            writefln("Mime type for %s: %s", fileToCheck, mimeType);
+            writeln("Alternatives: ", alternatives);
+        } else {
+            writefln("Could not detect mime type for %s", fileToCheck);
+        }
+    }
+    
+    return 0;
 }

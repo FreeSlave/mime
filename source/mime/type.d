@@ -61,7 +61,7 @@ struct MimePattern
 /**
  * Represents single MIME type.
  */
-struct MimeType
+final class MimeType
 {   
     /**
      * Create MIME type with name.
@@ -69,9 +69,17 @@ struct MimeType
      */
     @trusted this(string name) nothrow {
         _name = name;
-        _icon = name.replace("/", "-");
-        auto topLevel = name.findSplit("/")[0];
-        _genericIcon = topLevel ~ "-x-generic";
+    }
+    
+    @trusted void provideDefaultIconNames() nothrow {
+        if (_icon.empty) {
+            _icon = _name.replace("/", "-");
+        }
+        
+        if (_genericIcon.empty) {
+            auto topLevel = _name.findSplit("/")[0];
+            _genericIcon = topLevel ~ "-x-generic";
+        }
     }
     
     ///The name of MIME type.
@@ -143,7 +151,6 @@ struct MimeType
         return _localName;
     }
     
-package:
     @safe void addAlias(string alias_) nothrow {
         _aliases ~= alias_;
     }

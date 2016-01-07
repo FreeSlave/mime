@@ -16,3 +16,49 @@ package {
         }
     }
 }
+
+private {
+    import std.typecons : Tuple;
+}
+
+auto parseMimeTypeName(String)(String name) if (is(String : const(char)[]))
+{
+    alias Tuple!(String, "media", String, "subtype") MimeTypeName;
+    
+    String media;
+    String subtype;
+    
+    size_t i;
+    for (i=0; i<name.length; ++i) {
+        if (name[i] == '/') {
+            media = name[0..i];
+            subtype = name[i+1..$];
+            break;
+        }
+    }
+    
+    return MimeTypeName(media, subtype);
+}
+
+///
+unittest
+{
+    auto t = parseMimeTypeName("text/plain");
+    assert(t.media == "text" && t.subtype == "plain");
+    
+    t = parseMimeTypeName("not mime type");
+    assert(t.media is null && t.subtype is null);
+}
+
+bool isValidMimeTypeName(const(char)[] name)
+{
+    auto t = parseMimeTypeName(name);
+    return t.media.length && t.subtype.length;
+}
+
+///
+unittest
+{
+    assert( isValidMimeTypeName("text/plain"));
+    assert(!isValidMimeTypeName("not mime type"));
+}

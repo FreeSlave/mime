@@ -79,3 +79,16 @@ alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseS
         }
     });
 }
+
+///
+unittest
+{
+    string[] lines = [
+        "50:text/x-c++src:*.cpp",
+        "60:text/x-c++src:*.C:cs",
+        "50:text/x-csrc:*.c:cs"
+    ];
+    
+    auto expected = [GlobLine(50, "text/x-c++src", "*.cpp", false), GlobLine(60, "text/x-c++src", "*.C", true), GlobLine(50, "text/x-csrc", "*.c", true)];
+    assert(equal(globsFileReader(lines), expected));
+}

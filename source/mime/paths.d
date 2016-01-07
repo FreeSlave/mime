@@ -17,20 +17,40 @@ private {
     import std.traits;
 }
 
+package {
+    version(OSX) {
+        enum isFreedesktop = false;
+    } else version(Android) {
+        enum isFreedesktop = false;
+    } else version(Posix) {
+        enum isFreedesktop = true;
+    } else {
+        enum isFreedesktop = false;
+    }
+}
+
 /**
  * Get shared MIME database paths based on dataPaths.
  * Returns:
  *  Range of paths where MIME database files are stored.
  * 
  */
-@trusted auto mimePaths(Range)(Range dataPaths) if(is(ElementType!Range : string)) {
+@trusted auto mimePaths(Range)(Range dataPaths) if(isInputRange!Range && is(ElementType!Range : string)) {
     return dataPaths.map!(p => buildPath(p, "mime"));
 }
 
+///
+unittest
+{
+    auto dataPaths = ["share", buildPath("local", "share")];
+    assert(equal(mimePaths(dataPaths), [buildPath("share", "mime"), buildPath("local", "share", "mime")]));
+}
 
-version(OSX) {}
-else version(Posix) {
-    import standardpaths;
+
+static if (isFreedesktop) {
+    import std.process : environment;
+    import std.exception : collectException;
+    
     /**
      * Get shared MIME database paths in system.
      * This function is available only of freedesktop systems.
@@ -40,7 +60,31 @@ else version(Posix) {
      * Usually it's the same as $HOME/.local/share/mime, /usr/local/share/mime and /usr/share/mime.
      */
     @trusted auto mimePaths() {
-        return mimePaths(standardPaths(StandardPath.Data));
+        string[] result;
+        collectException(std.algorithm.splitter(environment.get("XDG_DATA_DIRS"), ':').map!(p => buildPath(p, "mime")).array, result);
+        if (result.empty) {
+            result = ["/usr/local/share/mime", "/usr/share/mime"];
+        }
+        string homeMimeDir = writableMimePath();
+        if(homeMimeDir.length) {
+            result = homeMimeDir ~ result;
+        }
+        return result;
+    }
+    
+    ///
+    unittest
+    {
+        try {
+            environment["XDG_DATA_DIRS"] = "/myuser/share:/myuser/share/local";
+            environment["XDG_DATA_HOME"] = "/home/myuser/share";
+            
+            assert(equal(mimePaths(), ["/home/myuser/share/mime", "/myuser/share/mime", "/myuser/share/local/mime"]));
+        }
+        catch (Exception e) {
+            import std.stdio;
+            stderr.writeln("environment error in unittest", e.msg);
+        }
     }
     
     /**
@@ -51,10 +95,30 @@ else version(Posix) {
      * This function is available only of freedesktop systems.
      */
     @safe string writableMimePath() nothrow {
-        string dataPath = writablePath(StandardPath.Data);
-        if (dataPath.length) {
-            return buildPath(dataPath, "mime");
+        string dir;
+        collectException(environment.get("XDG_DATA_HOME"), dir);
+        if (!dir.length) {
+            string home;
+            collectException(environment.get("HOME"), home);
+            if (home.length) {
+                return buildPath(home, ".local/share/mime");
+            }
+        } else {
+            return buildPath(dir, "mime");
         }
         return null;
+    }
+    
+    ///
+    unittest
+    {
+        try {
+            environment["XDG_DATA_HOME"] = "/home/myuser/share";
+            assert(writableMimePath() == "/home/myuser/share/mime");
+        }
+        catch(Exception e) {
+            import std.stdio;
+            stderr.writeln("environment error in unittest", e.msg);
+        }
     }
 }
