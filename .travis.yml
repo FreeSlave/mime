@@ -13,4 +13,4 @@ matrix:
         - d: ldc-0.14.0
         
 script:
-    - dub build --compiler=${DC}
+    - dub test --compiler=${DC}

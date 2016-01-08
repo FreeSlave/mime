@@ -11,15 +11,15 @@
 module mime.files.globs;
 
 public import mime.files.exception;
-import mime.common;
 
 private {
     import std.algorithm;
-    import std.conv;
+    import std.conv : parse;
     import std.range;
-    import std.string;
     import std.traits;
     import std.typecons;
+    
+    static if( __VERSION__ < 2066 ) enum nogc = 1;
 }
 
 /**
@@ -31,6 +31,8 @@ private {
 
 ///Represents one line in globs or globs2 file.
 alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseSensitive") GlobLine;
+
+private enum uint defaultGlobWeight = 0;
 
 /**
  * Parse mime/globs or mime/globs2 file by line ignoring empty lines and comments.
@@ -74,8 +76,8 @@ alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseS
             return GlobLine(weight, type, pattern, cs);
         } else { //globs version 1
             auto type = first;
-            auto pattern = third;
-            return GlobLine(0, type, pattern, false);
+            auto pattern = second;
+            return GlobLine(defaultGlobWeight, type, pattern, false);
         }
     });
 }
@@ -90,5 +92,9 @@ unittest
     ];
     
     auto expected = [GlobLine(50, "text/x-c++src", "*.cpp", false), GlobLine(60, "text/x-c++src", "*.C", true), GlobLine(50, "text/x-csrc", "*.c", true)];
+    assert(equal(globsFileReader(lines), expected));
+    
+    lines = ["text/x-c++src:*.cpp", "text/x-csrc:*.c"];
+    expected = [GlobLine(defaultGlobWeight, "text/x-c++src", "*.cpp", false), GlobLine(defaultGlobWeight, "text/x-csrc", "*.c", false)];
     assert(equal(globsFileReader(lines), expected));
 }

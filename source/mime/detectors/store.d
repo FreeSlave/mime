@@ -3,18 +3,18 @@ module mime.detectors.store;
 import mime.detector;
 
 
-private @nogc @trusted bool hasGlobMatchSymbols(string s) nothrow pure {
-    static @nogc @safe bool isGlobMatchSymbol(char c) nothrow pure {
-        return c == '*' || c == '?' || c == '[';
-    }
-    
-    for (size_t i=0; i<s.length; ++i) {
-        if (isGlobMatchSymbol(s[i])) {
-            return true;
-        }
-    }
-    return false;
-}
+// private @nogc @trusted bool hasGlobMatchSymbols(string s) nothrow pure {
+//     static @nogc @safe bool isGlobMatchSymbol(char c) nothrow pure {
+//         return c == '*' || c == '?' || c == '[';
+//     }
+//     
+//     for (size_t i=0; i<s.length; ++i) {
+//         if (isGlobMatchSymbol(s[i])) {
+//             return true;
+//         }
+//     }
+//     return false;
+// }
 
 // class StoreMimeDetector : IMimeDetector
 // {

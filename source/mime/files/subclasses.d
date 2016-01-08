@@ -15,7 +15,6 @@ public import mime.files.exception;
 private {
     import std.algorithm;
     import std.range;
-    import std.string;
     import std.traits;
     import std.typecons;
 }
@@ -32,7 +31,7 @@ alias Tuple!(string, "mimeType", string, "parent") SubclassLine;
  */
 @trusted auto subclassesFileReader(Range)(Range byLine) if(is(ElementType!Range : string)) {
     return byLine.map!(function(string line) {
-        auto splitted = line.splitter;
+        auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {
             auto mimeType = splitted.front;
             splitted.popFront();
@@ -41,6 +40,14 @@ alias Tuple!(string, "mimeType", string, "parent") SubclassLine;
                 return SubclassLine(mimeType, parent);
             }
         }
-        throw new MimeFileException("Malformed subclasses file: must be 3 words per line", line);
+        throw new MimeFileException("Malformed subclasses file: must be 2 words per line", line);
     });
+}
+
+///
+unittest
+{
+    string[] lines = ["application/javascript application/ecmascript", "text/x-markdown text/plain"];
+    auto expected = [SubclassLine("application/javascript", "application/ecmascript"), SubclassLine("text/x-markdown", "text/plain")];
+    assert(equal(subclassesFileReader(lines), expected));
 }

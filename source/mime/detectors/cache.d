@@ -1,3 +1,14 @@
+/**
+ * Detecting MIME type of file using MIME cache.
+ * 
+ * Authors: 
+ *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
+ * License: 
+ *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Copyright:
+ *  Roman Chistokhodov, 2016
+ */
+
 module mime.detectors.cache;
 
 import mime.detector;
@@ -7,32 +18,50 @@ private {
     
     import std.algorithm;
     import std.array;
+    import std.file;
     import std.path;
     import std.range;
     import std.traits;
 }
 
+/**
+ * Implementation of mime.detector.IMimeDetector interface using mmappable mime.cache files.
+ */
 final class MimeDetectorFromCache : IMimeDetector
 {
+    /**
+     * Constructor based on existing MIME cache objects.
+     * Params:
+     *  mimeCaches = Range of mime.cache.MimeCache objects sorted in order of preference from the mort preferred to the least. All must be non-null.
+     */
     @trusted this(Range)(Range mimeCaches) if (is(ElementType!Range : const(MimeCache)))
     {
         _mimeCaches = mimeCaches.array;
     }
     
+    /**
+     * Constructor based on MIME paths. It automatically load mime.cache files from given paths.
+     * Params:
+     *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
+     * Throws:
+     *  FileException if some existing mime.cache could not be memory mapped.
+     *  mime.cache.MimeCacheException if some existing mime.cache file is invalid.
+     * See_Also: mime.paths.mimePaths
+     */
     @trusted this(Range)(Range mimePaths) if (is(ElementType!Range : string))
     {
         foreach(mimePath; mimePaths) {
-            try {
-                string path = buildPath(mimePath, "mime.cache");
+            string path = buildPath(mimePath, "mime.cache");
+            if (path.exists) {
                 auto mimeCache = new MimeCache(path);
-                _mimeCaches = mimeCache;
-            }
-            catch(Exception e) {
-                
+                _mimeCaches ~= mimeCache;
             }
         }
     }
     
+    /**
+     * See_Also: mime.detector.IMimeDetector.mimeTypeNameForFileName
+     */
     const(char)[] mimeTypeNameForFileName(const(char)[] fileName)
     {
         const(char)[] mimeType;
@@ -81,6 +110,9 @@ final class MimeDetectorFromCache : IMimeDetector
         return mimeType;
     }
     
+    /**
+     * See_Also: mime.detector.IMimeDetector.mimeTypeNamesForFileName
+     */
     const(char)[][] mimeTypeNamesForFileName(const(char)[] fileName)
     {
         const(char)[][] conflicts;
@@ -134,16 +166,24 @@ final class MimeDetectorFromCache : IMimeDetector
             }
         }
         
-        return mimeType ~ conflicts;
+        if (mimeType.length) {
+            return mimeType ~ conflicts;
+        }
+        return null;
     }
     
+    /**
+     * See_Also: mime.detector.IMimeDetector.mimeTypeNameForData
+     */
     const(char)[] mimeTypeNameForData(const(void)[] data)
     {
         const(char)[] mimeType;
         uint weight;
         
         foreach(mimeCache; _mimeCaches) {
-            foreach(alternative; mimeCache.findMimeTypesByData(data)) {
+            auto matches = mimeCache.findMimeTypesByData(data);
+            if (!matches.empty) {
+                auto alternative = matches.front; //checking only the first is enough because matches are sorted.
                 if (mimeType.empty || alternative.weight > weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
@@ -154,6 +194,9 @@ final class MimeDetectorFromCache : IMimeDetector
         return mimeType;
     }
     
+    /**
+     * See_Also: mime.detector.IMimeDetector.mimeTypeNamesForData
+     */
     const(char)[][] mimeTypeNamesForData(const(void)[] data)
     {
         const(char)[][] conflicts;
@@ -168,13 +211,21 @@ final class MimeDetectorFromCache : IMimeDetector
                     conflicts = null;
                 } else if (weight == alternative.weight && mimeType != alternative.mimeType && conflicts.find(alternative.mimeType).empty) {
                     conflicts ~= alternative.mimeType;
+                } else if (weight > alternative.weight) {
+                    break; //stop since there're no alternatives with equal or better weight left.
                 }
             }
         }
         
-        return mimeType ~ conflicts;
+        if (mimeType.length) {
+            return mimeType ~ conflicts;
+        }
+        return null;
     }
     
+    /**
+     * See_Also: mime.detector.IMimeDetector.mimeTypeNameForNamespaceUri
+     */
     const(char)[] mimeTypeNameForNamespaceUri(const(char)[] namespaceUri)
     {
         foreach(mimeCache; _mimeCaches) {
@@ -186,6 +237,9 @@ final class MimeDetectorFromCache : IMimeDetector
         return null;
     }
     
+    /**
+     * See_Also: mime.detector.IMimeDetector.resolveAlias
+     */
     const(char)[] resolveAlias(const(char)[] aliasName)
     {
         foreach(mimeCache; _mimeCaches) {
@@ -197,6 +251,10 @@ final class MimeDetectorFromCache : IMimeDetector
         return null;
     }
     
+    /**
+     * Get used MimeCache objects.
+     * Returns: All loaded mime.cache.MimeCache objects.
+     */
     const(MimeCache[]) mimeCaches()
     {
         return _mimeCaches;

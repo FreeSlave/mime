@@ -41,3 +41,11 @@ alias Tuple!(string, "mimeType", string, "iconName") IconLine;
         }
     });
 }
+
+///
+unittest
+{
+    string[] lines = ["application/x-archive:package-x-generic", "application/x-perl:text-x-script"];
+    auto expected = [IconLine("application/x-archive", "package-x-generic"), IconLine("application/x-perl", "text-x-script")];
+    assert(equal(iconsFileReader(lines), expected));
+}

@@ -5,7 +5,7 @@
  * License: 
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
- *  Roman Chistokhodov, 2015
+ *  Roman Chistokhodov, 2015-2016
  */
 
 module mime.cache;
@@ -23,7 +23,7 @@ private {
     import std.traits;
     import std.typecons;
     
-    import std.stdio;
+    static if( __VERSION__ < 2066 ) enum nogc = 1;
 }
 
 private struct MimeCacheHeader
@@ -76,7 +76,7 @@ alias Tuple!(uint, "weight", const(char)[], "mimeType", uint, "matchletCount", u
 alias Tuple!(uint, "rangeStart", uint, "rangeLength", 
                 uint, "wordSize", uint, "valueLength", 
                 const(char)[], "value", const(char)[], "mask", 
-                uint, "childrenCount", uint, "firstChildOffset") //what are these?
+                uint, "childrenCount", uint, "firstChildOffset")
 MatchletEntry;
 
 private {
@@ -84,9 +84,10 @@ private {
     alias Tuple!(ubyte, "weight", bool, "cs") WeightAndCs;
 }
 
+/// MIME type alternative found by file name.
 alias Tuple!(const(char)[], "mimeType", uint, "weight", bool, "cs", const(char)[], "pattern") MimeTypeAlternativeByName;
 
-///MIME type alternative.
+/// MIME type alternative found by data.
 alias Tuple!(const(char)[], "mimeType", uint, "weight") MimeTypeAlternative;
 
 private @nogc @safe auto parseWeightAndFlags(uint value) nothrow pure {
@@ -115,12 +116,10 @@ private:
 
 /**
  * Class for reading mime.cache files. Mime cache is mainly optimized for MIME type detection by file name.
- * This class is somewhat low level and tricky to use in some cases. 
- * Also it knows nothing about MimeType struct.
+ * This class is somewhat low level and tricky to use directly. 
+ * Also it knows nothing about mime.type.MimeType.
  * Note: 
  *  This class does not try to provide more information than the underlying mime.cache file has.
- *  It does not return icon fallbacks for MIME types.
- *  It does not parse XML files to get the actual MIME type from namespace.
  */
 final class MimeCache
 {
@@ -206,9 +205,8 @@ final class MimeCache
     }
     
     /**
-     * Get parents of given mimeType.
-     * Note: only first level parents are returned.
-     * Returns: Range of parents for given mimeType.
+     * Get direct parents of given mimeType.
+     * Returns: Range of first level parents for given mimeType.
      */
     @trusted auto parents(const(char)[] mimeType) const {
         auto parentEntry = parentEntries().equalRange(ParentEntry(mimeType, 0));
@@ -294,38 +292,6 @@ final class MimeCache
         return namespaceEntry.empty ? null : namespaceEntry.front.mimeType;
     }
     
-    @trusted auto magicMatches() const {
-        auto matchCount = readValue!uint(_header.magicListOffset, "match count");
-        auto maxExtent = readValue!uint(_header.magicListOffset + uint.sizeof, "max extent"); //what is it? Spec does not say anything
-        auto firstMatchOffset = readValue!uint(_header.magicListOffset + uint.sizeof*2, "first match offset");
-        
-        return iota(matchCount)
-                .map!(i => firstMatchOffset + i*uint.sizeof*4)
-                .map!(offset => MatchEntry(readValue!uint(offset, "weight"), 
-                                           readString(readValue!uint(offset+uint.sizeof, "mime type offset"), "mime type name"), 
-                                           readValue!uint(offset+uint.sizeof*2, "matchlet count"), 
-                                           readValue!uint(offset+uint.sizeof*3, "first matchlet offset")));
-    }
-    
-    @trusted auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) const {
-        return iota(matchletCount)
-                .map!(i => firstMatchletOffset + i*uint.sizeof*8)
-                .map!(delegate(offset) {
-                    uint rangeStart = readValue!uint(offset, "range start");
-                    uint rangeLength = readValue!uint(offset+uint.sizeof, "range length");
-                    uint wordSize = readValue!uint(offset+uint.sizeof*2, "word size");
-                    uint valueLength = readValue!uint(offset+uint.sizeof*3, "value length");
-                    
-                    uint valueOffset = readValue!uint(offset+uint.sizeof*4, "value offset");
-                    const(char)[] value = readString(valueOffset, valueLength, "value");
-                    uint maskOffset = readValue!uint(offset+uint.sizeof*5, "mask offset");
-                    const(char)[] mask = maskOffset ? readString(maskOffset, valueLength, "mask") : null;
-                    uint childrenCount = readValue!uint(offset+uint.sizeof*6, "children count");
-                    uint firstChildOffset = readValue!uint(offset+uint.sizeof*7, "first child offset");
-                    return MatchletEntry(rangeStart, rangeLength, wordSize, valueLength, value, mask, childrenCount, firstChildOffset);
-                });
-    }
-    
     /**
      * Find icon name for mime type.
      * Returns: Icon name for given mimeType or null string if not found.
@@ -374,49 +340,119 @@ final class MimeCache
     }
     
     /**
-     * Find all MIME type alternatives for data.
+     * Find all MIME type alternatives for data matching it against magic rules.
      * Params:
      *  data = data to check against magic.
-     * Returns: Range of MimeTypeAlternative tuples matching given data.
+     * Returns: Range of MimeTypeAlternative tuples matching given data sorted by weight descending.
      */
-    @trusted auto findMimeTypesByData(const(void)[] data) const {
-        auto content = cast(const(char)[])data;
-        
-        alias Tuple!(const(char)[], "mimeType", uint, "weight", MatchletEntry, "matchlet") MM;
-        
+    @trusted auto findMimeTypesByData(const(void)[] data) const
+    {
         return magicMatches()
-            .map!(magicMatch => magicMatchlets(magicMatch.matchletCount, magicMatch.firstMatchletOffset)
-                .map!(magicMatchlet => MM(magicMatch.mimeType, magicMatch.weight, magicMatchlet)) )
-            .joiner()
-            .filter!(magic => checkMagic(magic.matchlet, content))
-            .map!(magic => MimeTypeAlternative(magic.mimeType, magic.weight));
+            .filter!(match => checkMatchlets(data, match.matchletCount, match.firstMatchletOffset))
+            .map!(match => MimeTypeAlternative(match.mimeType, match.weight));
     }
     
-    @trusted auto findMimeTypesByGlob(const(char)[] name) const {
-        name = name.baseName;
+    private bool checkMatchlets(const(void)[] data, uint matchletCount, uint firstMatchletOffset) const
+    {
+        auto content = cast(const(char)[])data;
+        foreach(matchlet; magicMatchlets(matchletCount, firstMatchletOffset))
+        {
+            if (checkMagic(matchlet, content)) {
+                if (matchlet.childrenCount) {
+                    return checkMatchlets(data, matchlet.childrenCount, matchlet.firstChildOffset);
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Find all MIME type alternatives for fileName using glob patterns which are not literals or suffices.
+     * Params:
+     *  fileName = name to match against glob patterns.
+     * Returns: Range of MimeTypeAlternativeByName with pattern set to glob pattern matching fileName.
+     */
+    @trusted auto findMimeTypesByGlob(const(char)[] fileName) const {
+        fileName = fileName.baseName;
         return globs().filter!(delegate(GlobEntry glob) { 
             if (glob.cs) {
-                return globMatch!(std.path.CaseSensitive.yes)(name, glob.glob);
+                return globMatch!(std.path.CaseSensitive.yes)(fileName, glob.glob);
             } else {
-                return globMatch!(std.path.CaseSensitive.no)(name, glob.glob);
+                return globMatch!(std.path.CaseSensitive.no)(fileName, glob.glob);
             }
         }).map!(glob => MimeTypeAlternativeByName(glob.mimeType, glob.weight, glob.cs, glob.glob));
     }
     
-    @trusted auto findMimeTypesByLiteral(const(char)[] name) const {
-        return findAllByLiteralHelper(name).map!(literal => MimeTypeAlternativeByName(literal.mimeType, literal.weight, literal.cs, literal.literal));
+    /**
+     * Find all MIME type alternatives for fileName using literal patterns like Makefile.
+     * Params:
+     *  fileName = name to match against literal patterns.
+     * Returns: Range of MimeTypeAlternativeByName with pattern set to literal matching fileName.
+     * Note: Depending on whether found literal is case sensitive or not literal can be equal to base fileName or not.
+     */
+    @trusted auto findMimeTypesByLiteral(const(char)[] fileName) const {
+        return findMimeTypesByLiteralHelper(fileName).map!(literal => MimeTypeAlternativeByName(literal.mimeType, literal.weight, literal.cs, literal.literal));
     }
     
-    @trusted void findMimeTypesBySuffix(OutRange)(const(char)[] name, OutRange sink) const if (isOutputRange!(OutRange, MimeTypeAlternativeByName))
+    /**
+     * Find all MIME type alternatives for fileName using suffix patterns like *.cpp.
+     * Due to mime cache format characteristics it uses output range instead of returning the input one.
+     * Params: 
+     *  fileName = name to match against suffix patterns.
+     *  sink = output range where MimeTypeAlternativeByName objects with pattern set to suffix matching fileName will be put.
+     * Note: pattern property of MimeTypeAlternativeByName objects will not have leading "*" to avoid allocating.
+     */
+    @trusted void findMimeTypesBySuffix(OutRange)(const(char)[] fileName, OutRange sink) const if (isOutputRange!(OutRange, MimeTypeAlternativeByName))
     {
         auto rootCount = readValue!uint(_header.reverseSuffixTreeOffset, "root count");
         auto firstRootOffset = readValue!uint(_header.reverseSuffixTreeOffset + rootCount.sizeof, "first root offset");
         
-        lookupLeaf(firstRootOffset, rootCount, name, name, sink);
+        lookupLeaf(firstRootOffset, rootCount, fileName, fileName, sink);
     }
     
 private:
-    @trusted auto findAllByLiteralHelper(const(char)[] name) const {
+    @trusted auto magicMatches() const {
+        auto matchCount = readValue!uint(_header.magicListOffset, "match count");
+        auto maxExtent = readValue!uint(_header.magicListOffset + uint.sizeof, "max extent"); //what is it? Spec does not say anything
+        auto firstMatchOffset = readValue!uint(_header.magicListOffset + uint.sizeof*2, "first match offset");
+        
+        return iota(matchCount)
+                .map!(i => firstMatchOffset + i*uint.sizeof*4)
+                .map!(offset => MatchEntry(readValue!uint(offset, "weight"), 
+                                           readString(readValue!uint(offset+uint.sizeof, "mime type offset"), "mime type name"), 
+                                           readValue!uint(offset+uint.sizeof*2, "matchlet count"), 
+                                           readValue!uint(offset+uint.sizeof*3, "first matchlet offset")))
+                .assumeSorted!(function(a,b) {
+                    if (a.weight == b.weight) {
+                        return a.mimeType < b.mimeType;
+                    } else {
+                        return a.weight > b.weight;
+                    }
+                });
+    }
+    
+    @trusted auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) const {
+        return iota(matchletCount)
+                .map!(i => firstMatchletOffset + i*uint.sizeof*8)
+                .map!(delegate(offset) {
+                    uint rangeStart = readValue!uint(offset, "range start");
+                    uint rangeLength = readValue!uint(offset+uint.sizeof, "range length");
+                    uint wordSize = readValue!uint(offset+uint.sizeof*2, "word size");
+                    uint valueLength = readValue!uint(offset+uint.sizeof*3, "value length");
+                    
+                    uint valueOffset = readValue!uint(offset+uint.sizeof*4, "value offset");
+                    const(char)[] value = readString(valueOffset, valueLength, "value");
+                    uint maskOffset = readValue!uint(offset+uint.sizeof*5, "mask offset");
+                    const(char)[] mask = maskOffset ? readString(maskOffset, valueLength, "mask") : null;
+                    uint childrenCount = readValue!uint(offset+uint.sizeof*6, "children count");
+                    uint firstChildOffset = readValue!uint(offset+uint.sizeof*7, "first child offset");
+                    return MatchletEntry(rangeStart, rangeLength, wordSize, valueLength, value, mask, childrenCount, firstChildOffset);
+                });
+    }
+    
+    @trusted auto findMimeTypesByLiteralHelper(const(char)[] name) const {
         name = name.baseName;
         //Case-sensitive match is always preferred
         auto csLiteral = literals().equalRange(LiteralEntry(name, null, 0, false));

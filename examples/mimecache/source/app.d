@@ -49,15 +49,30 @@ int main(string[] args)
     }
     
     foreach(fileToCheck; files) {
-        auto mimeType = mimeDetector.mimeTypeNameForFileName(fileToCheck);
-        auto alternatives = mimeDetector.mimeTypeNamesForFileName(fileToCheck);
-        
-        if (mimeType.length) {
-            writefln("Mime type for %s: %s", fileToCheck, mimeType);
-            writeln("Alternatives: ", alternatives);
+        if (useMagic) {
+            auto data = std.file.read(fileToCheck, 64);
+            auto mimeType = mimeDetector.mimeTypeNameForData(data);
+            auto alternatives = mimeDetector.mimeTypeNamesForData(data);
+            
+            if (mimeType.length) {
+                writefln("Mime type for %s data: %s", fileToCheck, mimeType);
+                writeln("Alternatives: ", alternatives);
+            } else {
+                writefln("Could not detect mime type for %s data", fileToCheck);
+            }
         } else {
-            writefln("Could not detect mime type for %s", fileToCheck);
+            auto mimeType = mimeDetector.mimeTypeNameForFileName(fileToCheck);
+            auto alternatives = mimeDetector.mimeTypeNamesForFileName(fileToCheck);
+            
+            if (mimeType.length) {
+                writefln("Mime type for %s: %s", fileToCheck, mimeType);
+                writeln("Alternatives: ", alternatives);
+            } else {
+                writefln("Could not detect mime type for %s", fileToCheck);
+            }
         }
+        
+        
     }
     
     return 0;

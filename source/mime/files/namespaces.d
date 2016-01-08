@@ -15,7 +15,6 @@ public import mime.files.exception;
 private {
     import std.algorithm;
     import std.range;
-    import std.string;
     import std.traits;
     import std.typecons;
 }
@@ -32,7 +31,7 @@ alias Tuple!(string, "namespaceUri", string, "localName", string, "mimeType") Na
  */
 @trusted auto namespacesFileReader(Range)(Range byLine) if(is(ElementType!Range : string)) {
     return byLine.filter!(s => !s.empty).map!(function(string line) {
-        auto splitted = line.splitter;
+        auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {
             auto namespaceUri = splitted.front;
             splitted.popFront();
@@ -47,4 +46,12 @@ alias Tuple!(string, "namespaceUri", string, "localName", string, "mimeType") Na
         }
         throw new MimeFileException("Malformed namespaces file: must be 3 words per line", line);
     });
+}
+
+///
+unittest
+{
+    string[] lines = ["http://www.w3.org/1999/xhtml html application/xhtml+xml", "http://www.w3.org/2000/svg svg image/svg+xml"];
+    auto expected = [NamespaceLine("http://www.w3.org/1999/xhtml", "html", "application/xhtml+xml"), NamespaceLine("http://www.w3.org/2000/svg", "svg", "image/svg+xml")];
+    assert(equal(namespacesFileReader(lines), expected));
 }

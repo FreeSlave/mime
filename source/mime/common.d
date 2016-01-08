@@ -2,26 +2,13 @@ module mime.common;
 
 package {
     static if( __VERSION__ < 2066 ) enum nogc = 1;
-    
-    @nogc @system pure inout(char)[] fromCString(inout(char)* cString) nothrow {
-        import std.c.string : strlen;
-        return cString ? cString[0..strlen(cString)] : null;
-    }
-    
-    static if (is(typeof({import std.string : fromStringz;}))) {
-        import std.string : fromStringz;
-    } else { //own fromStringz declaration for compatibility reasons
-        @system pure inout(char)[] fromStringz(inout(char)* cString) {
-            return fromCString(cString);
-        }
-    }
 }
 
 private {
     import std.typecons : Tuple;
 }
 
-auto parseMimeTypeName(String)(String name) if (is(String : const(char)[]))
+@trusted auto parseMimeTypeName(String)(String name) if (is(String : const(char)[]))
 {
     alias Tuple!(String, "media", String, "subtype") MimeTypeName;
     
@@ -50,7 +37,7 @@ unittest
     assert(t.media is null && t.subtype is null);
 }
 
-bool isValidMimeTypeName(const(char)[] name)
+@nogc @safe bool isValidMimeTypeName(const(char)[] name) nothrow pure
 {
     auto t = parseMimeTypeName(name);
     return t.media.length && t.subtype.length;

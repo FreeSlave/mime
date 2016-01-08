@@ -15,7 +15,6 @@ public import mime.files.exception;
 private {
     import std.algorithm;
     import std.range;
-    import std.string;
     import std.traits;
     import std.typecons;
 }
@@ -32,7 +31,7 @@ alias Tuple!(string, "aliasName", string, "mimeType") AliasLine;
  */
 @trusted auto aliasesFileReader(Range)(Range byLine) if(is(ElementType!Range : string)) {
     return byLine.filter!(s => !s.empty).map!(function(string line) {
-        auto splitted = line.splitter;
+        auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {
             auto aliasName = splitted.front;
             splitted.popFront();
@@ -45,3 +44,10 @@ alias Tuple!(string, "aliasName", string, "mimeType") AliasLine;
     });
 }
 
+///
+unittest
+{
+    string[] lines = ["application/acrobat application/pdf", "application/ico image/vnd.microsoft.icon"];
+    auto expected = [AliasLine("application/acrobat", "application/pdf"), AliasLine("application/ico", "image/vnd.microsoft.icon")];
+    assert(equal(aliasesFileReader(lines), expected));
+}

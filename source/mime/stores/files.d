@@ -21,9 +21,10 @@ private @trusted auto fileReader(string fileName) {
     return File(fileName, "r").byLine().map!(s => s.idup);
 }
 
-class FilesMimeStore : IMimeStore
+final class FilesMimeStore : IMimeStore
 {
-    this(in string[] mimePaths) {
+    @trusted this(Range)(Range mimePaths) if (is(ElementType!Range : string))
+    {
         foreach(mimePath; mimePaths.retro) {
             bool dirExists;
             collectException(mimePath.isDir, dirExists);
@@ -124,7 +125,7 @@ class FilesMimeStore : IMimeStore
     }
     
 private:
-    @trusted MimeType ensureMimeType(const(char)[] name) nothrow {
+    @trusted MimeType ensureMimeType(const(char)[] name) {
         MimeType* pmimeType = name in _mimeTypes;
         if (pmimeType) {
             return *pmimeType;
