@@ -13,26 +13,17 @@ module mime.files.globs;
 public import mime.files.exception;
 
 private {
+    import mime.common : defaultGlobWeight;
+    
     import std.algorithm;
     import std.conv : parse;
     import std.range;
     import std.traits;
     import std.typecons;
-    
-    static if( __VERSION__ < 2066 ) enum nogc = 1;
-}
-
-/**
- * Check is pattern is __NOGLOBS__. This means glob patterns from less preferable MIME paths should be ignored.
- */
-@nogc @safe bool isNoGlobs(string pattern) pure nothrow {
-    return pattern == "__NOGLOBS__";
 }
 
 ///Represents one line in globs or globs2 file.
 alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseSensitive") GlobLine;
-
-private enum uint defaultGlobWeight = 0;
 
 /**
  * Parse mime/globs or mime/globs2 file by line ignoring empty lines and comments.
@@ -41,7 +32,7 @@ private enum uint defaultGlobWeight = 0;
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto globsFileReader(Range)(Range byLine) if(is(ElementType!Range : string))
+@trusted auto globsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {
     return byLine.filter!(s => !s.empty && !s.startsWith("#")).map!(function(string line) {
         auto splitted = line.splitter(':');
@@ -67,9 +58,9 @@ private enum uint defaultGlobWeight = 0;
         }
         
         if (!third.empty) { //globs version 2
+            uint weight = parse!uint(first);
             auto type = second;
             auto pattern = third;
-            uint weight = pattern.isNoGlobs ? 0 : parse!uint(first);
             
             auto flags = fourth.splitter(','); //The fourth field contains a list of comma-separated flags
             bool cs = !flags.empty && flags.front == "cs";

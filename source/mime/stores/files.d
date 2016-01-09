@@ -1,13 +1,15 @@
 module mime.stores.files;
 
+import mime.common;
 import mime.store;
+
 private {
     import std.algorithm : map;
-    import std.exception : ErrnoException, collectException;
-    import std.file : isDir;
-    import std.path : buildPath;
-    import std.range : retro, inputRangeObject;
-    import std.stdio : File;
+    import std.exception;
+    import std.file;
+    import std.path;
+    import std.range;
+    import std.stdio;
     
     import mime.files.aliases;
     import mime.files.globs;
@@ -17,13 +19,30 @@ private {
     import mime.files.subclasses;
 }
 
+/**
+ * Check is pattern is __NOGLOBS__. This means glob patterns from less preferable MIME paths should be ignored.
+ */
+@nogc @safe bool isNoGlobs(string pattern) pure nothrow {
+    return pattern == "__NOGLOBS__";
+}
+
 private @trusted auto fileReader(string fileName) {
-    return File(fileName, "r").byLine().map!(s => s.idup);
+    static if( __VERSION__ < 2067 ) {
+        return File(fileName, "r").byLine().map!(s => s.idup);
+    } else {
+        return File(fileName, "r").byLineCopy();
+    }
+}
+
+private bool fileExists(string fileName) {
+    bool ok;
+    collectException(fileName.isFile, ok);
+    return ok;
 }
 
 final class FilesMimeStore : IMimeStore
 {
-    @trusted this(Range)(Range mimePaths) if (is(ElementType!Range : string))
+    @trusted this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
         foreach(mimePath; mimePaths.retro) {
             bool dirExists;
@@ -100,22 +119,29 @@ final class FilesMimeStore : IMimeStore
             }
             
             auto globsPath = buildPath(mimePath, "globs2");
-            try {
+            if (globsPath.fileExists) {
                 setGlobs(globsFileReader(fileReader(globsPath)));
-            } catch(ErrnoException e) {
-                try {
-                    globsPath = buildPath(mimePath, "globs");
-                    setGlobs(globsFileReader(fileReader(globsPath)));
-                } catch(ErrnoException e2) {
-                    
+            } else {
+                globsPath = buildPath(mimePath, "globs");
+                setGlobs(globsFileReader(fileReader(globsPath)));
+            }
+            
+            auto magicPath = buildPath(mimePath, "magic");
+            void sink(MagicEntry t) {
+                auto mimeType = ensureMimeType(t.mimeType);
+                if (t.magic.shouldDeleteMagic()) {
+                    mimeType.clearMagic();
+                } else {
+                    mimeType.addMagic(t.magic);
                 }
             }
+            magicFileReader(assumeUnique(std.file.read(magicPath)), &sink);
         }
     }
-    override InputRange!(const(MimeType)) byMimeType() {
+    InputRange!(const(MimeType)) byMimeType() {
         return inputRangeObject(_mimeTypes.byValue().map!(val => cast(const(MimeType))val));
     }
-    override const(MimeType) mimeType(const char[] name) {
+    const(MimeType) mimeType(const char[] name) {
         MimeType* pmimeType = name in _mimeTypes;
         if (pmimeType) {
             return *pmimeType;
@@ -132,6 +158,8 @@ private:
         } else {
             string mimeName = name.idup;
             auto mimeType = new MimeType(mimeName);
+            mimeType.icon = defaultIconName(mimeName);
+            mimeType.genericIcon = defaultGenericIconName(mimeName);
             _mimeTypes[mimeName] = mimeType;
             return mimeType;
         }

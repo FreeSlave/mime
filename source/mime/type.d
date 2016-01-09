@@ -11,39 +11,12 @@
 module mime.type;
 
 import mime.common;
+public import mime.magic;
 
 private {
     import std.algorithm;
     import std.range;
 }
-
-// struct MagicMatch
-// {
-//     enum Type {
-//         string_, 
-//         host16, 
-//         host32, 
-//         big16, 
-//         big32, 
-//         little16, 
-//         little32, 
-//         byte_
-//     }
-//     
-//     @nogc @safe Type type() nothrow const;
-//     @nogc @safe Tuple!(uint, uint) offset() nothrow const;
-//     
-//     @nogc @safe auto value() nothrow const;
-//     
-//     @nogc @safe bool hasMask() nothrow const;
-//     @nogc @safe auto mask() nothrow const;
-// }
-// 
-// struct MimeComment
-// {
-//     @nogc @safe string text() nothrow const;
-//     @nogc @safe string locale() nothrow const;
-// }
 
 /**
  * Glob pattern for detecting MIME type of file by name.
@@ -71,19 +44,14 @@ final class MimeType
         _name = name;
     }
     
-    @trusted void provideDefaultIconNames() nothrow {
-        if (_icon.empty) {
-            _icon = _name.replace("/", "-");
-        }
-        
-        if (_genericIcon.empty) {
-            auto topLevel = _name.findSplit("/")[0];
-            _genericIcon = topLevel ~ "-x-generic";
-        }
-    }
-    
     ///The name of MIME type.
     @nogc @safe string name() nothrow const {
+        return _name;
+    }
+    
+    ///Set MIME type name.
+    @nogc @safe string name(string typeName) nothrow {
+        _name = typeName;
         return _name;
     }
     
@@ -164,7 +132,19 @@ final class MimeType
     }
     
     @safe void clearPatterns() nothrow {
-        _patterns = [];
+        _patterns = null;
+    }
+    
+    @nogc @safe auto magics() const nothrow {
+        return _magics;
+    }
+    
+    @safe void addMagic(MimeMagic magic) nothrow {
+        _magics ~= magic;
+    }
+    
+    @safe void clearMagic() nothrow {
+        _magics = null;
     }
     
 private:
@@ -176,4 +156,5 @@ private:
     string _namespaceUri;
     string _localName;
     MimePattern[] _patterns;
+    MimeMagic[] _magics;
 }

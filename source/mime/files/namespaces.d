@@ -29,7 +29,7 @@ alias Tuple!(string, "namespaceUri", string, "localName", string, "mimeType") Na
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto namespacesFileReader(Range)(Range byLine) if(is(ElementType!Range : string)) {
+@trusted auto namespacesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(s => !s.empty).map!(function(string line) {
         auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {

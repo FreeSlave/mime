@@ -62,7 +62,7 @@ final class MimeDetectorFromCache : IMimeDetector
     /**
      * See_Also: mime.detector.IMimeDetector.mimeTypeNameForFileName
      */
-    const(char)[] mimeTypeNameForFileName(const(char)[] fileName)
+    const(char)[] mimeTypeForFileName(const(char)[] fileName)
     {
         const(char)[] mimeType;
         uint weight;
@@ -113,7 +113,7 @@ final class MimeDetectorFromCache : IMimeDetector
     /**
      * See_Also: mime.detector.IMimeDetector.mimeTypeNamesForFileName
      */
-    const(char)[][] mimeTypeNamesForFileName(const(char)[] fileName)
+    const(char[])[] mimeTypesForFileName(const(char)[] fileName)
     {
         const(char)[][] conflicts;
         const(char)[] mimeType;
@@ -175,7 +175,7 @@ final class MimeDetectorFromCache : IMimeDetector
     /**
      * See_Also: mime.detector.IMimeDetector.mimeTypeNameForData
      */
-    const(char)[] mimeTypeNameForData(const(void)[] data)
+    const(char)[] mimeTypeForData(const(void)[] data)
     {
         const(char)[] mimeType;
         uint weight;
@@ -197,7 +197,7 @@ final class MimeDetectorFromCache : IMimeDetector
     /**
      * See_Also: mime.detector.IMimeDetector.mimeTypeNamesForData
      */
-    const(char)[][] mimeTypeNamesForData(const(void)[] data)
+    const(char[])[] mimeTypesForData(const(void)[] data)
     {
         const(char)[][] conflicts;
         const(char)[] mimeType;
@@ -226,7 +226,7 @@ final class MimeDetectorFromCache : IMimeDetector
     /**
      * See_Also: mime.detector.IMimeDetector.mimeTypeNameForNamespaceUri
      */
-    const(char)[] mimeTypeNameForNamespaceUri(const(char)[] namespaceUri)
+    const(char)[] mimeTypeForNamespaceUri(const(char)[] namespaceUri)
     {
         foreach(mimeCache; _mimeCaches) {
             const(char)[] mimeType = mimeCache.findMimeTypeByNamespaceUri(namespaceUri);

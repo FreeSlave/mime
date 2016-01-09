@@ -22,7 +22,7 @@ interface IMimeDetector
      * The preferable mime type for fileName.
      * Returns: The name of preferable mime type for given fileName or null if could not find any match.
      */
-    const(char)[] mimeTypeNameForFileName(const(char)[] fileName);
+    const(char)[] mimeTypeForFileName(const(char)[] fileName);
     
     /**
      * The list of the most preferred mime types for fileName.
@@ -31,7 +31,7 @@ interface IMimeDetector
      * Note:
      *  Implementer should prefer to return arrays with unique names.
      */
-    const(char[])[] mimeTypeNamesForFileName(const(char)[] fileName);
+    const(char[])[] mimeTypesForFileName(const(char)[] fileName);
     
     /**
      * The preferable mime type for data.
@@ -40,7 +40,7 @@ interface IMimeDetector
      *  Implementer is NOT expected to check if data is textual to provide text/plain or application/octet-stream fallback.
      *  Implementer is NOT expected to clarify mime type by namespace uri itself if it was detected that data is xml.
      */
-    const(char)[] mimeTypeNameForData(const(void)[] data);
+    const(char)[] mimeTypeForData(const(void)[] data);
     
     /**
      * The list of the most preferred mime types for data.
@@ -49,12 +49,12 @@ interface IMimeDetector
      * Note: 
      *  Implementer should prefer to return arrays with unique names.
      */
-    const(char[])[] mimeTypeNamesForData(const(void)[] data);
+    const(char[])[] mimeTypesForData(const(void)[] data);
     
     /**
-     * Returns: Mime type name for namespaceUri or null if not found.
+     * Returns: MIME type name for namespaceUri or null if not found.
      */
-    const(char)[] mimeTypeNameForNamespaceUri(const(char)[] namespaceUri);
+    const(char)[] mimeTypeForNamespaceUri(const(char)[] namespaceUri);
     
     
     /**
