@@ -1,5 +1,6 @@
 module mime.files.magic;
 import mime.magic;
+import mime.common;
 
 private {
     import std.algorithm;
@@ -10,12 +11,6 @@ private {
     import std.string;
     import std.traits;
     import std.typecons;
-    
-    static if( __VERSION__ < 2066 ) enum nogc = 1;
-}
-
-private @nogc @trusted bool isNoMagic(const(ubyte)[] value) pure nothrow {
-    return cast(const(char)[])value == "__NOMAGIC__";
 }
 
 alias Tuple!(immutable(char)[], "mimeType", MimeMagic, "magic") MagicEntry;

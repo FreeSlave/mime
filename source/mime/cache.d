@@ -10,6 +10,8 @@
 
 module mime.cache;
 
+import mime.common;
+
 private {
     import std.mmfile;
     
@@ -22,8 +24,6 @@ private {
     import std.system;
     import std.traits;
     import std.typecons;
-    
-    static if( __VERSION__ < 2066 ) enum nogc = 1;
 }
 
 private struct MimeCacheHeader
@@ -70,7 +70,7 @@ alias Tuple!(const(char)[], "mimeType", const(char)[], "iconName") IconEntry;
 alias Tuple!(const(char)[], "namespaceUri", const(char)[], "localName", const(char)[], "mimeType") NamespaceEntry;
 
 ///Magic match entry in mime cache.
-alias Tuple!(uint, "weight", const(char)[], "mimeType", uint, "matchletCount", uint, "firstMatchletOffset") MatchEntry;
+alias Tuple!(uint, "weight", const(char)[], "mimeType", uint, "matchletCount", uint, "firstMatchletOffset", uint, "maxExtent") MatchEntry;
 
 ///Magic matchlet entry in mime cache.
 alias Tuple!(uint, "rangeStart", uint, "rangeLength", 
@@ -178,6 +178,41 @@ final class MimeCache
         _header.namespaceListOffset = readValue!uint(28, "namespace list offset");
         _header.iconsListOffset = readValue!uint(32, "icon list offset");
         _header.genericIconsListOffset = readValue!uint(36, "generic list offset");
+        
+        if (!aliasesImpl().isSorted!aliasesCmp) {
+            throw new MimeCacheException("aliases must be sorted by alias name");
+        }
+        
+        //TODO: check parents
+        if (!parentEntriesImpl().isSorted!parentEntryCmp) {
+            throw new MimeCacheException("parent list must be sorted by mime type name");
+        }
+        
+        if (!literalsImpl().isSorted!literalsCmp) {
+            throw new MimeCacheException("literals must be sorted by literal");
+        }
+        
+        foreach(glob; globs) {
+            //just iterate over all to ensure all is ok
+        }
+        
+        if (!commonIconsImpl(_header.iconsListOffset).isSorted!iconsCmp) {
+            throw new MimeCacheException("icon list must be sorted by mime type name");
+        }
+        
+        if (!commonIconsImpl(_header.genericIconsListOffset).isSorted!iconsCmp) {
+            throw new MimeCacheException("generic icons list must be sorted by mime type name");
+        }
+        
+        if (!namespacesImpl().isSorted!namespacesCmp) {
+            throw new MimeCacheException("namespaces must be sorted by namespace uri");
+        }
+        
+        //TODO: check reverse suffix tree
+        
+        if (!magicMatchesImpl().isSorted!magicMatchesCmp) {
+            throw new MimeCacheException("magic matches must be sorted by maxExtent");
+        }
     }
     
     /**
@@ -185,14 +220,19 @@ final class MimeCache
      * Returns: SortedRange of AliasEntry tuples sorted by aliasName.
      */
     @trusted auto aliases() const {
-        auto aliasCount = readValue!uint(_header.aliasListOffset, "alist count");
+        return aliasesImpl().assumeSorted!aliasesCmp;
+    }
+    
+    private enum aliasesCmp = "a.aliasName < b.aliasName";
+    
+    private @trusted auto aliasesImpl() const {
+        auto aliasCount = readValue!uint(_header.aliasListOffset, "alias count");
         return iota(aliasCount)
                 .map!(i => _header.aliasListOffset + aliasCount.sizeof + i*uint.sizeof*2)
                 .map!(offset => AliasEntry(
                     readString(readValue!uint(offset, "alias offset"), "alias name"), 
                     readString(readValue!uint(offset+uint.sizeof, "mime type offset"), "mime type name")
-                ))
-                .assumeSorted!(function(a,b) { return a.aliasName < b.aliasName; });
+                ));
     }
     
     /**
@@ -202,6 +242,12 @@ final class MimeCache
     @trusted const(char)[] resolveAlias(const(char)[] aliasName) const {
         auto aliasEntry = aliases().equalRange(AliasEntry(aliasName, null));
         return aliasEntry.empty ? null : aliasEntry.front.mimeType;
+    }
+    
+    private @trusted auto parents(uint parentsOffset, uint parentCount) const {
+        return iota(parentCount)
+                .map!(i => parentsOffset + parentCount.sizeof + i*uint.sizeof)
+                .map!(offset => readString(readValue!uint(offset, "mime type offset"), "mime type name"));
     }
     
     /**
@@ -219,9 +265,7 @@ final class MimeCache
             parentsOffset = parentEntry.front.parentsOffset;
             parentCount = readValue!uint(parentsOffset, "parent count");
         }
-        return iota(parentCount)
-                .map!(i => parentsOffset + parentCount.sizeof + i*uint.sizeof)
-                .map!(offset => readString(readValue!uint(offset, "mime type offset"), "mime type name"));
+        return parents(parentsOffset, parentCount);
     }
     
     /**
@@ -245,6 +289,12 @@ final class MimeCache
      * Returns: SortedRange of LiteralEntry tuples sorted by literal.
      */
     @trusted auto literals() const {
+        return literalsImpl.assumeSorted!literalsCmp;
+    }
+    
+    private enum literalsCmp = "a.literal < b.literal";
+    
+    private @trusted auto literalsImpl() const {
         auto literalCount = readValue!uint(_header.literalListOffset, "literal count");
         return iota(literalCount)
                 .map!(i => _header.literalListOffset + literalCount.sizeof + i*uint.sizeof*3)
@@ -253,7 +303,7 @@ final class MimeCache
                     auto mimeType = readString(readValue!uint(offset+uint.sizeof, "mime type offset"), "mime type name");
                     auto weightAndCs = parseWeightAndFlags(readValue!uint(offset+uint.sizeof*2, "weight and flags"));
                     return LiteralEntry(literal, mimeType, weightAndCs.weight, weightAndCs.cs);
-                }).assumeSorted!(function(a,b) { return a.literal < b.literal; });
+                });
     }
     
     /**
@@ -272,18 +322,25 @@ final class MimeCache
         return commonIcons(_header.genericIconsListOffset);
     }
     
+    private enum iconsCmp = "a.mimeType < b.mimeType";
+    
     /**
      * XML namespaces for MIME types.
      * Returns: SortedRange of NamespaceEntry tuples sorted by namespaceUri.
      */
     @trusted auto namespaces() const {
+        return namespacesImpl().assumeSorted!namespacesCmp;
+    }
+    
+    private enum namespacesCmp = "a.namespaceUri < b.namespaceUri";
+    
+    private @trusted auto namespacesImpl() const {
         auto namespaceCount = readValue!uint(_header.namespaceListOffset, "namespace count");
         return iota(namespaceCount)
                 .map!(i => _header.namespaceListOffset + namespaceCount.sizeof + i*uint.sizeof*3)
                 .map!(offset => NamespaceEntry(readString(readValue!uint(offset, "namespace uri offset"), "namespace uri"), 
                                                readString(readValue!uint(offset+uint.sizeof, "local name offset"), "local name"), 
-                                               readString(readValue!uint(offset+uint.sizeof*2, "mime type offset"), "mime type name")))
-                .assumeSorted!(function(a,b) { return a.namespaceUri < b.namespaceUri; });
+                                               readString(readValue!uint(offset+uint.sizeof*2, "mime type offset"), "mime type name")));
     }
     
     @trusted const(char)[] findMimeTypeByNamespaceUri(const(char)[] namespaceUri) const
@@ -315,7 +372,7 @@ final class MimeCache
         bool check = false;
         if (magicMatchlet.mask.length == 0 && magicMatchlet.rangeStart + magicMatchlet.value.length <= content.length) {
             if (magicMatchlet.wordSize == 1) {
-                check = content[magicMatchlet.rangeStart..$].startsWith(magicMatchlet.value);
+                check = content[magicMatchlet.rangeStart..magicMatchlet.rangeStart + magicMatchlet.value.length] == magicMatchlet.value;
             }
             //not sure how to deal with for now
             /+else if (magicMatchlet.wordSize && (magicMatchlet.wordSize % 2 == 0) && (magicMatchlet.valueLength % magicMatchlet.wordSize == 0)) {
@@ -396,6 +453,18 @@ final class MimeCache
         return findMimeTypesByLiteralHelper(fileName).map!(literal => MimeTypeAlternativeByName(literal.mimeType, literal.weight, literal.cs, literal.literal));
     }
     
+    private @trusted auto findMimeTypesByLiteralHelper(const(char)[] name) const {
+        name = name.baseName;
+        //Case-sensitive match is always preferred
+        auto csLiteral = literals().equalRange(LiteralEntry(name, null, 0, false));
+        if (csLiteral.empty) {
+            //Try case-insensitive match. toLower should work for this since all case-insensitive literals in mime.cache are stored in lower form.
+            return literals().equalRange(LiteralEntry(name.toLower, null, 0, false));
+        } else {
+            return csLiteral;
+        }
+    }
+    
     /**
      * Find all MIME type alternatives for fileName using suffix patterns like *.cpp.
      * Due to mime cache format characteristics it uses output range instead of returning the input one.
@@ -412,10 +481,13 @@ final class MimeCache
         lookupLeaf(firstRootOffset, rootCount, fileName, fileName, sink);
     }
     
-private:
     @trusted auto magicMatches() const {
+        return magicMatchesImpl().assumeSorted!magicMatchesCmp;
+    }
+    
+    private @trusted auto magicMatchesImpl() const {
         auto matchCount = readValue!uint(_header.magicListOffset, "match count");
-        auto maxExtent = readValue!uint(_header.magicListOffset + uint.sizeof, "max extent"); //what is it? Spec does not say anything
+        auto maxExtent = readValue!uint(_header.magicListOffset + uint.sizeof, "max extent"); //seems like magic is sorted by this
         auto firstMatchOffset = readValue!uint(_header.magicListOffset + uint.sizeof*2, "first match offset");
         
         return iota(matchCount)
@@ -423,15 +495,12 @@ private:
                 .map!(offset => MatchEntry(readValue!uint(offset, "weight"), 
                                            readString(readValue!uint(offset+uint.sizeof, "mime type offset"), "mime type name"), 
                                            readValue!uint(offset+uint.sizeof*2, "matchlet count"), 
-                                           readValue!uint(offset+uint.sizeof*3, "first matchlet offset")))
-                .assumeSorted!(function(a,b) {
-                    if (a.weight == b.weight) {
-                        return a.mimeType < b.mimeType;
-                    } else {
-                        return a.weight > b.weight;
-                    }
-                });
+                                           readValue!uint(offset+uint.sizeof*3, "first matchlet offset"),
+                                           maxExtent
+                                          ));
     }
+    
+    private enum magicMatchesCmp = "a.maxExtent < b.maxExtent";
     
     @trusted auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) const {
         return iota(matchletCount)
@@ -452,18 +521,7 @@ private:
                 });
     }
     
-    @trusted auto findMimeTypesByLiteralHelper(const(char)[] name) const {
-        name = name.baseName;
-        //Case-sensitive match is always preferred
-        auto csLiteral = literals().equalRange(LiteralEntry(name, null, 0, false));
-        if (csLiteral.empty) {
-            //Try case-insensitive match. toLower should work for this since all case-insensitive literals in mime.cache are stored in lower form.
-            return literals().equalRange(LiteralEntry(name.toLower, null, 0, false));
-        } else {
-            return csLiteral;
-        }
-    }
-    
+private:
     @trusted void lookupLeaf(OutRange)(const uint startOffset, const uint count, const(char[]) originalName, const(char[]) name, OutRange sink, const(char[]) suffix = null, const bool wasCaseMismatch = false) const {
         
         for (uint i=0; i<count; ++i) {
@@ -500,26 +558,34 @@ private:
         }
     }
     
+    enum parentEntryCmp = "a.mimeType < b.mimeType";
+    
     auto parentEntries() const {
+        return parentEntriesImpl().assumeSorted!parentEntryCmp;
+    }
+    
+    auto parentEntriesImpl() const {
         auto parentListCount = readValue!uint(_header.parentListOffset, "parent list count");
         return iota(parentListCount)
                 .map!(i => _header.parentListOffset + parentListCount.sizeof + i*uint.sizeof*2)
                 .map!(offset => ParentEntry(
                     readString(readValue!uint(offset, "mime type offset"), "mime type name"), 
                     readValue!uint(offset + uint.sizeof, "parents offset")
-                ))
-                .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
+                ));
     }
 
     @trusted auto commonIcons(uint iconsListOffset) const {
+        return commonIconsImpl(iconsListOffset).assumeSorted!iconsCmp;
+    }
+    
+    @trusted auto commonIconsImpl(uint iconsListOffset) const {
         auto iconCount = readValue!uint(iconsListOffset);
         return iota(iconCount)
                 .map!(i => iconsListOffset + iconCount.sizeof + i*uint.sizeof*2)
                 .map!(offset => IconEntry(
                     readString(readValue!uint(offset, "mime type offset"), "mime type name"), 
                     readString(readValue!uint(offset+uint.sizeof, "icon name offset"), "icon name")
-                ))
-                .assumeSorted!(function(a,b) { return a.mimeType < b.mimeType; });
+                ));
     }
     
     @trusted T readValue(T)(size_t offset, string context = null) const if (isIntegral!T || isSomeChar!T)

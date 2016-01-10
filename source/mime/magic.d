@@ -1,10 +1,7 @@
 module mime.magic;
 
 import std.exception;
-
-private {
-    static if( __VERSION__ < 2066 ) enum nogc = 1;
-}
+import mime.common;
 
 struct MagicMatch
 {

@@ -19,13 +19,6 @@ private {
     import mime.files.subclasses;
 }
 
-/**
- * Check is pattern is __NOGLOBS__. This means glob patterns from less preferable MIME paths should be ignored.
- */
-@nogc @safe bool isNoGlobs(string pattern) pure nothrow {
-    return pattern == "__NOGLOBS__";
-}
-
 private @trusted auto fileReader(string fileName) {
     static if( __VERSION__ < 2067 ) {
         return File(fileName, "r").byLine().map!(s => s.idup);

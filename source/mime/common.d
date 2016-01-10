@@ -103,3 +103,16 @@ enum uint defaultGlobWeight = 50;
 /// Default magic match rule priority to use when it's not explicitly provided.
 enum uint defaultMatchWeight = 50;
 
+/**
+ * Check is pattern is __NOGLOBS__. This means glob patterns from the less preferable MIME paths should be ignored.
+ */
+@nogc @safe bool isNoGlobs(String)(String pattern) pure nothrow if (is(String : const(char)[])) {
+    return pattern == "__NOGLOBS__";
+}
+
+/**
+ * Check if value is __NOMAGIC__. This means magic rules from the less preferable MIME paths should be ignored.
+ */
+@nogc @trusted bool isNoMagic(T)(const(T)[] value) pure nothrow if (is(T : char) || is(T : ubyte) || is(T : byte)) {
+    return cast(const(char)[])value == "__NOMAGIC__";
+}
