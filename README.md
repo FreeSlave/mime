@@ -22,7 +22,7 @@ Run to detect mime type of README.md or other files using mime.cache:
 
     dub run mime:mimecache -- README.md lib/libmime.a Makefile CMakeLists.txt test.c test.C test.cpp test.xml
 
-Run to detect mime type of files using using mime.cache including its magic rules.
+Run to detect mime type of files via magic rules.
     
     dub run mime:mimecache -- --useMagic examples/mimecache/bin/mimecache lib/libmime.a
 

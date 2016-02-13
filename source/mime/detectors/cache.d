@@ -184,7 +184,7 @@ final class MimeDetectorFromCache : IMimeDetector
             auto matches = mimeCache.findMimeTypesByData(data);
             if (!matches.empty) {
                 auto alternative = matches.front; //checking only the first is enough because matches are sorted.
-                if (mimeType.empty || alternative.weight > weight) {
+                if ((mimeType.empty && alternative.weight) || alternative.weight > weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                 }

@@ -39,6 +39,8 @@ struct MagicMatch
         
         _value = value;
         _mask = mask;
+        _startOffset = startOffset;
+        _rangeLength = rangeLength;
     }
     
     @nogc @safe Type type() nothrow const {

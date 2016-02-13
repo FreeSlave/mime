@@ -70,7 +70,7 @@ alias Tuple!(const(char)[], "mimeType", const(char)[], "iconName") IconEntry;
 alias Tuple!(const(char)[], "namespaceUri", const(char)[], "localName", const(char)[], "mimeType") NamespaceEntry;
 
 ///Magic match entry in mime cache.
-alias Tuple!(uint, "weight", const(char)[], "mimeType", uint, "matchletCount", uint, "firstMatchletOffset", uint, "maxExtent") MatchEntry;
+alias Tuple!(uint, "weight", const(char)[], "mimeType", uint, "matchletCount", uint, "firstMatchletOffset") MatchEntry;
 
 ///Magic matchlet entry in mime cache.
 alias Tuple!(uint, "rangeStart", uint, "rangeLength", 
@@ -183,7 +183,7 @@ final class MimeCache
             throw new MimeCacheException("aliases must be sorted by alias name");
         }
         
-        //TODO: check parents
+        //TODO: check parents tree
         if (!parentEntriesImpl().isSorted!parentEntryCmp) {
             throw new MimeCacheException("parent list must be sorted by mime type name");
         }
@@ -211,8 +211,9 @@ final class MimeCache
         //TODO: check reverse suffix tree
         
         if (!magicMatchesImpl().isSorted!magicMatchesCmp) {
-            throw new MimeCacheException("magic matches must be sorted by maxExtent");
+            throw new MimeCacheException("magic matches must be sorted first by weight (descending) and then by mime type names (ascending)");
         }
+        //TODO: check matchLets
     }
     
     /**
@@ -266,6 +267,24 @@ final class MimeCache
             parentCount = readValue!uint(parentsOffset, "parent count");
         }
         return parents(parentsOffset, parentCount);
+    }
+    
+    /**
+     * Recursively check if mimeType is subclass of parent. Any mime type is considered to be subclass of itself.
+     * Returns: true if mimeType is subclass of parent or mimeType and parent are equal. False otherwise.
+     */
+    @trusted bool isSubclassOf(const(char)[] mimeType, const(char)[] parent) const {
+        //TODO: should check for circular references?
+        return isSubclassOfHelper(mimeType, parent);
+    }
+    
+    private @trusted bool isSubclassOfHelper(const(char)[] mimeType, const(char)[] parent) const {
+        foreach(candidate; parents(mimeType)) {
+            if (candidate == parent || isSubclassOfHelper(candidate, parent)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**
@@ -481,13 +500,26 @@ final class MimeCache
         lookupLeaf(firstRootOffset, rootCount, fileName, fileName, sink);
     }
     
+    /**
+     * All magic matches in this mime cache. Matches don't include magic rules themselves, but they reference matchlets.
+     * Returns: Range of MatchEntry tuples.
+     * See_Also: magicMatchlets
+     */
     @trusted auto magicMatches() const {
         return magicMatchesImpl().assumeSorted!magicMatchesCmp;
     }
     
     private @trusted auto magicMatchesImpl() const {
+        auto toReturn = allMagicMatchesImpl();
+        while(!toReturn.empty && toReturn.front.weight == 0) {
+            toReturn.popFront(); //remove entries meant for magic-deleteall
+        }
+        return toReturn;
+    }
+    
+    private auto allMagicMatchesImpl() const {
         auto matchCount = readValue!uint(_header.magicListOffset, "match count");
-        auto maxExtent = readValue!uint(_header.magicListOffset + uint.sizeof, "max extent"); //seems like magic is sorted by this
+        auto maxExtent = readValue!uint(_header.magicListOffset + uint.sizeof, "max extent"); //still don't get what is it
         auto firstMatchOffset = readValue!uint(_header.magicListOffset + uint.sizeof*2, "first match offset");
         
         return iota(matchCount)
@@ -495,13 +527,18 @@ final class MimeCache
                 .map!(offset => MatchEntry(readValue!uint(offset, "weight"), 
                                            readString(readValue!uint(offset+uint.sizeof, "mime type offset"), "mime type name"), 
                                            readValue!uint(offset+uint.sizeof*2, "matchlet count"), 
-                                           readValue!uint(offset+uint.sizeof*3, "first matchlet offset"),
-                                           maxExtent
+                                           readValue!uint(offset+uint.sizeof*3, "first matchlet offset")
                                           ));
     }
     
-    private enum magicMatchesCmp = "a.maxExtent < b.maxExtent";
+    private enum magicMatchesCmp = "(a.weight > b.weight) || (a.weight == b.weight && a.mimeType < b.mimeType)";
     
+    /**
+     * One level magic matchlets.
+     * matchletCount and firstMatchletOffset should be taken from MatchEntry or upper level MatchletEntry.
+     * Returns: Range of MatchletEntry tuples which are direct descendants of MatchEntry or another MatchletEntry.
+     * See_Also: magicMatches
+     */
     @trusted auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) const {
         return iota(matchletCount)
                 .map!(i => firstMatchletOffset + i*uint.sizeof*8)
@@ -520,6 +557,20 @@ final class MimeCache
                     return MatchletEntry(rangeStart, rangeLength, wordSize, valueLength, value, mask, childrenCount, firstChildOffset);
                 });
     }
+    
+    /**
+     * Names of mime types which magic rules from the least preferred mime.cache files should be discarded.
+     * Returns: Range of mime type names that were marked as magic-deleteall.
+     */
+    @trusted auto magicToDelete() const {
+        return magicToDeleteImpl().assumeSorted!magicToDeleteCmp;
+    }
+    
+    private @trusted auto magicToDeleteImpl() const {
+        return allMagicMatchesImpl().until!(m => m.weight != 0).map!(m => m.mimeType);
+    }
+    
+    private enum magicToDeleteCmp = "a < b";
     
 private:
     @trusted void lookupLeaf(OutRange)(const uint startOffset, const uint count, const(char[]) originalName, const(char[]) name, OutRange sink, const(char[]) suffix = null, const bool wasCaseMismatch = false) const {
