@@ -1,3 +1,14 @@
+/**
+ * MIME store implemented around reading of various files in mime/ subfolder.
+ * 
+ * Authors: 
+ *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
+ * License: 
+ *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Copyright:
+ *  Roman Chistokhodov, 2015-2016
+ */
+
 module mime.stores.files;
 
 import mime.common;
@@ -33,8 +44,20 @@ private bool fileExists(string fileName) {
     return ok;
 }
 
+/**
+ * Implementation of mime.store.IMimeStore interface that uses various files from mime/ subfolder to read MIME types.
+ */
 final class FilesMimeStore : IMimeStore
 {
+    /**
+     * Constructor based on MIME paths.
+     * Params:
+     *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
+     * Throws:
+     *  MimeFileException if some info file has errors.
+     *  ErrnoException if some important file does not exist or could not be read.
+     * See_Also: mime.paths.mimePaths
+     */
     @trusted this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
         foreach(mimePath; mimePaths.retro) {
@@ -131,9 +154,17 @@ final class FilesMimeStore : IMimeStore
             magicFileReader(assumeUnique(std.file.read(magicPath)), &sink);
         }
     }
+    
+    /**
+     * See_Also: mime.store.IMimeStore.byMimeType
+     */
     InputRange!(const(MimeType)) byMimeType() {
         return inputRangeObject(_mimeTypes.byValue().map!(val => cast(const(MimeType))val));
     }
+    
+    /**
+     * See_Also: mime.store.IMimeStore.mimeType
+     */
     const(MimeType) mimeType(const char[] name) {
         MimeType* pmimeType = name in _mimeTypes;
         if (pmimeType) {

@@ -1,3 +1,13 @@
+/**
+ * Parsing mime/magic files.
+ * Authors: 
+ *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
+ * License: 
+ *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Copyright:
+ *  Roman Chistokhodov, 2015-2016
+ */
+
 module mime.files.magic;
 import mime.magic;
 import mime.common;
@@ -104,7 +114,10 @@ private uint parseIndent(ref immutable(char)[] current)
     return indent;
 }
 
-@trusted auto magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
+/**
+ * Reads magic file contents and push magic entries to sink.
+ */
+@trusted void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
 {
     enum mimeMagic = "MIME-Magic\0\n";
     auto content = cast(immutable(char)[])data;

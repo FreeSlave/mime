@@ -60,7 +60,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeNameForFileName
+     * See_Also: mime.detector.IMimeDetector.mimeTypeForFileName
      */
     const(char)[] mimeTypeForFileName(const(char)[] fileName)
     {
@@ -111,7 +111,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeNamesForFileName
+     * See_Also: mime.detector.IMimeDetector.mimeTypesForFileName
      */
     const(char[])[] mimeTypesForFileName(const(char)[] fileName)
     {
@@ -173,7 +173,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeNameForData
+     * See_Also: mime.detector.IMimeDetector.mimeTypeForData
      */
     const(char)[] mimeTypeForData(const(void)[] data)
     {
@@ -195,7 +195,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeNamesForData
+     * See_Also: mime.detector.IMimeDetector.mimeTypesForData
      */
     const(char[])[] mimeTypesForData(const(void)[] data)
     {
@@ -224,7 +224,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeNameForNamespaceUri
+     * See_Also: mime.detector.IMimeDetector.mimeTypeForNamespaceUri
      */
     const(char)[] mimeTypeForNamespaceUri(const(char)[] namespaceUri)
     {

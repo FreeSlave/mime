@@ -17,8 +17,12 @@ import mime.detector;
 import mime.type;
 import mime.utils;
 
+/**
+ * High-level class for accessing Shared MIME-info database.
+ */
 final class MimeDatabase
 {
+    /// Options for mimeTypeForFile
     enum Match
     {
         globPatterns = 1,   /// Match file name against glob patterns.
@@ -29,6 +33,13 @@ final class MimeDatabase
         octetStreamFallback = 32 /// Provide application/octet-stream fallback if data seems to be binary.
     }
     
+    /**
+     * Constructor based on MIME paths. 
+     * It uses mime.detectors.cache.MimeDetectorFromCache as MIME type detector and mime.stores.files.FilesMimeStore as MIME type store.
+     * Params:
+     *  mimePaths = Range of paths to base mime directories where needed files will be read.
+     * See_Also: mime.paths.mimePaths, mime.detectors.cache.MimeDetectorFromCache, mime.stores.files.FilesMimeStore
+     */
     this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
         import mime.stores.files;
@@ -47,31 +58,50 @@ final class MimeDatabase
         _detector = detector;
     }
     
+    /**
+     * Get MIME types store used in MimeDatabase instance.
+     */
     IMimeStore store()
     {
         return _store;
     }
     
+    /**
+     * Get MIME type detector used in MimeDatabase instance.
+     */
     IMimeDetector detector()
     {
         return _detector;
     }
     
+    /**
+     * Get MIME type for given fileName.
+     */
     const(MimeType) mimeTypeForFileName(string fileName)
     {
         return findExistingAlternative(_detector.mimeTypesForFileName(fileName));
     }
     
+    /**
+     * Get MIME type for given data.
+     */
     const(MimeType) mimeTypeForData(const(void)[] data)
     {
         return findExistingAlternative(_detector.mimeTypesForData(data));
     }
     
+    /**
+     * Get MIME type for file using methods describing in options.
+     */
     const(MimeType) mimeTypeForFile(string fileName, const(void)[] data, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
     {
         return mimeTypeForFileImpl(fileName, data, options);
     }
     
+    /**
+     * Get MIME type for file using methods describing in options.
+     * File contents will be read automatically if needed.
+     */
     const(MimeType) mimeTypeForFile(string fileName, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback|Match.inodeFallback)
     {
         return mimeTypeForFileImpl(fileName, null, options);

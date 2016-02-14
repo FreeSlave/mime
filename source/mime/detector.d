@@ -15,7 +15,7 @@ module mime.detector;
 /**
  * Interface for classes that detect mime type name from file names or data.
  * This interface is designed to know nothing about mime.type.MimeType, it deals only with mime type names.
- * Implemented classes are not expected to be 'smart' (i.e. do anything besides what required). See notes for member functions.
+ * Implemented classes are not expected to be 'smart' (i.e. they should not do anything besides what required). See notes for member functions.
  */
 interface IMimeDetector
 {   

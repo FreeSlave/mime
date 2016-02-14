@@ -33,9 +33,15 @@ Run to detect mime types of files.
 
     dub run mime:mimedatabase -- README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.selections.json
     
-## TODO
+## Features
 
-1. Implement MIME type detection from file contents (via magic, parially done).
-2. Read MIME types from mime/packages sources (requires xml library).
-3. Determine MIME type by XMLnamespace if document is xml (requires streaming xml library).
-4. Allow to create MIME types (requires xml library) and call update-mime-database.
+### Implemented features
+
+* Reading mime.cache files.
+* Using mime.cache files to match file names against glob patterns, match data against magic rules (not fully implemented) and resolve aliases.
+* Reading various files in mime/ subfolder, e.g. globs2, magic and others.
+
+### Missing features
+
+* Reading MIME types from mime/packages sources (requires xml library).
+* Determining MIME type by XMLnamespace if document is xml (requires streaming xml library).
