@@ -113,6 +113,6 @@ enum uint defaultMatchWeight = 50;
 /**
  * Check if value is __NOMAGIC__. This means magic rules from the less preferable MIME paths should be ignored.
  */
-@nogc @trusted bool isNoMagic(T)(const(T)[] value) pure nothrow if (is(T : char) || is(T : ubyte) || is(T : byte)) {
-    return cast(const(char)[])value == "__NOMAGIC__";
+@nogc @trusted bool isNoMagic(T)(const(T)[] value) pure nothrow if (is(T : char) || is(T : ubyte) || is(T : byte) || is(T : void)) {
+    return cast(const(ubyte)[])value == cast(const(ubyte)[])"__NOMAGIC__";
 }

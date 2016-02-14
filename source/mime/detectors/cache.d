@@ -34,7 +34,7 @@ final class MimeDetectorFromCache : IMimeDetector
      * Params:
      *  mimeCaches = Range of mime.cache.MimeCache objects sorted in order of preference from the mort preferred to the least. All must be non-null.
      */
-    @trusted this(Range)(Range mimeCaches) if (is(ElementType!Range : const(MimeCache)))
+    @trusted this(Range)(Range mimeCaches) if (isInputRange!Range && is(ElementType!Range : const(MimeCache)))
     {
         _mimeCaches = mimeCaches.array;
     }
@@ -48,7 +48,7 @@ final class MimeDetectorFromCache : IMimeDetector
      *  mime.cache.MimeCacheException if some existing mime.cache file is invalid.
      * See_Also: mime.paths.mimePaths
      */
-    @trusted this(Range)(Range mimePaths) if (is(ElementType!Range : string))
+    @trusted this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
         foreach(mimePath; mimePaths) {
             string path = buildPath(mimePath, "mime.cache");
@@ -184,7 +184,7 @@ final class MimeDetectorFromCache : IMimeDetector
             auto matches = mimeCache.findMimeTypesByData(data);
             if (!matches.empty) {
                 auto alternative = matches.front; //checking only the first is enough because matches are sorted.
-                if ((mimeType.empty && alternative.weight) || alternative.weight > weight) {
+                if (mimeType.empty || alternative.weight > weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                 }
@@ -249,6 +249,19 @@ final class MimeDetectorFromCache : IMimeDetector
             }
         }
         return null;
+    }
+    
+    /**
+     * See_Also: mime.detector.IMimeDetector.isSubclassOf
+     */
+    bool isSubclassOf(const(char)[] mimeType, const(char)[] parent)
+    {
+        foreach(mimeCache; _mimeCaches) {
+            if (mimeCache.isSubclassOf(mimeType, parent)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**

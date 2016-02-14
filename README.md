@@ -16,7 +16,7 @@ Ddox:
 
 ## Examples
 
-### MimeCache
+### [MimeCache](examples/mimecache/source/app.d)
 
 Run to detect mime type of README.md or other files using mime.cache:
 
@@ -27,15 +27,11 @@ Run to detect mime type of files via magic rules.
     dub run mime:mimecache -- --useMagic examples/mimecache/bin/mimecache lib/libmime.a
 
     
-### MimeDatabase
-
-Print short information on all found MIME types.
-
-    dub run mime:mimedatabase -- --printDatabase=true
+### [MimeDatabase](examples/mimedatabase/source/app.d)
 
 Run to detect mime types of files.
 
-    dub run mime:mimedatabase -- --file=README.md --file=source --file=.gitignore --file=lib/libmime.a
+    dub run mime:mimedatabase -- README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.selections.json
     
 ## TODO
 

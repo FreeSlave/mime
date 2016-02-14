@@ -270,8 +270,9 @@ final class MimeCache
     }
     
     /**
-     * Recursively check if mimeType is subclass of parent. Any mime type is considered to be subclass of itself.
-     * Returns: true if mimeType is subclass of parent or mimeType and parent are equal. False otherwise.
+     * Recursively check if mimeType is subclass of parent.
+     * Note: Mime type is not considered to be subclass of itself.
+     * Returns: true if mimeType is subclass of parent. False otherwise.
      */
     @trusted bool isSubclassOf(const(char)[] mimeType, const(char)[] parent) const {
         //TODO: should check for circular references?
