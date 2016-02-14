@@ -110,15 +110,6 @@ final class MimeType
         return _namespaceUri;
     }
     
-    @nogc @safe string localName() nothrow const {
-        return _localName;
-    }
-    
-    @nogc @safe string localName(string name) nothrow {
-        _localName = name;
-        return _localName;
-    }
-    
     @safe void addAlias(string alias_) nothrow {
         _aliases ~= alias_;
     }
@@ -154,7 +145,6 @@ private:
     string[] _aliases;
     string[] _parents;
     string _namespaceUri;
-    string _localName;
     MimePattern[] _patterns;
     MimeMagic[] _magics;
 }
