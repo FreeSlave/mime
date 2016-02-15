@@ -127,7 +127,6 @@ final class FilesMimeStore : IMimeStore
                 auto namespaces = namespacesFileReader(fileReader(namespacesPath));
                 foreach(namespaceLine; namespaces) {
                     auto mimeType = ensureMimeType(namespaceLine.mimeType);
-                    mimeType.localName = namespaceLine.localName;
                     mimeType.namespaceUri = namespaceLine.namespaceUri;
                 }
             } catch(ErrnoException e) {

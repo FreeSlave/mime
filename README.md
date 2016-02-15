@@ -33,6 +33,10 @@ Run to detect mime types of files.
 
     dub run mime:mimedatabase -- README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.selections.json
     
+Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows using KDE it will be:
+
+    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase.exe /var/run/acpid.socket dub.selections.json
+    
 ## Features
 
 ### Implemented features
