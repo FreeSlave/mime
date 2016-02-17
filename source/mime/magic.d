@@ -3,19 +3,30 @@ module mime.magic;
 import std.exception;
 import mime.common;
 
+/**
+ * One of magic rules in magic definition. Represents <match> element in source XML.
+ */
 struct MagicMatch
 {
+    /**
+     * Type of match value.
+     */
     enum Type {
-        string_, 
-        host16, 
-        host32, 
-        big16, 
-        big32, 
-        little16, 
-        little32, 
-        byte_
+        string_, ///string
+        host16,  ///16-bit value in host endian
+        host32,  ///32-bit value in host endian
+        big16,   ///16-bit value in big endian
+        big32,   ///32-bit value in big endian
+        little16, ///16-bit value in little endian
+        little32, ///32-bit value in little endian
+        byte_    ///single byte value
     }
     
+    /**
+     * Construct MagicMatch from type, value, mask, startOffset and rangeLength
+     * Throws:
+     *  Exception if value length does not match type.
+     */
     @safe this(Type type, immutable(ubyte)[] value, immutable(ubyte)[] mask = null, uint startOffset = 0, uint rangeLength = 1)
     {
         if (mask.length) {
@@ -28,12 +39,12 @@ struct MagicMatch
             case Type.host16:
             case Type.big16:
             case Type.little16:
-                enforce(value.length % 2 == 0, "value length must be multiple of 2 for given type");
+                enforce(value.length == 2, "value length must be 2 for given type");
                 break;
             case Type.host32:
             case Type.big32:
             case Type.little32:
-                enforce(value.length % 4 == 0, "value length must be multiple of 4 for given type");
+                enforce(value.length == 4, "value length must be 4 for given type");
                 break;
         }
         
@@ -43,10 +54,16 @@ struct MagicMatch
         _rangeLength = rangeLength;
     }
     
+    /**
+     * Type of match value.
+     */
     @nogc @safe Type type() nothrow const {
         return _type;
     }
     
+    /**
+     * The offset into the file to look for a match.
+     */
     @nogc @safe uint startOffset() nothrow const {
         return _startOffset;
     }
@@ -55,6 +72,9 @@ struct MagicMatch
         return _startOffset;
     }
     
+    /**
+     * The length of the region in the file to check.
+     */
     @nogc @safe uint rangeLength() nothrow const {
         return _rangeLength;
     }
@@ -63,21 +83,38 @@ struct MagicMatch
         return _rangeLength;
     }
     
+    /**
+     * The value to compare the file contents with
+     */
     @nogc @safe immutable(ubyte)[] value() nothrow const {
         return _value;
     }
     
+    /**
+     * Check if the rule has value mask.
+     */
     @nogc @safe bool hasMask() nothrow const {
         return _mask.length != 0;
     }
+    /**
+     * The number to AND the value in the file with before comparing it to `value'
+     * See_Also: value
+     */
     @nogc @safe immutable(ubyte)[] mask() nothrow const {
         return _mask;
     }
     
+    /**
+     * Get match subrules
+     * Returns: Array of child rules.
+     */
     @nogc @safe auto submatches() nothrow const {
         return _submatches;
     }
     
+    /**
+     * Add subrule to the children of this rule.
+     */
     @safe void addSubmatch(MagicMatch match) nothrow {
         _submatches ~= match;
     }
@@ -92,12 +129,21 @@ private:
     MagicMatch[] _submatches;
 }
 
+/**
+ * Magic definition. Represents <magic> element in souce XML.
+ */
 struct MimeMagic
 {
+    /**
+     * Constructor specifiyng priority for all contained rules.
+     */
     @nogc @safe this(uint weight) {
         _weight = weight;
     }
     
+    /**
+     * Priority for all contained rules.
+     */
     @nogc @safe uint weight() const nothrow {
         return _weight;
     }
@@ -107,14 +153,24 @@ struct MimeMagic
         return _weight;
     }
     
+    /**
+     * Get match rules
+     * Returns: Array of MagicMatch elements.
+     */
     auto matches() const nothrow {
         return _matches;
     }
     
+    /**
+     * Add top-level match rule.
+     */
     void addMatch(MagicMatch match) nothrow {
         _matches ~= match;
     }
     
+    /**
+     * Indicates that magic matches read from less preferable paths must be discarded
+     */
     @nogc @safe bool shouldDeleteMagic() nothrow const {
         return _deleteMagic;
     }
@@ -125,7 +181,7 @@ struct MimeMagic
     }
     
 private:
-    uint _weight;
+    uint _weight = defaultMatchWeight;
     MagicMatch[] _matches;
     bool _deleteMagic;
 }

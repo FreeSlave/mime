@@ -33,16 +33,16 @@ Run to detect mime types of files.
 
     dub run mime:mimedatabase -- README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.selections.json
     
-Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows using KDE it will be:
+Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows with KDE installed it would be:
 
-    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase.exe /var/run/acpid.socket dub.selections.json
+    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase.exe dub.selections.json
     
 ## Features
 
 ### Implemented features
 
 * Reading mime.cache files.
-* Using mime.cache files to match file names against glob patterns, match data against magic rules (not fully implemented) and resolve aliases.
+* Using mime.cache files to match file names against glob patterns, match file contents against magic rules (not fully implemented yet, but works in most cases) and resolve aliases.
 * Reading various files in mime/ subfolder, e.g. globs2, magic and others.
 
 ### Missing features

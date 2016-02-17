@@ -9,7 +9,7 @@
  */
 
 module mime.files.magic;
-import mime.magic;
+public import mime.magic;
 import mime.common;
 
 private {
@@ -78,11 +78,13 @@ private MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
     
     enforce(foundNewLine, "Expected new line character after match rule definition");
     
-    auto type = MagicMatch.Type.byte_;
+    auto type = MagicMatch.Type.string_;
+    
+    //Not sure if this is right...
     if (wordSize == 2) {
-        type = MagicMatch.Type.big16;
+        type = MagicMatch.Type.host16;
     } else if (wordSize == 4) {
-        type = MagicMatch.Type.big32;
+        type = MagicMatch.Type.host32;
     }
     
     auto match = MagicMatch(type, value, mask, startOffset, rangeLength);

@@ -393,13 +393,17 @@ final class MimeCache
         if (magicMatchlet.mask.length == 0 && magicMatchlet.rangeStart + magicMatchlet.value.length <= content.length) {
             if (magicMatchlet.wordSize == 1) {
                 check = content[magicMatchlet.rangeStart..magicMatchlet.rangeStart + magicMatchlet.value.length] == magicMatchlet.value;
-            }
-            //not sure how to deal with for now
-            /+else if (magicMatchlet.wordSize && (magicMatchlet.wordSize % 2 == 0) && (magicMatchlet.valueLength % magicMatchlet.wordSize == 0)) {
+            }/+ 
+            //this is really rare, but should be investigated later
+            else if (magicMatchlet.wordSize != 0 && (magicMatchlet.wordSize % 2 == 0) && (magicMatchlet.valueLength % magicMatchlet.wordSize == 0)) {
                 static if (endian == Endian.littleEndian) {
-                    check = content[magicMatchlet.rangeStart..$].byChar.startsWith(magicMatchlet.value.byChar.retro.chunks(magicMatchlet.wordSize).joiner);
+                    auto byteContent = cast(const(ubyte)[])content;
+                    auto byteValue = cast(const(ubyte)[])magicMatchlet.value;
+                    
+                    check = (byteContent[magicMatchlet.rangeStart..magicMatchlet.rangeStart + magicMatchlet.value.length])
+                    .equal(byteValue.chunks(magicMatchlet.wordSize).map!(r => r.retro).joiner);
                 } else {
-                    check = content[magicMatchlet.rangeStart..$].startsWith(magicMatchlet.value);
+                    check = content[magicMatchlet.rangeStart..magicMatchlet.rangeStart + magicMatchlet.value.length] == magicMatchlet.value;
                 }
             }+/
         }
