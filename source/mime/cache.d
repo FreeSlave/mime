@@ -183,9 +183,14 @@ final class MimeCache
             throw new MimeCacheException("aliases must be sorted by alias name");
         }
         
-        //TODO: check parents tree
         if (!parentEntriesImpl().isSorted!parentEntryCmp) {
             throw new MimeCacheException("parent list must be sorted by mime type name");
+        }
+        
+        foreach (parentEntry; parentEntries()) {
+            foreach (parent; parents(parentEntry.parentsOffset)) {
+                //just iterate over all parents to ensure all is ok
+            }
         }
         
         if (!literalsImpl().isSorted!literalsCmp) {
@@ -193,7 +198,7 @@ final class MimeCache
         }
         
         foreach(glob; globs) {
-            //just iterate over all to ensure all is ok
+            //just iterate over all globs to ensure all is ok
         }
         
         if (!commonIconsImpl(_header.iconsListOffset).isSorted!iconsCmp) {
@@ -208,12 +213,46 @@ final class MimeCache
             throw new MimeCacheException("namespaces must be sorted by namespace uri");
         }
         
-        //TODO: check reverse suffix tree
+        auto rootCount = readValue!uint(_header.reverseSuffixTreeOffset, "root count");
+        auto firstRootOffset = readValue!uint(_header.reverseSuffixTreeOffset + rootCount.sizeof, "first root offset");
+        checkSuffixTree(firstRootOffset, rootCount);
         
         if (!magicMatchesImpl().isSorted!magicMatchesCmp) {
             throw new MimeCacheException("magic matches must be sorted first by weight (descending) and then by mime type names (ascending)");
         }
-        //TODO: check matchLets
+        
+        foreach(magicMatch; magicMatches()) {
+            checkMatchlets(magicMatch.matchletCount, magicMatch.firstMatchletOffset);
+        }
+        
+        if (!magicToDeleteImpl().isSorted!magicToDeleteCmp) {
+            throw new MimeCacheException("magic to delete must be sorted by mime type");
+        }
+    }
+    
+    private void checkMatchlets(uint matchletCount, uint firstMatchletOffset) {
+        foreach(matchlet; magicMatchlets(matchletCount, firstMatchletOffset))
+        {
+            if (matchlet.childrenCount) {
+                checkMatchlets(matchlet.childrenCount, matchlet.firstChildOffset);
+            }
+        }
+    }
+    
+    private void checkSuffixTree(const uint startOffset, const uint count) {
+        for (uint i=0; i<count; ++i) {
+            const size_t offset = startOffset + i * uint.sizeof * 3;
+            auto character = readValue!dchar(offset, "character");
+            
+            if (character) {
+                uint childrenCount = readValue!uint(offset + uint.sizeof, "children count");
+                uint firstChildOffset = readValue!uint(offset + uint.sizeof*2, "first child offset");
+                checkSuffixTree(firstChildOffset, childrenCount);
+            } else {
+                uint mimeTypeOffset = readValue!uint(offset + uint.sizeof, "mime type offset");
+                auto weightAndCs = readValue!uint(offset + uint.sizeof*2, "weight and flags").parseWeightAndFlags;
+            }
+        }
     }
     
     /**
@@ -249,6 +288,11 @@ final class MimeCache
         return iota(parentCount)
                 .map!(i => parentsOffset + parentCount.sizeof + i*uint.sizeof)
                 .map!(offset => readString(readValue!uint(offset, "mime type offset"), "mime type name"));
+    }
+    
+    private @trusted auto parents(uint parentsOffset) const {
+        uint parentCount = readValue!uint(parentsOffset, "parent count");
+        return parents(parentsOffset, parentCount);
     }
     
     /**
@@ -407,16 +451,6 @@ final class MimeCache
                 }
             }+/
         }
-        if(check) {
-            if (magicMatchlet.childrenCount) {
-                foreach(childMatchlet; magicMatchlets(magicMatchlet.childrenCount, magicMatchlet.firstChildOffset)) {
-                    check = check && checkMagic(childMatchlet, content);
-                    if (!check) {
-                        return false;
-                    }
-                }
-            }
-        }
         return check;
     }
     
@@ -429,18 +463,18 @@ final class MimeCache
     @trusted auto findMimeTypesByData(const(void)[] data) const
     {
         return magicMatches()
-            .filter!(match => checkMatchlets(data, match.matchletCount, match.firstMatchletOffset))
+            .filter!(match => testAgainstMatchlets(data, match.matchletCount, match.firstMatchletOffset))
             .map!(match => MimeTypeAlternative(match.mimeType, match.weight));
     }
     
-    private bool checkMatchlets(const(void)[] data, uint matchletCount, uint firstMatchletOffset) const
+    private bool testAgainstMatchlets(const(void)[] data, uint matchletCount, uint firstMatchletOffset) const
     {
         auto content = cast(const(char)[])data;
         foreach(matchlet; magicMatchlets(matchletCount, firstMatchletOffset))
         {
             if (checkMagic(matchlet, content)) {
                 if (matchlet.childrenCount) {
-                    return checkMatchlets(data, matchlet.childrenCount, matchlet.firstChildOffset);
+                    return testAgainstMatchlets(data, matchlet.childrenCount, matchlet.firstChildOffset);
                 } else {
                     return true;
                 }

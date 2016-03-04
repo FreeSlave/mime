@@ -35,7 +35,7 @@ Run to detect mime types of files.
     
 Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows with KDE installed it would be:
 
-    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase.exe dub.selections.json
+    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/mime.lib examples/mimedatabase/bin/mimedatabase.exe dub.selections.json
     
 ## Features
 
@@ -49,3 +49,4 @@ Automated mime path detection works only on Freedesktop platforms. On other syst
 
 * Reading MIME types from mime/packages sources (requires xml library).
 * Determining MIME type by XMLnamespace if document is xml (requires streaming xml library).
+* treemagic support.
