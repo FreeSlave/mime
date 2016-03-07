@@ -1,6 +1,6 @@
 # Mime
 
-[Shared MIME-info database](http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html) specification implementation in D programming language.
+[Shared MIME-info database](http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html) specification implementation in D programming language. Shared MIME-info database helps to determine media type of file by its name or contents.
 
 [![Build Status](https://travis-ci.org/MyLittleRobo/mime.svg?branch=master)](https://travis-ci.org/MyLittleRobo/mime)
 
@@ -18,11 +18,11 @@ Ddox:
 
 ### [MimeCache](examples/mimecache/source/app.d)
 
-Run to detect mime type of README.md or other files using mime.cache:
+Run to detect mime type of files using mime.cache (files are not required to exist since only names are used):
 
-    dub run mime:mimecache -- README.md lib/libmime.a Makefile CMakeLists.txt test.c test.C test.cpp test.xml
+    dub run mime:mimecache -- README.md lib/libmime.a Makefile CMakeLists.txt test.h test.c test.C test.cpp test.xml test.json image.jpg image.png image.bmp libc.so 
 
-Run to detect mime type of files via magic rules.
+Run to detect mime type of files via magic rules (files should exist in order to read their contents):
     
     dub run mime:mimecache -- --useMagic examples/mimecache/bin/mimecache lib/libmime.a
 
@@ -42,7 +42,7 @@ Automated mime path detection works only on Freedesktop platforms. On other syst
 ### Implemented features
 
 * Reading mime.cache files.
-* Using mime.cache files to match file names against glob patterns, match file contents against magic rules (not fully implemented yet, but works in most cases) and resolve aliases.
+* Using mime.cache files to match file names against glob patterns, match file contents against magic rules (not fully implemented yet, but works in most cases), resolve aliases and find mime type parents.
 * Reading various files in mime/ subfolder, e.g. globs2, magic and others.
 
 ### Missing features

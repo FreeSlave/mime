@@ -66,8 +66,11 @@ final class MimeDetectorFromCache : IMimeDetector
     {
         const(char)[] mimeType;
         uint weight;
-        foreach(mimeCache; _mimeCaches) {
+        foreach(i, mimeCache; _mimeCaches) {
             foreach(alternative; mimeCache.findMimeTypesByLiteral(fileName)) {
+                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
+                    continue;
+                }
                 if (mimeType.empty || alternative.weight > weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
@@ -79,8 +82,12 @@ final class MimeDetectorFromCache : IMimeDetector
         }
         
         size_t lastPatternLength;
+        size_t mimeCacheIndex;
         void exchangeAlternative(MimeTypeAlternativeByName alternative)
         {
+            if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..mimeCacheIndex])) {
+                return;
+            }
             if (mimeType.empty || weight < alternative.weight || (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) {
                 mimeType = alternative.mimeType;
                 weight = alternative.weight;
@@ -90,6 +97,7 @@ final class MimeDetectorFromCache : IMimeDetector
         
         foreach(mimeCache; _mimeCaches) {
             mimeCache.findMimeTypesBySuffix(fileName, &exchangeAlternative);
+            mimeCacheIndex++;
         }
         
         if (mimeType.length) {
@@ -97,8 +105,11 @@ final class MimeDetectorFromCache : IMimeDetector
         }
         
         lastPatternLength = 0;
-        foreach(mimeCache; _mimeCaches) {
+        foreach(i, mimeCache; _mimeCaches) {
             foreach(alternative; mimeCache.findMimeTypesByGlob(fileName)) {
+                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
+                    continue;
+                }
                 if (mimeType.empty || weight < alternative.weight || (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
@@ -119,8 +130,11 @@ final class MimeDetectorFromCache : IMimeDetector
         const(char)[] mimeType;
         uint weight;
         
-        foreach(mimeCache; _mimeCaches) {
+        foreach(i, mimeCache; _mimeCaches) {
             foreach(alternative; mimeCache.findMimeTypesByLiteral(fileName)) {
+                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
+                    continue;
+                }
                 if (mimeType.empty || alternative.weight > weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
@@ -135,8 +149,12 @@ final class MimeDetectorFromCache : IMimeDetector
             return mimeType ~ conflicts;
         }
         
+        size_t mimeCacheIndex;
         void exchangeAlternative(MimeTypeAlternativeByName alternative)
         {
+            if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..mimeCacheIndex])) {
+                return;
+            }
             if (mimeType.empty || weight < alternative.weight) {
                 mimeType = alternative.mimeType;
                 weight = alternative.weight;
@@ -148,14 +166,18 @@ final class MimeDetectorFromCache : IMimeDetector
         
         foreach(mimeCache; _mimeCaches) {
             mimeCache.findMimeTypesBySuffix(fileName, &exchangeAlternative);
+            mimeCacheIndex++;
         }
         
         if (mimeType.length) {
             return mimeType ~ conflicts;
         }
         
-        foreach(mimeCache; _mimeCaches) {
+        foreach(i, mimeCache; _mimeCaches) {
             foreach(alternative; mimeCache.findMimeTypesByGlob(fileName)) {
+                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
+                    continue;
+                }
                 if (mimeType.empty || weight < alternative.weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
@@ -172,6 +194,16 @@ final class MimeDetectorFromCache : IMimeDetector
         return null;
     }
     
+    private bool shouldDiscardGlob(const(char)[] mimeType, const(MimeCache)[] mimeCaches)
+    {
+        foreach(mimeCache; mimeCaches) {
+            if (!mimeCache.findMimeTypesByLiteral("__NOGLOBS__").map!(alternative => alternative.mimeType).find(mimeType).empty) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     /**
      * See_Also: mime.detector.IMimeDetector.mimeTypeForData
      */
@@ -180,14 +212,18 @@ final class MimeDetectorFromCache : IMimeDetector
         const(char)[] mimeType;
         uint weight;
         
-        foreach(mimeCache; _mimeCaches) {
-            auto matches = mimeCache.findMimeTypesByData(data);
-            if (!matches.empty) {
-                auto alternative = matches.front; //checking only the first is enough because matches are sorted.
+        foreach(i, mimeCache; _mimeCaches) {
+            foreach(alternative; mimeCache.findMimeTypesByData(data)) {
+                bool shouldDiscard = shouldDiscardMagic(alternative.mimeType, _mimeCaches[0..i]);
+                if (shouldDiscard) {
+                    continue;
+                }
+                
                 if (mimeType.empty || alternative.weight > weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                 }
+                break;//checking only the first is enough because matches are sorted.
             }
         }
         
@@ -203,8 +239,13 @@ final class MimeDetectorFromCache : IMimeDetector
         const(char)[] mimeType;
         uint weight;
         
-        foreach(mimeCache; _mimeCaches) {
+        foreach(i, mimeCache; _mimeCaches) {
             foreach(alternative; mimeCache.findMimeTypesByData(data)) {
+                bool shouldDiscard = shouldDiscardMagic(alternative.mimeType, _mimeCaches[0..i]);
+                if (shouldDiscard) {
+                    continue;
+                }
+                
                 if (mimeType.empty || alternative.weight > weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
@@ -221,6 +262,16 @@ final class MimeDetectorFromCache : IMimeDetector
             return mimeType ~ conflicts;
         }
         return null;
+    }
+    
+    private bool shouldDiscardMagic(const(char)[] mimeType, const(MimeCache)[] mimeCaches) 
+    {
+        foreach(mimeCache; mimeCaches) {
+            if (!mimeCache.magicToDelete().equalRange(mimeType).empty) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**

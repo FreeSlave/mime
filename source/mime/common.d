@@ -84,7 +84,7 @@ unittest
 @trusted string defaultGenericIconName(string mimeType) nothrow pure
 {
     auto t = parseMimeTypeName(mimeType);
-    if (t.media) {
+    if (t.media.length) {
         return t.media ~ "-x-generic";
     }
     return null;
@@ -106,8 +106,15 @@ enum uint defaultMatchWeight = 50;
 /**
  * Check is pattern is __NOGLOBS__. This means glob patterns from the less preferable MIME paths should be ignored.
  */
-@nogc @safe bool isNoGlobs(String)(String pattern) pure nothrow if (is(String : const(char)[])) {
-    return pattern == "__NOGLOBS__";
+@nogc @safe bool isNoGlobs(T)(const(T)[] pattern) pure nothrow if (is(T : char) || is(T : ubyte) || is(T : byte) || is(T : void)) {
+    return cast(const(ubyte)[])pattern == cast(const(ubyte)[])"__NOGLOBS__";
+}
+
+///
+unittest
+{
+    assert(isNoGlobs("__NOGLOBS__"));
+    assert(!isNoGlobs("someglob"));
 }
 
 /**
@@ -115,4 +122,11 @@ enum uint defaultMatchWeight = 50;
  */
 @nogc @trusted bool isNoMagic(T)(const(T)[] value) pure nothrow if (is(T : char) || is(T : ubyte) || is(T : byte) || is(T : void)) {
     return cast(const(ubyte)[])value == cast(const(ubyte)[])"__NOMAGIC__";
+}
+
+///
+unittest
+{
+    assert(isNoMagic("__NOMAGIC__"));
+    assert(!isNoMagic("somemagic"));
 }

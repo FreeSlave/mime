@@ -29,7 +29,7 @@ void main(string[] args)
     auto database = new MimeDatabase(mimePaths);
     
     foreach(filePath; filePaths) {
-        writefln("MIME type of %s according to", filePath);
+        writefln("MIME type of '%s' according to", filePath);
         
         auto mimeType = rebindable(database.mimeTypeForFile(filePath, MimeDatabase.Match.globPatterns));
         writefln("\tglob patterns:\t%s", mimeType ? mimeType.name : "unknown");

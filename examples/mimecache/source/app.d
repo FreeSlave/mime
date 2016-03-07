@@ -52,14 +52,19 @@ int main(string[] args)
     
     foreach(fileToCheck; files) {
         if (useMagic) {
-            auto data = std.file.read(fileToCheck, 64);
-            auto mimeType = mimeDetector.mimeTypeForData(data);
-            auto alternatives = mimeDetector.mimeTypesForData(data);
-            
-            if (mimeType.length) {
-                writefln("%s: %s. Alternatives: %s", fileToCheck, mimeType, alternatives);
-            } else {
-                writefln("%s: could not detect mime type", fileToCheck);
+            try {
+                auto data = std.file.read(fileToCheck, 256);
+                auto mimeType = mimeDetector.mimeTypeForData(data);
+                auto alternatives = mimeDetector.mimeTypesForData(data);
+                
+                if (mimeType.length) {
+                    writefln("%s: %s. Alternatives: %s", fileToCheck, mimeType, alternatives);
+                } else {
+                    writefln("%s: could not detect mime type", fileToCheck);
+                }
+            }
+            catch(FileException e) {
+                stderr.writeln(e.msg);
             }
         } else {
             auto mimeType = mimeDetector.mimeTypeForFileName(fileToCheck);

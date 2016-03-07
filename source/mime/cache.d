@@ -197,7 +197,7 @@ final class MimeCache
             throw new MimeCacheException("literals must be sorted by literal");
         }
         
-        foreach(glob; globs) {
+        foreach(glob; globs()) {
             //just iterate over all globs to ensure all is ok
         }
         
@@ -606,7 +606,9 @@ final class MimeCache
     }
     
     private @trusted auto magicToDeleteImpl() const {
-        return allMagicMatchesImpl().until!(m => m.weight != 0).map!(m => m.mimeType);
+        auto allMatches = allMagicMatchesImpl();
+        auto count = allMatches.countUntil!(m => m.weight != 0);
+        return allMatches.take(count).map!(m => m.mimeType);
     }
     
     private enum magicToDeleteCmp = "a < b";
