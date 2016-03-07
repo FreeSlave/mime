@@ -38,7 +38,7 @@ version(Posix)
                 return "inode/symlink";
             }
         } catch(Exception e) {
-            
+            //pass
         }
         return null;
     }
@@ -56,15 +56,20 @@ version(Posix)
         import std.string : toStringz;
         
         stat_t statbuf;
-        if (stat(toStringz(fileName), &statbuf) == 0) {
-            return inodeMimeType(statbuf.st_mode);
+        try {
+            if (stat(toStringz(fileName), &statbuf) == 0) {
+                return inodeMimeType(statbuf.st_mode);
+            }
+        } catch(Exception e) {
+            //pass
         }
+        
         return null;
     } else {
         bool ok;
         collectException(fileName.isDir, ok);
         if (ok) {
-            return mimeType("inode/directory");
+            return "inode/directory";
         } else {
             return null;
         }
