@@ -13,7 +13,7 @@ module mime.files.globs;
 public import mime.files.common;
 
 private {
-    import mime.common : defaultGlobWeight;
+    import mime.common : defaultGlobWeight, isNoGlobs;
     
     import std.algorithm;
     import std.conv : parse;
@@ -54,7 +54,7 @@ alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseS
             throw new MimeFileException("Malformed globs file: the line has wrong format", line);
         }
         
-        return GlobLine(defaultGlobWeight, mimeType, pattern, false);
+        return GlobLine(isNoGlobs(pattern) ? 0 : defaultGlobWeight, mimeType, pattern, false);
     });
 }
 
@@ -64,6 +64,7 @@ unittest
     string[] lines = ["#comment", "text/x-c++src:*.cpp", "text/x-csrc:*.c"];
     auto expected = [GlobLine(defaultGlobWeight, "text/x-c++src", "*.cpp", false), GlobLine(defaultGlobWeight, "text/x-csrc", "*.c", false)];
     assert(equal(globsFileReader(lines), expected));
+    assert(equal(globsFileReader(["text/plain:__NOGLOBS__"]), [GlobLine(0, "text/plain", "__NOGLOBS__", false)]));
     
     assertThrown!MimeFileException(globsFileReader(["#comment", "text/plain:*.txt", "nocolon"]).array, "must throw");
 }
