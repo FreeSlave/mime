@@ -1,5 +1,5 @@
 /**
- * Various utility functions.
+ * Text utility functions.
  * Authors: 
  *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
  * License: 
@@ -8,40 +8,7 @@
  *  Roman Chistokhodov, 2016
  */
 
-module mime.utils;
-
-private import mime.common;
-
-version(Posix)
-{
-    import core.sys.posix.sys.stat;
-    
-    /**
-     * Get mime type from stat mode.
-     * Returns: inode/* mime type name for mode or null if unknown. Regular files don't have inode/* type.
-     * Note: This function is Posix-only.
-     */
-    @nogc @trusted string inodeMimeType(mode_t mode) nothrow
-    {
-        if (S_ISREG(mode)) {
-            //skip
-        } else if (S_ISDIR(mode)) {
-            return "inode/directory";
-        } else if (S_ISCHR(mode)) {
-            return "inode/chardevice";
-        } else if (S_ISBLK(mode)) {
-            return "inode/blockdevice";
-        } else if (S_ISFIFO(mode)) {
-            return "inode/fifo";
-        } else if (S_ISSOCK(mode)) {
-            return "inode/socket";
-        } else if (S_ISLNK(mode)) {
-            return "inode/symlink";
-        }
-        
-        return null;
-    }
-}
+module mime.text;
 
 private bool isValidUnicodeTail(const(char)[] tail)
 {

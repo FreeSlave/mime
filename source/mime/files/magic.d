@@ -23,6 +23,14 @@ private {
     import std.typecons;
 }
 
+///Exception thrown on parse errors while reading shared MIME database magic file.
+final class MimeMagicFileException : Exception
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null) pure nothrow @safe {
+        super(msg, file, line, next);
+    }
+}
+
 alias Tuple!(immutable(char)[], "mimeType", MimeMagic, "magic") MagicEntry;
 
 private MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
@@ -118,40 +126,57 @@ private uint parseIndent(ref immutable(char)[] current)
 
 /**
  * Reads magic file contents and push magic entries to sink.
+ * Throws: 
+ *  Exception on error.
  */
 @trusted void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
 {
-    enum mimeMagic = "MIME-Magic\0\n";
-    auto content = cast(immutable(char)[])data;
-    if (!content.startsWith(mimeMagic)) {
-        throw new Exception("Not mime magic file");
-    }
-    
-    auto current = content[mimeMagic.length..$];
-    
-    while(current.length) {
-        enforce(current[0] == '[', "Expected '[' at the start of magic section");
-        current = current[1..$];
-        
-        auto result = findSplit(current[0..$], "]\n");
-        enforce(result[1].length, "Could not find \"]\\n\"");
-        current = result[2];
-        
-        auto sectionResult = findSplit(result[0], ":");
-        enforce(sectionResult[1].length, "Priority and MIME type must be splitted by ':'");
-        
-        uint priority = parse!uint(sectionResult[0]);
-        auto mimeType = sectionResult[2];
-        
-        auto magic = MimeMagic(priority);
-        
-        while (current.length && current[0] != '[') {
-            uint indent = parseIndent(current);
-            
-            MagicMatch match = parseMagicMatch(current, indent);
-            magic.addMatch(match);
+    try {
+        enum mimeMagic = "MIME-Magic\0\n";
+        auto content = cast(immutable(char)[])data;
+        if (!content.startsWith(mimeMagic)) {
+            throw new Exception("Not mime magic file");
         }
-        sink(MagicEntry(mimeType, magic));
+        
+        auto current = content[mimeMagic.length..$];
+        
+        while(current.length) {
+            enforce(current[0] == '[', "Expected '[' at the start of magic section");
+            current = current[1..$];
+            
+            auto result = findSplit(current[0..$], "]\n");
+            enforce(result[1].length, "Could not find \"]\\n\"");
+            current = result[2];
+            
+            auto sectionResult = findSplit(result[0], ":");
+            enforce(sectionResult[1].length, "Priority and MIME type must be splitted by ':'");
+            
+            uint priority = parse!uint(sectionResult[0]);
+            auto mimeType = sectionResult[2];
+            
+            auto magic = MimeMagic(priority);
+            
+            while (current.length && current[0] != '[') {
+                uint indent = parseIndent(current);
+                
+                MagicMatch match = parseMagicMatch(current, indent);
+                magic.addMatch(match);
+            }
+            sink(MagicEntry(mimeType, magic));
+        }
+    } catch (Exception e) {
+        throw new MimeMagicFileException(e.msg, e.file, e.line, e.next);
     }
 }
 
+///
+unittest
+{
+    auto data = "MIME-Magic\0\n[60:text/x-diff]\n1>4=\x00\x02\x55\x40&\xff\xf0~2+8\n";
+    
+    void sink(MagicEntry t) {
+        assert(t.mimeType == "text/x-diff");
+        assert(t.magic.weight == 60);
+    }
+    magicFileReader(data, &sink);
+}

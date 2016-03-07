@@ -10,10 +10,11 @@
 
 module mime.files.icons;
 
-public import mime.files.exception;
+public import mime.files.common;
 
 private {
     import std.algorithm;
+    import std.exception;
     import std.range;
     import std.string;
     import std.traits;
@@ -32,10 +33,10 @@ alias Tuple!(string, "mimeType", string, "iconName") IconLine;
  */
 @trusted auto iconsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {
-    return byLine.filter!(s => !s.empty).map!(function(string line) {
+    return byLine.filter!(lineFilter).map!(function(string line) {
         auto result = findSplit(line, ":");
         if (result[1].empty) {
-            throw new MimeFileException("Malformed icons file", line);
+            throw new MimeFileException("Malformed icons file: mime type and icon must be separated by colon", line);
         } else {
             return IconLine(result[0], result[2]);
         }
@@ -48,4 +49,6 @@ unittest
     string[] lines = ["application/x-archive:package-x-generic", "application/x-perl:text-x-script"];
     auto expected = [IconLine("application/x-archive", "package-x-generic"), IconLine("application/x-perl", "text-x-script")];
     assert(equal(iconsFileReader(lines), expected));
+    
+    assertThrown!MimeFileException(iconsFileReader(["application/nocolon"]).array, "must throw");
 }

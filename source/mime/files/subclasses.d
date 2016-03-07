@@ -10,10 +10,11 @@
 
 module mime.files.subclasses;
 
-public import mime.files.exception;
+public import mime.files.common;
 
 private {
     import std.algorithm;
+    import std.exception;
     import std.range;
     import std.traits;
     import std.typecons;
@@ -30,7 +31,7 @@ alias Tuple!(string, "mimeType", string, "parent") SubclassLine;
  *  MimeFileException on parsing error.
  */
 @trusted auto subclassesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
-    return byLine.map!(function(string line) {
+    return byLine.filter!(lineFilter).map!(function(string line) {
         auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {
             auto mimeType = splitted.front;
@@ -50,4 +51,6 @@ unittest
     string[] lines = ["application/javascript application/ecmascript", "text/x-markdown text/plain"];
     auto expected = [SubclassLine("application/javascript", "application/ecmascript"), SubclassLine("text/x-markdown", "text/plain")];
     assert(equal(subclassesFileReader(lines), expected));
+    
+    assertThrown!MimeFileException(subclassesFileReader(["application/javascript"]).array, "must throw");
 }

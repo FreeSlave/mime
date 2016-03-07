@@ -38,7 +38,7 @@ unittest
     assert(t.media == "text" && t.subtype == "plain");
     
     t = parseMimeTypeName("not mime type");
-    assert(t.media is null && t.subtype is null);
+    assert(t.media == string.init && t.subtype == string.init);
 }
 
 /**
@@ -55,6 +55,9 @@ unittest
 {
     assert( isValidMimeTypeName("text/plain"));
     assert(!isValidMimeTypeName("not mime type"));
+    assert(!isValidMimeTypeName("text/"));
+    assert(!isValidMimeTypeName("/plain"));
+    assert(!isValidMimeTypeName("/"));
 }
 
 /**

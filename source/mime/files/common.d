@@ -1,5 +1,5 @@
 /**
- * Exception thrown on parse errors while reading shared MIME database files.
+ * Common code for modules that read shared MIME-info database files.
  * Authors: 
  *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
  * License: 
@@ -8,12 +8,12 @@
  *  Roman Chistokhodov, 2015
  */
 
-module mime.files.exception;
+module mime.files.common;
 
 import mime.common;
 
-///Exception thrown on parse errors while reading shared MIME database files.
-class MimeFileException : Exception
+///Exception thrown on parse errors while reading shared MIME-info database files.
+final class MimeFileException : Exception
 {
     this(string msg, string lineString, string file = __FILE__, size_t line = __LINE__, Throwable next = null) pure nothrow @safe {
         super(msg, file, line, next);
@@ -28,3 +28,6 @@ class MimeFileException : Exception
 private:
     string _lineString;
 }
+
+package enum string lineFilter = "!a.empty && a[0] != '#'";
+

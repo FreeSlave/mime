@@ -10,10 +10,11 @@
 
 module mime.files.aliases;
 
-public import mime.files.exception;
+public import mime.files.common;
 
 private {
     import std.algorithm;
+    import std.exception;
     import std.range;
     import std.traits;
     import std.typecons;
@@ -30,7 +31,7 @@ alias Tuple!(string, "aliasName", string, "mimeType") AliasLine;
  *  MimeFileException on parsing error.
  */
 @trusted auto aliasesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
-    return byLine.filter!(s => !s.empty).map!(function(string line) {
+    return byLine.filter!(lineFilter).map!(function(string line) {
         auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {
             auto aliasName = splitted.front;
@@ -50,4 +51,6 @@ unittest
     string[] lines = ["application/acrobat application/pdf", "application/ico image/vnd.microsoft.icon"];
     auto expected = [AliasLine("application/acrobat", "application/pdf"), AliasLine("application/ico", "image/vnd.microsoft.icon")];
     assert(equal(aliasesFileReader(lines), expected));
+    
+    assertThrown!MimeFileException(aliasesFileReader(["application/aliasonly"]).array, "must throw");
 }

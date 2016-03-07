@@ -21,6 +21,7 @@ private {
     import std.path;
     import std.range;
     import std.stdio;
+    import std.typecons;
     
     import mime.files.aliases;
     import mime.files.globs;
@@ -28,6 +29,7 @@ private {
     import mime.files.magic;
     import mime.files.namespaces;
     import mime.files.subclasses;
+    import mime.files.types;
 }
 
 private @trusted auto fileReader(string fileName) {
@@ -49,6 +51,67 @@ private bool fileExists(string fileName) {
  */
 final class FilesMimeStore : IMimeStore
 {
+    alias Tuple!(string, "fileName", Exception, "e") FileError;
+    
+    /**
+     * Options to use when reading various shared MIME-info database files.
+     */
+    struct Options
+    {
+        enum : ubyte {
+            skip = 0, ///Don't try to read file.
+            read = 1, ///Try do read file.
+            throwReadError = 2, ///Throw on file reading error.
+            throwParseError = 4, ///Throw on file parsing error.
+            saveErrors = 8, ///Save non-thrown errors to retrieve later via errors method.
+            
+            optional = read | throwParseError,   ///Read file if it's readable. Throw only on malformed contents.
+            required = read | throwReadError | throwParseError,   ///Always try to read file, throw on any error.
+            allowFail = read,  ///Don't throw if file can't be read or has invalid contents.    
+        }
+        
+        ubyte types = optional;        ///Options for reading types file.
+        ubyte aliases = optional;      ///Options for reading aliases file.
+        ubyte subclasses = optional;   ///Options for reading subclasses file.
+        ubyte icons = optional;        ///Options for reading icons file.
+        ubyte genericIcons = optional; ///Options for reading generic-icons file.
+        ubyte XMLnamespaces = optional;///Options for reading XMLnamespaces file.
+        ubyte globs2 = optional;       ///Options for reading globs2 file.
+        ubyte globs = optional;        ///Options for reading globs file. Used only if globs2 file could not or was not read.
+        ubyte magic = optional;        ///Options for reading magic file.
+    }
+    
+    private void handleError(Exception e, ubyte option, string fileName)
+    {
+        auto me = cast(MimeFileException)e;
+        auto mme = cast(MimeMagicFileException)e;
+        if ((me !is null || mme !is null) && option & Options.throwParseError) {
+            if (me) {
+                throw me;
+            } else {
+                throw mme;
+            }
+        }
+        
+        auto ee = cast(ErrnoException)e;
+        auto fe = cast(FileException)e;
+        if ((ee !is null || fe !is null) && option & Options.throwReadError) {
+            if (ee) {
+                throw ee;
+            } else {
+                throw fe;
+            }   
+        }
+        
+        if (ee is null && fe is null && me is null && mme is null) {
+            throw e;
+        }
+        
+        if (option & Options.saveErrors) {
+            _errors ~= FileError(fileName, e);
+        }
+    }
+    
     /**
      * Constructor based on MIME paths.
      * Params:
@@ -58,7 +121,7 @@ final class FilesMimeStore : IMimeStore
      *  ErrnoException if some important file does not exist or could not be read.
      * See_Also: mime.paths.mimePaths
      */
-    @trusted this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
+    @trusted this(Range)(Range mimePaths, Options options = Options.init) if (isInputRange!Range && is(ElementType!Range : string))
     {
         foreach(mimePath; mimePaths.retro) {
             bool dirExists;
@@ -67,90 +130,120 @@ final class FilesMimeStore : IMimeStore
                 continue;
             }
             
-            auto typesPath = buildPath(mimePath, "types");
-            try {
-                foreach(line; File(typesPath, "r").byLine()) {
-                    if (line.length) {
+            if (options.types & Options.read) {
+                auto typesPath = buildPath(mimePath, "types");
+                try {
+                    foreach(line; typesFileReader(fileReader(typesPath))) {
                         ensureMimeType(line);
                     }
+                } catch(Exception e) {
+                    handleError(e, options.types, typesPath);
                 }
-            } catch(ErrnoException e) {
-                
             }
             
-            auto aliasesPath = buildPath(mimePath, "aliases");
-            try {
-                auto aliases = aliasesFileReader(fileReader(aliasesPath));
-                foreach(aliasLine; aliases) {
-                    auto mimeType = ensureMimeType(aliasLine.mimeType);
-                    mimeType.addAlias(aliasLine.aliasName);
+            if (options.aliases & Options.read) {
+                auto aliasesPath = buildPath(mimePath, "aliases");
+                try {
+                    auto aliases = aliasesFileReader(fileReader(aliasesPath));
+                    foreach(aliasLine; aliases) {
+                        auto mimeType = ensureMimeType(aliasLine.mimeType);
+                        mimeType.addAlias(aliasLine.aliasName);
+                    }
+                } catch(Exception e) {
+                    handleError(e, options.aliases, aliasesPath);
                 }
-            } catch(ErrnoException e) {
-                
             }
             
-            auto subclassesPath = buildPath(mimePath, "subclasses");
-            try {
-                auto subclasses = subclassesFileReader(fileReader(subclassesPath));
-                foreach(subclassLine; subclasses) {
-                    auto mimeType = ensureMimeType(subclassLine.mimeType);
-                    mimeType.addParent(subclassLine.parent);
+            if (options.subclasses & Options.read) {
+                auto subclassesPath = buildPath(mimePath, "subclasses");
+                try {
+                    auto subclasses = subclassesFileReader(fileReader(subclassesPath));
+                    foreach(subclassLine; subclasses) {
+                        auto mimeType = ensureMimeType(subclassLine.mimeType);
+                        mimeType.addParent(subclassLine.parent);
+                    }
+                } catch(Exception e) {
+                    handleError(e, options.subclasses, subclassesPath);
                 }
-            } catch(ErrnoException e) {
-                
             }
             
-            auto iconsPath = buildPath(mimePath, "icons");
-            try {
-                auto icons = iconsFileReader(fileReader(iconsPath));
-                foreach(iconLine; icons) {
-                    auto mimeType = ensureMimeType(iconLine.mimeType);
-                    mimeType.icon = iconLine.iconName;
+            if (options.icons & Options.read) {
+                auto iconsPath = buildPath(mimePath, "icons");
+                try {
+                    auto icons = iconsFileReader(fileReader(iconsPath));
+                    foreach(iconLine; icons) {
+                        auto mimeType = ensureMimeType(iconLine.mimeType);
+                        mimeType.icon = iconLine.iconName;
+                    }
+                } catch(ErrnoException e) {
+                    handleError(e, options.icons, iconsPath);
                 }
-            } catch(ErrnoException e) {
-                
             }
             
-            auto genericIconsPath = buildPath(mimePath, "generic-icons");
-            try {
-                auto icons = iconsFileReader(fileReader(genericIconsPath));
-                foreach(iconLine; icons) {
-                    auto mimeType = ensureMimeType(iconLine.mimeType);
-                    mimeType.genericIcon = iconLine.iconName;
+            if (options.genericIcons & Options.read) {
+                auto genericIconsPath = buildPath(mimePath, "generic-icons");
+                try {
+                    auto icons = iconsFileReader(fileReader(genericIconsPath));
+                    foreach(iconLine; icons) {
+                        auto mimeType = ensureMimeType(iconLine.mimeType);
+                        mimeType.genericIcon = iconLine.iconName;
+                    }
+                } catch(Exception e) {
+                    handleError(e, options.genericIcons, genericIconsPath);
                 }
-            } catch(ErrnoException e) {
-                
             }
             
-            auto namespacesPath = buildPath(mimePath, "XMLnamespaces");
-            try {
-                auto namespaces = namespacesFileReader(fileReader(namespacesPath));
-                foreach(namespaceLine; namespaces) {
-                    auto mimeType = ensureMimeType(namespaceLine.mimeType);
-                    mimeType.namespaceUri = namespaceLine.namespaceUri;
+            if (options.XMLnamespaces & Options.read) {
+                auto namespacesPath = buildPath(mimePath, "XMLnamespaces");
+                try {
+                    auto namespaces = namespacesFileReader(fileReader(namespacesPath));
+                    foreach(namespaceLine; namespaces) {
+                        auto mimeType = ensureMimeType(namespaceLine.mimeType);
+                        mimeType.namespaceUri = namespaceLine.namespaceUri;
+                    }
+                } catch(Exception e) {
+                    handleError(e, options.XMLnamespaces, namespacesPath);
                 }
-            } catch(ErrnoException e) {
-                
             }
             
-            auto globsPath = buildPath(mimePath, "globs2");
-            if (globsPath.fileExists) {
-                setGlobs(globsFileReader(fileReader(globsPath)));
+            bool shouldReadGlobs = false;
+            if (options.globs2 & Options.read) {
+                auto globs2Path = buildPath(mimePath, "globs2");
+                try {
+                    setGlobs(globs2FileReader(fileReader(globs2Path)));
+                } catch(Exception e) {
+                    handleError(e, options.globs2, globs2Path);
+                    shouldReadGlobs = true;
+                }
             } else {
-                globsPath = buildPath(mimePath, "globs");
-                setGlobs(globsFileReader(fileReader(globsPath)));
+                shouldReadGlobs = true;
             }
             
-            auto magicPath = buildPath(mimePath, "magic");
-            void sink(MagicEntry t) {
-                auto mimeType = ensureMimeType(t.mimeType);
-                if (t.magic.shouldDeleteMagic()) {
-                    mimeType.clearMagic();
-                } else {
-                    mimeType.addMagic(t.magic);
+            if (shouldReadGlobs && (options.globs & Options.read)) {
+                auto globsPath = buildPath(mimePath, "globs");
+                try {
+                    setGlobs(globsFileReader(fileReader(globsPath)));
+                } catch(Exception e) {
+                    handleError(e, options.globs, globsPath);
                 }
             }
-            magicFileReader(assumeUnique(std.file.read(magicPath)), &sink);
+            
+            if (options.magic & Options.read) {
+                auto magicPath = buildPath(mimePath, "magic");
+                try {
+                    void sink(MagicEntry t) {
+                        auto mimeType = ensureMimeType(t.mimeType);
+                        if (t.magic.shouldDeleteMagic()) {
+                            mimeType.clearMagic();
+                        } else {
+                            mimeType.addMagic(t.magic);
+                        }
+                    }
+                    magicFileReader(assumeUnique(std.file.read(magicPath)), &sink);
+                } catch(Exception e) {
+                    handleError(e, options.magic, magicPath);
+                }
+            }
         }
     }
     
@@ -164,13 +257,24 @@ final class FilesMimeStore : IMimeStore
     /**
      * See_Also: mime.store.IMimeStore.mimeType
      */
-    const(MimeType) mimeType(const char[] name) {
+    Rebindable!(const(MimeType)) mimeType(const char[] name) {
+        return rebindable(mimeTypeImpl(name));
+    }
+    
+    private final const(MimeType) mimeTypeImpl(const char[] name) {
         MimeType* pmimeType = name in _mimeTypes;
         if (pmimeType) {
             return *pmimeType;
         } else {
             return null;
         }
+    }
+    
+    /**
+     * Get errors that were told to not throw but to be saved during parsing.
+     */
+    const(FileError)[] errors() const {
+        return _errors;
     }
     
 private:
@@ -204,4 +308,5 @@ private:
     }
     
     MimeType[const(char)[]] _mimeTypes;
+    FileError[] _errors;
 }

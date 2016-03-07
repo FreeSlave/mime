@@ -15,7 +15,8 @@ import std.range;
 import mime.store;
 import mime.detector;
 import mime.type;
-import mime.utils;
+import mime.text;
+import mime.inode;
 
 /**
  * High-level class for accessing Shared MIME-info database.
@@ -28,7 +29,7 @@ final class MimeDatabase
         globPatterns = 1,   /// Match file name against glob patterns.
         magicRules   = 2,   /// Match file content against magic rules. With MatchOptions.globPatterns flag it's used only in conflicts.
         //namespaceUri = 4, /// Try to clarify mime type in case it's XML.
-        inodeFallback = 8, /// Provide inode/* fallback for files other than regular files
+        inodeFallback = 8, /// Provide inode/* type for files other than regular files.
         textFallback = 16, /// Provide text/plain fallback if data seems to be textual.
         octetStreamFallback = 32 /// Provide application/octet-stream fallback if data seems to be binary.
     }
@@ -77,7 +78,7 @@ final class MimeDatabase
     /**
      * Get MIME type for given fileName.
      */
-    const(MimeType) mimeTypeForFileName(string fileName)
+    Rebindable!(const(MimeType)) mimeTypeForFileName(string fileName)
     {
         return findExistingAlternative(_detector.mimeTypesForFileName(fileName));
     }
@@ -85,7 +86,7 @@ final class MimeDatabase
     /**
      * Get MIME type for given data.
      */
-    const(MimeType) mimeTypeForData(const(void)[] data)
+    Rebindable!(const(MimeType)) mimeTypeForData(const(void)[] data)
     {
         return findExistingAlternative(_detector.mimeTypesForData(data));
     }
@@ -93,7 +94,7 @@ final class MimeDatabase
     /**
      * Get MIME type for file using methods describing in options.
      */
-    const(MimeType) mimeTypeForFile(string fileName, const(void)[] data, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
+    Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, const(void)[] data, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
     {
         return mimeTypeForFileImpl(fileName, data, options);
     }
@@ -102,15 +103,22 @@ final class MimeDatabase
      * Get MIME type for file using methods describing in options.
      * File contents will be read automatically if needed.
      */
-    const(MimeType) mimeTypeForFile(string fileName, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback|Match.inodeFallback)
+    Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
     {
         return mimeTypeForFileImpl(fileName, null, options);
     }
     
-    private const(MimeType) mimeTypeForFileImpl(string fileName, const(void)[] data, Match options)
+    private auto mimeTypeForFileImpl(string fileName, const(void)[] data, Match options)
     {
         import std.file;
         import std.exception;
+        
+        if (data is null && (options & Match.inodeFallback)) {
+            string inodeType = inodeMimeType(fileName);
+            if (inodeType.length) {
+                return mimeType(inodeType);
+            }
+        }
         
         const(char[])[] mimeTypes;
         if (options & Match.globPatterns) {
@@ -123,44 +131,11 @@ final class MimeDatabase
             }
         }
         
-        if (data is null && (options & (Match.magicRules | Match.textFallback | Match.octetStreamFallback | Match.inodeFallback))) {
-            version(Posix) {
-                import core.sys.posix.sys.stat;
-                import std.string : toStringz;
-                
-                stat_t statbuf;
-                if (stat(toStringz(fileName), &statbuf) == 0) {
-                    mode_t mode = statbuf.st_mode;
-                    if (S_ISREG(mode)) {
-                        //pass through to read data from file
-                    } else if (options & Match.inodeFallback) {
-                        return mimeType(inodeMimeType(mode));
-                    } else {
-                        return findExistingAlternative(mimeTypes);
-                    }
-                } else {
-                    return findExistingAlternative(mimeTypes);
-                }
-            } else {
-                bool ok;
-                collectException(fileName.isFile, ok);
-                if (ok) {
-                    //pass through to read data from file
-                } else if (options & Match.inodeFallback) {
-                    collectException(fileName.isDir, ok);
-                    if (ok) {
-                        return mimeType("inode/directory");
-                    } else {
-                        return null;
-                    }
-                } else {
-                    return findExistingAlternative(mimeTypes);
-                }
-            }
-            
-            // if need data
-            if (options & (Match.magicRules | Match.textFallback | Match.octetStreamFallback )) {
-                collectException(std.file.read(fileName, 256), data);
+        if (data is null && (options & (Match.magicRules | Match.textFallback | Match.octetStreamFallback ))) {
+            try {
+                data = std.file.read(fileName, 256);
+            } catch(Exception e) {
+                //pass
             }
         }
         
@@ -184,10 +159,10 @@ final class MimeDatabase
             return mimeType("application/octet-stream");
         }
         
-        return null;
+        return rebindable(const(MimeType).init);
     }
     
-    private const(MimeType) findExistingAlternative(const(char[])[] conflicts)
+    private auto findExistingAlternative(const(char[])[] conflicts)
     {
         foreach(name; conflicts) {
             auto type = mimeType(name);
@@ -195,26 +170,23 @@ final class MimeDatabase
                 return type;
             }
         }
-        return null;
+        return rebindable(const(MimeType).init);
     }
     
     /**
      * Get mime type by name or alias.
      * Returns: mime.type.MimeType object for given nameOrAlias, resolving alias if needed. Null if no mime type found.
      */
-    const(MimeType) mimeType(const(char)[] nameOrAlias)
+    Rebindable!(const(MimeType)) mimeType(const(char)[] nameOrAlias)
     {
         if (nameOrAlias.length == 0) {
-            return null;
+            return rebindable(const(MimeType).init);
         }
         auto type = _store.mimeType(nameOrAlias);
         if (type is null) {
             auto resolved = _detector.resolveAlias(nameOrAlias);
             if (resolved.length) {
-                auto resolvedType = _store.mimeType(resolved);
-                if (resolvedType) {
-                    return resolvedType;
-                }
+                type = _store.mimeType(resolved);
             }
         }
         return type;

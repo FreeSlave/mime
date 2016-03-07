@@ -1,6 +1,7 @@
 module mime.store;
 
 public import std.range : InputRange;
+public import std.typecons : Rebindable, rebindable;
 public import mime.type;
 
 
@@ -21,5 +22,5 @@ interface IMimeStore
      * Note:
      *  Implementer is not required to resolve alias if name happens to be alias.
      */
-    const(MimeType) mimeType(const char[] name);
+    Rebindable!(const(MimeType)) mimeType(const char[] name);
 }

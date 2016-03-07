@@ -10,10 +10,11 @@
 
 module mime.files.namespaces;
 
-public import mime.files.exception;
+public import mime.files.common;
 
 private {
     import std.algorithm;
+    import std.exception;
     import std.range;
     import std.traits;
     import std.typecons;
@@ -30,7 +31,7 @@ alias Tuple!(string, "namespaceUri", string, "localName", string, "mimeType") Na
  *  MimeFileException on parsing error.
  */
 @trusted auto namespacesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
-    return byLine.filter!(s => !s.empty).map!(function(string line) {
+    return byLine.filter!(lineFilter).map!(function(string line) {
         auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {
             auto namespaceUri = splitted.front;
@@ -54,4 +55,7 @@ unittest
     string[] lines = ["http://www.w3.org/1999/xhtml html application/xhtml+xml", "http://www.w3.org/2000/svg svg image/svg+xml"];
     auto expected = [NamespaceLine("http://www.w3.org/1999/xhtml", "html", "application/xhtml+xml"), NamespaceLine("http://www.w3.org/2000/svg", "svg", "image/svg+xml")];
     assert(equal(namespacesFileReader(lines), expected));
+    
+    assertThrown!MimeFileException(namespacesFileReader(["http://www.example.org nameonly"]).array, "must throw");
+    assertThrown!MimeFileException(namespacesFileReader(["http://www.example.org"]).array, "must throw");
 }
