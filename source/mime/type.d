@@ -65,38 +65,86 @@ final class MimeType
         return _aliases;
     }
     
-    ///First level parents for  this MIME type.
+    ///First level parents for this MIME type.
     @nogc @safe const(string)[] parents() nothrow const {
         return _parents;
     }
     
     /**
-     * Get icon name for the MIME type. 
-     * The default form is MIME type name with '/' replaces with '-'.
+     * Get icon namee.
      */
     @nogc @safe string icon() nothrow const {
         return _icon;
     }
     
-    ///Set icon name for MIME type.
+    ///Set icon name.
     @nogc @safe string icon(string iconName) nothrow {
         _icon = iconName;
         return _icon;
     }
     
     /**
-     * Get generic icon name for the MIME type. 
-     * The default form is media part of MIME type name with '-x-generic' appended.
+     * Get icon name.
+     * The difference from icon property is that this function provides default icon name if no explicitly set.
+     * The default form is MIME type name with '/' replaces with '-'.
+     * Note: This function will allocate every time it's called if no icon explicitly set.
+     */
+    @safe string getIcon() nothrow const {
+        if (_icon.length) {
+            return _icon;
+        } else {
+            return defaultIconName(_name);
+        }
+    }
+    
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("text/mytype");
+        assert(mimeType.icon.length == 0);
+        assert(mimeType.getIcon() == "text-mytype");
+        mimeType.icon = "mytype";
+        assert(mimeType.getIcon() == "mytype");
+        assert(mimeType.icon == "mytype");
+    }
+    
+    /**
+     * Get generic icon name. 
      * Use this if the icon could not be found.
      */
     @nogc @safe string genericIcon() nothrow const {
         return _genericIcon;
     }
     
-    ///Set generic icon name for MIME type.
+    ///Set generic icon name.
     @nogc @safe string genericIcon(string iconName) nothrow {
         _genericIcon = iconName;
         return _genericIcon;
+    }
+    
+    /**
+     * Get generic icon name.
+     * The difference from genericIcon property is that this function provides default generic icon name if no explicitly set.
+     * The default form is media part of MIME type name with '-x-generic' appended.
+     * Note: This function will allocate every time it's called if no generic icon explicitly set.
+     */
+    @safe string getGenericIcon() nothrow const {
+        if (_genericIcon.length) {
+            return _genericIcon;
+        } else {
+            return defaultGenericIconName(_name);
+        }
+    }
+    
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("text/mytype");
+        assert(mimeType.genericIcon.length == 0);
+        assert(mimeType.getGenericIcon() == "text-x-generic");
+        mimeType.genericIcon = "mytype";
+        assert(mimeType.getGenericIcon() == "mytype");
+        assert(mimeType.genericIcon == "mytype");
     }
     
     ///Get namespace uri for XML-based types.
