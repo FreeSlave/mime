@@ -15,27 +15,24 @@ Ddox:
     dub build --build=ddox
 
 ## Examples
-
-### [MimeCache](examples/mimecache/source/app.d)
-
-Run to detect mime type of files using mime.cache (files are not required to exist since only names are used):
-
-    dub run mime:mimecache -- README.md lib/libmime.a Makefile CMakeLists.txt test.h test.c test.C test.cpp test.xml test.json image.jpg image.png image.bmp libc.so 
-
-Run to detect mime type of files via magic rules (files should exist in order to read their contents):
-    
-    dub run mime:mimecache -- --useMagic examples/mimecache/bin/mimecache lib/libmime.a
-
     
 ### [MimeDatabase](examples/mimedatabase/source/app.d)
 
 Run to detect mime types of files.
 
-    dub run mime:mimedatabase -- README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.json
+    dub run mime:mimedatabase -- detect README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.json
     
 Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows with KDE installed it would be:
 
-    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/mime.lib examples/mimedatabase/bin/mimedatabase.exe dub.json
+    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime detect README.md source .gitignore lib/mime.lib examples/mimedatabase/bin/mimedatabase.exe dub.json
+    
+Run to print info about MIME types:
+
+    dub run mime:mimedatabase -- info application/pdf application/x-executable image/png text/plain text/html text/xml
+
+Run to resolve aliases:
+
+    dub run mime:mimedatabase -- resolve application/wwf application/x-pdf application/pgp text/rtf text/xml
     
 ## Features
 
