@@ -66,6 +66,8 @@ version(Posix)
         
         return null;
     } else {
+        import std.exception;
+        import std.file;
         bool ok;
         collectException(fileName.isDir, ok);
         if (ok) {
