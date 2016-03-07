@@ -31,11 +31,11 @@ Run to detect mime type of files via magic rules (files should exist in order to
 
 Run to detect mime types of files.
 
-    dub run mime:mimedatabase -- README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.selections.json
+    dub run mime:mimedatabase -- README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.json
     
 Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows with KDE installed it would be:
 
-    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/mime.lib examples/mimedatabase/bin/mimedatabase.exe dub.selections.json
+    dub run mime:mimedatabase -- --mimepath=C:\ProgramData\KDE\share\mime README.md source .gitignore lib/mime.lib examples/mimedatabase/bin/mimedatabase.exe dub.json
     
 ## Features
 
