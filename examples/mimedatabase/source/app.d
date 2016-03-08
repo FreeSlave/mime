@@ -11,17 +11,17 @@ void detectTypes(MimeDatabase database, string[] filePaths)
     foreach(filePath; filePaths) {
         writefln("MIME type of '%s' according to", filePath);
         
-        auto mimeType = rebindable(database.mimeTypeForFile(filePath, MimeDatabase.Match.globPatterns));
+        auto mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.globPatterns);
         writefln("\tglob patterns:\t%s", mimeType ? mimeType.name : "unknown");
         
         mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.magicRules);
         writefln("\tmagic rules:\t%s", mimeType ? mimeType.name : "unknown");
         
-        mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.textFallback | MimeDatabase.Match.octetStreamFallback);
+        mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.textFallback | MimeDatabase.Match.octetStreamFallback | MimeDatabase.Match.emptyFileFallback);
         writefln("\ttext or binary:\t%s", mimeType ? mimeType.name : "unknown");
         
-        mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.inodeFallback);
-        writefln("\tinode fallback:\t%s", mimeType ? mimeType.name : "unknown");
+        mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.inodeType);
+        writefln("\tinode type:\t%s", mimeType ? mimeType.name : "unknown");
     }
 }
 

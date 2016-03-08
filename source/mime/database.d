@@ -29,9 +29,10 @@ final class MimeDatabase
         globPatterns = 1,   /// Match file name against glob patterns.
         magicRules   = 2,   /// Match file content against magic rules. With MatchOptions.globPatterns flag it's used only in conflicts.
         //namespaceUri = 4, /// Try to clarify mime type in case it's XML.
-        inodeFallback = 8, /// Provide inode/* type for files other than regular files.
+        inodeType = 8, /// Provide inode/* type for files other than regular files.
         textFallback = 16, /// Provide text/plain fallback if data seems to be textual.
-        octetStreamFallback = 32 /// Provide application/octet-stream fallback if data seems to be binary.
+        octetStreamFallback = 32, /// Provide application/octet-stream fallback if data seems to be binary.
+        emptyFileFallback = 64 ///Provide application/x-zerosize fallback if mime type can't be detected, but data is known to be zero size.
     }
     
     /**
@@ -113,7 +114,7 @@ final class MimeDatabase
         import std.file;
         import std.exception;
         
-        if (data is null && (options & Match.inodeFallback)) {
+        if (data is null && (options & Match.inodeType)) {
             string inodeType = inodeMimeType(fileName);
             if (inodeType.length) {
                 return mimeType(inodeType);
@@ -128,6 +129,14 @@ final class MimeDatabase
                 if (type !is null) {
                     return type;
                 }
+            }
+        }
+        
+        if (data is null && (options & Match.emptyFileFallback) && mimeTypes.length == 0) {
+            ulong size;
+            auto e = collectException(fileName.getSize, size);
+            if (e is null && size == 0) {
+                return mimeType("application/x-zerosize");
             }
         }
         
