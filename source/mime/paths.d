@@ -80,6 +80,9 @@ static if (isFreedesktop) {
             environment["XDG_DATA_HOME"] = "/home/myuser/share";
             
             assert(equal(mimePaths(), ["/home/myuser/share/mime", "/myuser/share/mime", "/myuser/share/local/mime"]));
+            
+            environment["XDG_DATA_DIRS"] = "";
+            assert(equal(mimePaths(), ["/home/myuser/share/mime", "/usr/local/share/mime", "/usr/share/mime"]));
         }
         catch (Exception e) {
             import std.stdio;
@@ -115,6 +118,9 @@ static if (isFreedesktop) {
         try {
             environment["XDG_DATA_HOME"] = "/home/myuser/share";
             assert(writableMimePath() == "/home/myuser/share/mime");
+            
+            environment["XDG_DATA_HOME"] = "";
+            assert(writableMimePath() == buildPath(environment["HOME"], ".local/share/mime"));
         }
         catch(Exception e) {
             import std.stdio;

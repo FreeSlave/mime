@@ -23,6 +23,12 @@ private {
  */
 struct MimePattern
 {
+    @nogc @safe this(string glob, uint priority = defaultGlobWeight, bool cs = false) nothrow {
+        pattern = glob;
+        weight = priority;
+        caseSensitive = cs;
+    }
+    
     ///Glob pattern as string.
     string pattern;
     ///Priority of pattern.
@@ -30,16 +36,37 @@ struct MimePattern
     ///Tells whether the pattern should be considered case sensitive or not.
     bool caseSensitive;
     
+    ///Member version of static isLiteral. Uses pattern as argument.
     @nogc @safe bool isLiteral() nothrow pure const {
         return isLiteral(pattern);
     }
+    ///
+    unittest
+    {
+        auto mimePattern = MimePattern("Makefile");
+        assert(mimePattern.isLiteral());
+    }
     
+    ///Member version of static isSuffix. Uses pattern as argument.
     @nogc @safe bool isSuffix() nothrow pure const {
         return isSuffix(pattern);
     }
+    ///
+    unittest
+    {
+        auto mimePattern = MimePattern("*.txt");
+        assert(mimePattern.isSuffix());
+    }
     
+    ///Member version of static isGenericGlob. Uses pattern as argument.
     @nogc @safe bool isGenericGlob() nothrow pure const {
         return isGenericGlob(pattern);
+    }
+    ///
+    unittest
+    {
+        auto mimePattern = MimePattern("lib*.so.[0-9]");
+        assert(mimePattern.isGenericGlob());
     }
     
     private static @nogc @safe bool isGlobSymbol(char c) nothrow pure {
@@ -127,6 +154,15 @@ final class MimeType
     ///The name of MIME type.
     @nogc @safe string name() nothrow const {
         return _name;
+    }
+    
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("text/plain");
+        assert(mimeType.name == "text/plain");
+        mimeType.name = "text/xml";
+        assert(mimeType.name == "text/xml");
     }
     
     ///Set MIME type name.
@@ -245,6 +281,22 @@ final class MimeType
         _aliases ~= alias_;
     }
     
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("text/html");
+        mimeType.addAlias("application/html");
+        mimeType.addAlias("text/x-html");
+        assert(mimeType.aliases == ["application/html", "text/x-html"]);
+        mimeType.clearAliases();
+        assert(mimeType.aliases().empty);
+    }
+    
+    /// Remove all aliases.
+    @safe void clearAliases() nothrow {
+        _aliases = null;
+    }
+    
     /**
      * Add parent type for this MIME type.
      */
@@ -252,13 +304,45 @@ final class MimeType
         _parents ~= parent;
     }
     
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("text/html");
+        mimeType.addParent("text/xml");
+        mimeType.addParent("text/plain");
+        assert(mimeType.parents == ["text/xml", "text/plain"]);
+        mimeType.clearParents();
+        assert(mimeType.parents().empty);
+    }
+    
+    /// Remove all parents.
+    @safe void clearParents() nothrow {
+        _parents = null;
+    }
+    
     /**
      * Add glob pattern for this MIME type.
      */
-    @safe void addPattern(string pattern, uint weight, bool cs) nothrow {
+    @safe void addPattern(string pattern, uint weight = defaultGlobWeight, bool cs = false) nothrow {
         _patterns ~= MimePattern(pattern, weight, cs);
     }
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("image/jpeg");
+        mimeType.addPattern("*.jpg");
+        mimeType.addPattern(MimePattern("*.jpeg"));
+        assert(mimeType.patterns() == [MimePattern("*.jpg"), MimePattern("*.jpeg")]);
+        mimeType.clearPatterns();
+        assert(mimeType.patterns().empty);
+    }
     
+    ///ditto
+    @safe void addPattern(MimePattern mimePattern) nothrow {
+        _patterns ~= mimePattern;
+    }
+    
+    /// Remove all glob patterns.
     @safe void clearPatterns() nothrow {
         _patterns = null;
     }
