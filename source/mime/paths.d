@@ -61,7 +61,7 @@ static if (isFreedesktop) {
      */
     @trusted auto mimePaths() {
         string[] result;
-        collectException(std.algorithm.splitter(environment.get("XDG_DATA_DIRS"), ':').map!(p => buildPath(p, "mime")).array, result);
+        collectException(std.algorithm.splitter(environment.get("XDG_DATA_DIRS"), ':').filter!(p => !p.empty).map!(p => buildPath(p, "mime")).array, result);
         if (result.empty) {
             result = ["/usr/local/share/mime", "/usr/share/mime"];
         }
@@ -81,7 +81,7 @@ static if (isFreedesktop) {
             
             assert(equal(mimePaths(), ["/home/myuser/share/mime", "/myuser/share/mime", "/myuser/share/local/mime"]));
             
-            environment["XDG_DATA_DIRS"] = "";
+            environment["XDG_DATA_DIRS"] = null;
             assert(equal(mimePaths(), ["/home/myuser/share/mime", "/usr/local/share/mime", "/usr/share/mime"]));
         }
         catch (Exception e) {

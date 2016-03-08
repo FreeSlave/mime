@@ -69,14 +69,14 @@ struct MimePattern
         assert(mimePattern.isGenericGlob());
     }
     
-    private static @nogc @safe bool isGlobSymbol(char c) nothrow pure {
+    private @nogc @safe static bool isGlobSymbol(char c) nothrow pure {
         return c == '*' || c == '[' || c == '?';
     }
     
     /**
      * Check if glob is literal, i.e. does not have special glob match characters.
      */
-    static @nogc @safe bool isLiteral(string glob) nothrow pure {
+    @nogc @safe static bool isLiteral(string glob) nothrow pure {
         if (glob.length == 0) {
             return false;
         }
@@ -99,7 +99,7 @@ struct MimePattern
     /**
      * Check if glob is suffix, i.e. starts with '*' and does not have special glob match characters in the rest of pattern.
      */
-    static @nogc @safe bool isSuffix(string glob) nothrow pure {
+    @nogc @safe static bool isSuffix(string glob) nothrow pure {
         if (glob.length > 1 && glob[0] == '*') {
             for (size_t i=1; i<glob.length; ++i) {
                 if (isGlobSymbol(glob[i])) {
@@ -123,7 +123,7 @@ struct MimePattern
     /**
      * Check if glob is some glob pattern other than literal and suffix.
      */
-    static @nogc @safe bool isGenericGlob(string glob) nothrow pure {
+    @nogc @safe static bool isGenericGlob(string glob) nothrow pure {
         return glob.length > 0 && !isLiteral(glob) && !isSuffix(glob);
     }
     
