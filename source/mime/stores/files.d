@@ -32,6 +32,8 @@ private {
     import mime.files.types;
 }
 
+public import mime.files.common;
+
 private @trusted auto fileReader(string fileName) {
     static if( __VERSION__ < 2067 ) {
         return File(fileName, "r").byLine().map!(s => s.idup);
@@ -116,6 +118,7 @@ final class FilesMimeStore : IMimeStore
      * Constructor based on MIME paths.
      * Params:
      *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
+     *  options = Options for file reading and error reporting.
      * Throws:
      *  MimeFileException if some info file has errors.
      *  ErrnoException if some important file does not exist or could not be read.

@@ -1,5 +1,5 @@
 /**
- * Parsing various files in shared MIME database.
+ * Parsing various files of shared MIME-info database.
  * Authors: 
  *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
  * License: 

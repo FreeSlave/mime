@@ -9,5 +9,5 @@
     "targetType" : "library",
     "dependencies": {
     },
-    "subPackages" : ["./examples/mimedatabase"]
+    "subPackages" : ["./examples/mimedatabase", "./examples/mimetest"]
 }

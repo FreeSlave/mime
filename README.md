@@ -34,16 +34,25 @@ Run to resolve aliases:
 
     dub run mime:mimedatabase -- resolve application/wwf application/x-pdf application/pgp text/rtf text/xml
     
+### [MimeTest](examples/mimetest/source/app.d)
+
+Run to test if this library is capable of parsing your local shared MIME-info database:
+
+    dub run mime:mimetest
+    
+As with mimedatabase example you may specify paths to *mime* folder(s) via command line:
+
+    dub run mime:mimetest -- --mimepath=C:\ProgramData\KDE\share\mime
+    
 ## Features
 
 ### Implemented features
 
-* Reading mime.cache files.
-* Using mime.cache files to match file names against glob patterns, match file contents against magic rules (not fully implemented yet, but works in most cases), resolve aliases and find mime type parents.
-* Reading various files in mime/ subfolder, e.g. globs2, magic and others.
+* Reading and using mime.cache files to match file names against glob patterns, match file contents against magic rules, resolve aliases and find mime type parents.
+* Reading various shared MIME-info database files in mime/ subfolder, e.g. globs2, magic and others.
 
 ### Missing features
 
-* Reading MIME types from mime/packages sources (requires xml library).
+* Reading MIME types from mime/packages sources and mime/MEDIA folders (requires xml library).
 * Determining MIME type by XMLnamespace if document is xml (requires streaming xml library).
 * treemagic support.
