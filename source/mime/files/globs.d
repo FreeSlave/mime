@@ -130,5 +130,13 @@ unittest
     assert(equal(globs2FileReader(lines), expected));
     
     assertThrown!MimeFileException(globs2FileReader(["notanumber:text/plain:*.txt"]).array, "must throw");
-    assertThrown!MimeFileException(globs2FileReader(["notanumber:text/nopattern"]).array, "must throw");
+    
+    MimeFileException mfe;
+    try {
+        globs2FileReader(["notanumber:text/nopattern"]).array;
+    } catch(MimeFileException e) {
+        mfe = e;
+        assert(mfe.lineString == "notanumber:text/nopattern");
+    }
+    assert(mfe, "must throw");
 }

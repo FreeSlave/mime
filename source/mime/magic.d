@@ -47,7 +47,7 @@ struct MagicMatch
                 enforce(value.length == 4, "value length must be 4 for given type");
                 break;
         }
-        
+        _type = type;
         _value = value;
         _mask = mask;
         _startOffset = startOffset;

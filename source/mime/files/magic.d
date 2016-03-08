@@ -41,25 +41,31 @@ private MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
     enforce(current.length && current[0] == '=', "Expected '=' after start-offset");
     current = current[1..$];
     
-    enforce(current.length >= 2, "Expected 2 bytes to read value length");
-    ubyte[2] bigEndianLength;
-    bigEndianLength[0] = cast(ubyte)current[0];
-    bigEndianLength[1] = cast(ubyte)current[1];
-    current = current[2..$];
+    immutable(ubyte)[] value;
+    enum noMagic = "__NOMAGIC__";
+    if (current.length >= noMagic.length && current[0..noMagic.length] == noMagic) {
+        value = cast(typeof(value))noMagic;
+    } else {
+        enforce(current.length >= 2, "Expected 2 bytes to read value length");
+        ubyte[2] bigEndianLength;
+        bigEndianLength[0] = cast(ubyte)current[0];
+        bigEndianLength[1] = cast(ubyte)current[1];
+        current = current[2..$];
+        
+        auto valueLength = bigEndianToNative!ushort(bigEndianLength);
+        enforce(current.length >= valueLength, "Value is out of bounds");
+        
+        value = cast(immutable(ubyte)[])(current[0..valueLength]);
+    }
     
-    auto valueLength = bigEndianToNative!ushort(bigEndianLength);
-    enforce(current.length >= valueLength, "Value is out of bounds");
-    
-    auto value = cast(immutable(ubyte)[])(current[0..valueLength]);
-    current = current[valueLength..$];
-    
+    current = current[value.length..$];
     
     typeof(value) mask;
     if (current.length && current[0] == '&') {
         current = current[1..$];
-        enforce(current.length >= valueLength, "Mask is out of bounds");
-        mask = cast(typeof(value))(current[0..valueLength]);
-        current = current[valueLength..$];
+        enforce(current.length >= value.length, "Mask is out of bounds");
+        mask = cast(typeof(value))(current[0..value.length]);
+        current = current[value.length..$];
     }
     
     uint wordSize = 1;
@@ -89,9 +95,9 @@ private MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
     auto type = MagicMatch.Type.string_;
     
     //Not sure if this is right...
-    if (wordSize == 2) {
+    if (wordSize == 2 && value.length == 2) {
         type = MagicMatch.Type.host16;
-    } else if (wordSize == 4) {
+    } else if (wordSize == 4 && value.length == 4) {
         type = MagicMatch.Type.host32;
     }
     
@@ -160,7 +166,11 @@ private uint parseIndent(ref immutable(char)[] current)
                 uint indent = parseIndent(current);
                 
                 MagicMatch match = parseMagicMatch(current, indent);
-                magic.addMatch(match);
+                if (isNoMagic(match.value)) {
+                    magic.shouldDeleteMagic = true;
+                } else {
+                    magic.addMatch(match);
+                }
             }
             sink(MagicEntry(mimeType, magic));
         }
@@ -172,11 +182,34 @@ private uint parseIndent(ref immutable(char)[] current)
 ///
 unittest
 {
-    auto data = "MIME-Magic\0\n[60:text/x-diff]\n1>4=\x00\x02\x55\x40&\xff\xf0~2+8\n";
+    auto data = "MIME-Magic\0\n[60:text/x-diff]\n>0=__NOMAGIC__\n0>4=\x00\x02\x55\x40&\xff\xf0~2+8\n1>12=\x00\x04\x55\x40\xff\xf0~4+10\n";
     
     void sink(MagicEntry t) {
         assert(t.mimeType == "text/x-diff");
         assert(t.magic.weight == 60);
+        assert(t.magic.matches.length == 1);
+        assert(t.magic.shouldDeleteMagic);
+        
+        auto match = t.magic.matches[0];
+        assert(match.startOffset == 4);
+        assert(match.value.length == 2);
+        assert(match.mask.length == 2);
+        assert(match.type == MagicMatch.Type.host16);
+        assert(match.rangeLength == 8);
+        assert(match.submatches.length == 1);
+        
+        auto submatch = match.submatches[0];
+        assert(submatch.startOffset == 12);
+        assert(submatch.value.length == 4);
+        assert(!submatch.hasMask());
+        assert(submatch.type == MagicMatch.Type.host32);
+        assert(submatch.rangeLength == 10);
     }
     magicFileReader(data, &sink);
+    
+    void emptySink(MagicEntry t) {
+        
+    }
+    assertThrown!MimeMagicFileException(magicFileReader("MIME-wrong-magic", &sink));
+    
 }

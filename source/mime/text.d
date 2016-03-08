@@ -79,6 +79,10 @@ unittest
     assert(isTextualData("Copyright ©"));
     assert(isTextualData("0A a!\n\r\t~(){}.?"));
     
+    auto slice = "日本語"[0..$-1]; //case when utf-8 data is splitted
+    assert(isTextualData(slice));
+    
+    assert(!isTextualData(""));
     assert(!isTextualData("abc\x01"));
     assert(!isTextualData("\xFF\xFE"));
     assert(!isTextualData("\xd0\x54"));

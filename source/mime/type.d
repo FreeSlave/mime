@@ -29,6 +29,86 @@ struct MimePattern
     uint weight;
     ///Tells whether the pattern should be considered case sensitive or not.
     bool caseSensitive;
+    
+    @nogc @safe bool isLiteral() nothrow pure const {
+        return isLiteral(pattern);
+    }
+    
+    @nogc @safe bool isSuffix() nothrow pure const {
+        return isSuffix(pattern);
+    }
+    
+    @nogc @safe bool isGenericGlob() nothrow pure const {
+        return isGenericGlob(pattern);
+    }
+    
+    private static @nogc @safe bool isGlobSymbol(char c) nothrow pure {
+        return c == '*' || c == '[' || c == '?';
+    }
+    
+    /**
+     * Check if glob is literal, i.e. does not have special glob match characters.
+     */
+    static @nogc @safe bool isLiteral(string glob) nothrow pure {
+        if (glob.length == 0) {
+            return false;
+        }
+        for (size_t i=0; i<glob.length; ++i) {
+            if (isGlobSymbol(glob[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    ///
+    unittest
+    {
+        assert(isLiteral("Makefile"));
+        assert(!isLiteral(""));
+        assert(!isLiteral("pak[0-9].pak"));
+    }
+    
+    /**
+     * Check if glob is suffix, i.e. starts with '*' and does not have special glob match characters in the rest of pattern.
+     */
+    static @nogc @safe bool isSuffix(string glob) nothrow pure {
+        if (glob.length > 1 && glob[0] == '*') {
+            for (size_t i=1; i<glob.length; ++i) {
+                if (isGlobSymbol(glob[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    ///
+    unittest
+    {
+        assert(isSuffix("*.jpg"));
+        assert(!isSuffix(""));
+        assert(!isSuffix("*"));
+        assert(!isSuffix("*dir[0-9]"));
+    }
+    
+    /**
+     * Check if glob is some glob pattern other than literal and suffix.
+     */
+    static @nogc @safe bool isGenericGlob(string glob) nothrow pure {
+        return glob.length > 0 && !isLiteral(glob) && !isSuffix(glob);
+    }
+    
+    ///
+    unittest
+    {
+        assert(isGenericGlob("lib*.so"));
+        assert(isGenericGlob("*dir[0-9]"));
+        assert(!isGenericGlob(""));
+        assert(!isGenericGlob("Makefile"));
+        assert(!isGenericGlob("*.bmp"));
+    }
 }
 
 /**
@@ -158,14 +238,23 @@ final class MimeType
         return _namespaceUri;
     }
     
+    /**
+     * Add alias for this MIME type.
+     */
     @safe void addAlias(string alias_) nothrow {
         _aliases ~= alias_;
     }
     
+    /**
+     * Add parent type for this MIME type.
+     */
     @safe void addParent(string parent) nothrow {
         _parents ~= parent;
     }
     
+    /**
+     * Add glob pattern for this MIME type.
+     */
     @safe void addPattern(string pattern, uint weight, bool cs) nothrow {
         _patterns ~= MimePattern(pattern, weight, cs);
     }
