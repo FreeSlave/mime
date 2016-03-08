@@ -2,7 +2,7 @@
 
 [Shared MIME-info database](http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html) specification implementation in D programming language. Shared MIME-info database helps to determine media type of file by its name or contents.
 
-[![Build Status](https://travis-ci.org/MyLittleRobo/mime.svg?branch=master)](https://travis-ci.org/MyLittleRobo/mime)
+[![Build Status](https://travis-ci.org/MyLittleRobo/mime.svg?branch=master)](https://travis-ci.org/MyLittleRobo/mime) [![Coverage Status](https://coveralls.io/repos/github/MyLittleRobo/mime/badge.svg?branch=master)](https://coveralls.io/github/MyLittleRobo/mime?branch=master)
 
 ## Generating documentation
 
