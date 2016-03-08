@@ -16,4 +16,3 @@ matrix:
         
 script:
     - dub test --compiler=${DC}
-    - dub build --compiler=${DC}

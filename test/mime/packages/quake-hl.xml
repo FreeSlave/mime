@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <!-- Sprite types -->
+    
+    <mime-type type="image/x-qsprite">
+        <comment>Quake sprite</comment>
+        <magic priority="60">
+            <match value="IDSP" type="string" offset="0">
+                <match value="0x00000001" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*.spr"/>
+        <alias type="application/x-qsprite"/>
+    </mime-type>
+    
+    <mime-type type="image/x-sprite32">
+        <comment>Darkplaces 32bit color sprite</comment>
+        <magic priority="60">
+            <match value="IDSP" type="string" offset="0">
+                <match value="0x00000020" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*.spr32"/>
+        <glob pattern="*.sp2"/>
+        <glob pattern="*.spr"/>
+        <alias type="application/x-sprite32"/>
+    </mime-type>
+    
+    <mime-type type="image/x-hlsprite">
+        <comment>Half-Life sprite</comment>
+        <magic priority="60">
+            <match value="IDSP" type="string" offset="0">
+                <match value="0x00000002" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*.spr"/>
+        <alias type="application/x-hlsprite"/>
+    </mime-type>
+    
+    <mime-type type="image/x-q2sprite">
+        <comment>Quake II sprite</comment>
+        <magic priority="60">
+            <match value="IDS2" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.sp2"/>
+        <alias type="application/x-q2sprite"/>
+    </mime-type>
+    
+    <!-- Text files -->
+    <mime-type type="text/x-fgd">
+        <comment>Game entity definitions file</comment>
+        <sub-class-of type="text/plain"/>
+        <glob pattern="*.fgd"/>
+    </mime-type>
+    
+    <mime-type type="text/x-qcsrc">
+        <comment>QuakeC source code</comment>
+        <sub-class-of type="text/x-csrc"/>
+        <generic-icon name="text-x-csrc"/>
+        <glob pattern="*.qc"/>
+    </mime-type>
+    
+    <mime-type type="text/x-qchdr">
+        <comment>QuakeC header</comment>
+        <sub-class-of type="text/x-chdr"/>
+        <generic-icon name="text-x-chdr"/>
+        <glob pattern="*.qh"/>
+    </mime-type>
+    
+    <mime-type type="text/x-q3shader">
+        <comment>Quake III shader script</comment>
+        <sub-class-of type="text/plain"/>
+        <glob pattern="*.shader"/>
+    </mime-type>
+    
+    <!-- Map source formats -->
+    <mime-type type="application/x-map">
+        <comment>Map source file</comment>
+        <magic priority="50">
+            <match value="&quot;classname&quot; &quot;worldspawn&quot;" type="string" offset="2"/>
+        </magic>
+        <glob pattern="*.map"/>
+    </mime-type>
+    
+    <mime-type type="application/x-rmf">
+        <comment>VHE map source file</comment>
+        <magic priority="60">
+            <match value="\xCD\xCC\x0c@RMF" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.rmf"/>
+    </mime-type>
+    
+    <mime-type type="application/x-vmf">
+        <comment>VHE2 map source file</comment>
+        <glob pattern="*.vmf"/>
+        <alias type="application/vnd.valve.source.map"/>
+    </mime-type>
+    
+    <!-- Archive formats -->
+    <mime-type type="application/x-pak">
+        <comment>Quake/Half-Life package file</comment>
+        <generic-icon name="package-x-generic"/>
+        <magic priority="50">
+            <match value="PACK" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.pak"/>
+    </mime-type>
+    
+    <mime-type type="application/vnd.valve.vpk">
+        <comment>Source engine package file</comment>
+        <generic-icon name="package-x-generic"/>
+        <magic priority="50">
+            <match value="0x3412AA55" type="big32" offset="0"/>
+        </magic>
+        <glob pattern="*dir.vpk"/>
+    </mime-type>
+    
+    <mime-type type="application/x-gcf">
+        <comment>Source engine package file</comment>
+        <generic-icon name="package-x-generic"/>
+        <glob pattern="*.gcf"/>
+        <alias type="application/vnd.valve.gcf"/>
+    </mime-type>
+    
+    <mime-type type="application/x-wad">
+        <comment>Doom WAD package</comment>
+        <generic-icon name="package-x-generic"/>
+        <magic priority="60">
+            <match value="IWAD" type="string" offset="0"/>
+            <match value="PWAD" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.wad"/>
+    </mime-type>
+    
+    <!-- Texture archive formats -->
+    <mime-type type="application/x-wad2">
+        <comment>Quake WAD package</comment>
+        <generic-icon name="package-x-generic"/>
+        <magic priority="60">
+            <match value="WAD2" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.wad"/>
+    </mime-type>
+    
+    <mime-type type="application/x-wad3">
+        <comment>Half-Life WAD package</comment>
+        <generic-icon name="package-x-generic"/>
+        <magic priority="60">
+            <match value="WAD3" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.wad"/>
+    </mime-type>
+    
+    <!-- Textures -->
+    <mime-type type="application/x-lmp">
+        <comment>Quake lump file</comment>
+        <glob pattern="*.lmp"/>
+    </mime-type>
+    
+    <mime-type type="application/x-wal">
+        <comment>Quake II wal texture</comment>
+        <glob pattern="*.wal"/>
+    </mime-type>
+    
+    <mime-type type="image/x-vtf">
+        <comment>Source engine texture</comment>
+        <magic priority="60">
+            <match value="VTF\0" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.vtf" type="string"/>
+        <alias type="image/vnd.valve.source.texture"/>
+        <alias type="application/x-vtf"/>
+    </mime-type>
+    
+    <!-- Model types -->
+    <mime-type type="application/x-hlmdl">
+        <comment>Half-Life model</comment>
+        <magic priority="60">
+            <match value="IDST" type="string" offset="0">
+                <match value="0x0000000a" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*.mdl"/>
+    </mime-type>
+    
+    <mime-type type="application/x-hlmdl-sequence">
+        <comment>Half-Life model sequence</comment>
+        <generic-icon name="application-x-hlmdl"/>
+        <magic priority="60">
+            <match value="IDSQ" type="string" offset="0">
+                <match value="0x0000000a" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*[0-9][0-9].mdl"/>
+    </mime-type>
+    
+    <mime-type type="application/x-hl2mdl">
+        <comment>Source engine model</comment>
+        <magic priority="60">
+            <match value="IDST" type="string" offset="0">
+                <match value="0x00000030" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*.mdl"/>
+        <alias type="model/vnd.valve.source.model.geometry"/>
+    </mime-type>
+    
+    <mime-type type="application/x-mdl">
+        <comment>Quake model</comment>
+        <magic priority="60">
+            <match value="IDPO" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.mdl"/>
+    </mime-type>
+    
+    <mime-type type="application/x-md2">
+        <comment>Quake II model</comment>
+        <magic priority="60">
+            <match value="IDP2" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.md2"/>
+    </mime-type>
+    
+    <mime-type type="application/x-md3">
+        <comment>Quake III model</comment>
+        <magic priority="60">
+            <match value="IDP3" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.md3"/>
+    </mime-type>
+    
+    <mime-type type="application/x-md4">
+        <comment>Quake IV model</comment>
+        <magic priority="60">
+            <match value="IDP4" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.md4"/>
+    </mime-type>
+    
+    <mime-type type="application/x-iqm">
+        <comment>Inter-Quake Model</comment>
+        <magic priority="60">
+            <match value="INTERQUAKEMODEL" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.iqm"/>
+    </mime-type>
+    
+    <!-- Compiled map types -->
+    <mime-type type="application/x-qbsp">
+        <comment>Quake game level</comment>
+        <magic priority="50">
+            <match value="0x0000001d" type="little32" offset="0"/>
+        </magic>
+        <glob pattern="*.bsp"/>
+    </mime-type>
+    
+    <mime-type type="application/x-q2bsp">
+        <comment>Quake II game level</comment>
+        <magic priority="60">
+            <match value="IBSP" type="string" offset="0">
+                <match value="0x00000026" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*.bsp"/>
+    </mime-type>
+    
+    <mime-type type="application/x-q3bsp">
+        <comment>Quake III game level</comment>
+        <magic priority="60">
+            <match value="IBSP" type="string" offset="0">
+                <match value="0x0000002e" type="little32" offset="4"/>
+                <match value="0x0000002f" type="little32" offset="4"/>
+            </match>
+        </magic>
+        <glob pattern="*.bsp"/>
+    </mime-type>
+    
+    <mime-type type="application/x-hlbsp">
+        <comment>GoldSrc game level</comment>
+        <magic priority="50">
+            <match value="0x0000001e" type="little32" offset="0"/>
+        </magic>
+        <glob pattern="*.bsp"/>
+    </mime-type>
+    
+    <mime-type type="application/x-hl2bsp">
+        <comment>Source engine game level</comment>
+        <magic priority="50">
+            <match value="VBSP" type="string" offset="0"/>
+        </magic>
+        <glob pattern="*.bsp"/>
+        <alias type="application/vnd.valve.source.compiled-map"/>
+    </mime-type>
+    
+    <!-- Other -->
+    <mime-type type="application/x-qvm">
+        <comment>Quake III virtual machine bytecode</comment>
+        <magic priority="50">
+            <match value="0x12721444" type="little32" offset="0"/>
+            <match value="0x12721445" type="little32" offset="0"/>
+        </magic>
+        <glob pattern="*.qvm"/>
+    </mime-type>
+    
+</mime-info>

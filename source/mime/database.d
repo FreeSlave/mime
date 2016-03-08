@@ -205,3 +205,48 @@ private:
     IMimeStore _store;
     IMimeDetector _detector;
 }
+
+///
+unittest
+{
+    import mime.stores.files;
+    import mime.detectors.cache;
+    
+    auto mimePaths = ["./test/mime"];
+    
+    alias FilesMimeStore.Options FOptions;
+    FOptions foptions;
+    ubyte opt = FOptions.required;
+    
+    foptions.types = opt;
+    foptions.aliases = opt;
+    foptions.subclasses = opt;
+    foptions.icons = opt;
+    foptions.genericIcons = opt;
+    foptions.XMLnamespaces = opt;
+    foptions.globs2 = opt;
+    foptions.globs = opt;
+    foptions.magic = opt;
+    
+    auto store = new FilesMimeStore(mimePaths, foptions);
+    auto detector = new MimeDetectorFromCache(mimePaths);
+    
+    auto database = new MimeDatabase(store, detector);
+    
+    auto imageSprite = database.mimeType("image/x-hlsprite");
+    auto appSprite = database.mimeType("application/x-hlsprite");
+    assert(imageSprite !is null && imageSprite is appSprite);
+    
+    assert(database.detector().isSubclassOf("text/x-fgd", "text/plain"));
+    auto fgdType = database.mimeTypeForFileName("name.fgd");
+    assert(fgdType !is null);
+    assert(fgdType.name == "text/x-fgd");
+    
+    auto hlsprite = database.mimeTypeForData("IDSP\x02\x00\x00\x00");
+    assert(hlsprite !is null);
+    assert(hlsprite.name == "image/x-hlsprite");
+    
+    auto qsprite = database.mimeTypeForData("IDSP\x01\x00\x00\x00");
+    assert(qsprite !is null);
+    assert(qsprite.name == "image/x-qsprite");
+}
