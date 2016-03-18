@@ -491,7 +491,7 @@ final class MimeCache
      */
     @trusted auto findMimeTypesByGlob(const(char)[] fileName) const {
         fileName = fileName.baseName;
-        return globs().filter!(delegate(GlobEntry glob) { 
+        return globs().filter!(delegate(GlobEntry glob) {
             if (glob.cs) {
                 return globMatch!(std.path.CaseSensitive.yes)(fileName, glob.glob);
             } else {
@@ -680,10 +680,10 @@ private:
                 ));
     }
     
-    @trusted T readValue(T)(size_t offset, string context = null) const if (isIntegral!T || isSomeChar!T)
+    private @trusted static T readValue(T)(const(void)[] data, size_t offset, string context = null) pure
     {
-        if (_data.length >= offset + T.sizeof) {
-            T value = *(cast(const(T)*)_data[offset..(offset+T.sizeof)].ptr);
+        if (data.length >= offset + T.sizeof) {
+            T value = *(cast(const(T)*)data[offset..(offset+T.sizeof)].ptr);
             static if (endian == Endian.littleEndian) {
                 swapByteOrder(value);
             }
@@ -693,12 +693,26 @@ private:
         }
     }
     
-    @trusted auto readString(size_t offset, string context = null) const {
-        if (offset > _data.length) {
+    unittest
+    {
+        ubyte[] data;
+        data.length = 10;
+        assertThrown!MimeCacheException(readValue!uint(data, 7));
+        assertThrown!MimeCacheException(readValue!ushort(data, 9));
+    }
+    
+    @trusted T readValue(T)(size_t offset, string context = null) const pure if (isIntegral!T || isSomeChar!T)
+    {
+        return readValue!T(_data, offset, context);
+    }
+    
+    private @trusted static auto readString(const(void)[] data, size_t offset, string context = null) pure
+    {
+        if (offset > data.length) {
             throw new MimeCacheException("Beginning of string is out of bounds", context);
         }
         
-        auto str = cast(const(char[]))_data[offset.._data.length];
+        auto str = cast(const(char[]))data[offset..data.length];
         
         size_t len = 0;
         while (len < str.length && str[len] != '\0') {
@@ -711,13 +725,41 @@ private:
         return str[0..len];
     }
     
-    @trusted auto readString(size_t offset, uint length, string context = null) const {
-        
-        if (offset + length <= _data.length) {
-            return cast(const(char)[])_data[offset..offset+length];
+    unittest
+    {
+        ubyte[] data;
+        data.length = 10;
+        data[] = 65;
+        assertThrown!MimeCacheException(readString(data, 11));
+        assertThrown!MimeCacheException(readString(data, 0));
+    }
+    
+    @trusted auto readString(size_t offset, string context = null) const pure {
+        return readString(_data, offset, context);
+    }
+    
+    
+    private @trusted static auto readString(const(void)[] data, size_t offset, uint length, string context = null) pure
+    {
+        if (offset + length <= data.length) {
+            return cast(const(char)[])data[offset..offset+length];
         } else {
             throw new MimeCacheException("String is out of bounds", context);
         }
+    }
+    
+    unittest
+    {
+        ubyte[] data;
+        data.length = 10;
+        data[] = 'A';
+        assertThrown!MimeCacheException(readString(data, 0, 11));
+        assertThrown!MimeCacheException(readString(data, 1, 10));
+    }
+    
+    @trusted auto readString(size_t offset, uint length, string context = null) const pure {
+        
+        return readString(_data, offset, length, context);
     }
     
     MmFile _mmapped;
@@ -725,3 +767,27 @@ private:
     MimeCacheHeader _header;
     string _fileName;
 }
+
+unittest
+{
+    immutable(ubyte)[] data = [0, 1, 0, 15];
+    auto thrown = collectException!MimeCacheException(new MimeCache(data));
+    assert(thrown !is null);
+    assert(thrown.context == "minor version");
+    
+    data = [0, 15, 0, 2];
+    thrown = collectException!MimeCacheException(new MimeCache(data));
+    assert(thrown !is null);
+    assert(thrown.context == "major version");
+    
+    auto cache = new MimeCache("./test/mime/mime.cache");
+    assert(cache.fileName() == "./test/mime/mime.cache");
+    assert(cache.findGenericIcon("application/x-wad") == "package-x-generic");
+    assert(cache.findIcon("application/vnd.valve.vpk") == "package-x-vpk");
+    
+    assert(cache.isSubclassOf("text/x-fgd", "text/plain"));
+    assert(!cache.isSubclassOf("text/x-fgd", "application/octet-stream"));
+    
+    assert(cache.findMimeTypeByNamespaceUri("http://www.w3.org/1999/ent") == "text/x-ent");
+}
+

@@ -2,7 +2,7 @@
 # update-mime-database command. DO NOT EDIT!
 application/x-jmf:__NOGLOBS__
 application/x-jmx:__NOGLOBS__
-application/x-md2:*.md2
+application/vnd.valve.vpk:*dir.vpk
 image/x-sprite32:*.spr32
 application/x-hlmdl:*.mdl
 application/x-hl2mdl:*.mdl
@@ -10,6 +10,7 @@ application/x-mdl:*.mdl
 application/x-md3:*.md3
 application/x-iqm:*.iqm
 application/x-md4:*.md4
+application/x-md2:*.md2
 application/x-lmp:*.lmp
 application/x-vmf:*.vmf
 application/x-jmx:*.jmx
@@ -30,13 +31,13 @@ application/x-qvm:*.qvm
 application/x-wad:*.wad
 application/x-wad2:*.wad
 application/x-wad3:*.wad
-application/vnd.valve.vpk:*dir.vpk
+text/x-ent:*.ent
 application/x-map:*.map
 application/x-gcf:*.gcf
 application/x-jmf:*.jmf
 text/x-fgd:*.fgd
 application/x-rmf:*.rmf
 application/x-wal:*.wal
-application/x-hlmdl-sequence:*[0-9][0-9].mdl
-application/x-pak:*.pak
+application/x-pak:pak*.pak
+application/x-hlmdl-sequence:*[0123456789][0123456789].mdl
 image/x-vtf:*.vtf

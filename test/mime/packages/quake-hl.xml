@@ -53,6 +53,13 @@
         <glob pattern="*.fgd"/>
     </mime-type>
     
+    <mime-type type="text/x-ent">
+        <comment>Game entity definitions file</comment>
+        <sub-class-of type="text/xml"/>
+        <glob pattern="*.ent"/>
+        <root-XML namespaceURI="http://www.w3.org/1999/ent" localName="ENT"/>
+    </mime-type>
+    
     <mime-type type="text/x-qcsrc">
         <comment>QuakeC source code</comment>
         <sub-class-of type="text/x-csrc"/>
@@ -70,7 +77,7 @@
     <mime-type type="text/x-q3shader">
         <comment>Quake III shader script</comment>
         <sub-class-of type="text/plain"/>
-        <glob pattern="*.shader"/>
+        <glob pattern="*.shader" case-sensitive="true"/>
     </mime-type>
     
     <!-- Map source formats -->
@@ -103,11 +110,12 @@
         <magic priority="50">
             <match value="PACK" type="string" offset="0"/>
         </magic>
-        <glob pattern="*.pak"/>
+        <glob pattern="pak*.pak" case-sensitive="true"/>
     </mime-type>
     
     <mime-type type="application/vnd.valve.vpk">
         <comment>Source engine package file</comment>
+        <icon name="package-x-vpk"/>
         <generic-icon name="package-x-generic"/>
         <magic priority="50">
             <match value="0x3412AA55" type="big32" offset="0"/>
@@ -191,7 +199,7 @@
                 <match value="0x0000000a" type="little32" offset="4"/>
             </match>
         </magic>
-        <glob pattern="*[0-9][0-9].mdl"/>
+        <glob pattern="*[0123456789][0123456789].mdl"/>
     </mime-type>
     
     <mime-type type="application/x-hl2mdl">

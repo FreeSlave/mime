@@ -82,6 +82,23 @@ final class MimeDetectorFromCache : IMimeDetector
         }
         
         size_t lastPatternLength;
+        foreach(i, mimeCache; _mimeCaches) {
+            foreach(alternative; mimeCache.findMimeTypesByGlob(fileName)) {
+                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
+                    continue;
+                }
+                if (mimeType.empty || weight < alternative.weight || (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) {
+                    mimeType = alternative.mimeType;
+                    weight = alternative.weight;
+                    lastPatternLength = alternative.pattern.length;
+                }
+            }
+        }
+        
+        if (mimeType.length) {
+            return mimeType;
+        }
+        
         size_t mimeCacheIndex;
         void exchangeAlternative(MimeTypeAlternativeByName alternative)
         {
@@ -98,24 +115,6 @@ final class MimeDetectorFromCache : IMimeDetector
         foreach(mimeCache; _mimeCaches) {
             mimeCache.findMimeTypesBySuffix(fileName, &exchangeAlternative);
             mimeCacheIndex++;
-        }
-        
-        if (mimeType.length) {
-            return mimeType;
-        }
-        
-        lastPatternLength = 0;
-        foreach(i, mimeCache; _mimeCaches) {
-            foreach(alternative; mimeCache.findMimeTypesByGlob(fileName)) {
-                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
-                    continue;
-                }
-                if (mimeType.empty || weight < alternative.weight || (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) {
-                    mimeType = alternative.mimeType;
-                    weight = alternative.weight;
-                    lastPatternLength = alternative.pattern.length;
-                }
-            }
         }
         
         return mimeType;
@@ -136,6 +135,25 @@ final class MimeDetectorFromCache : IMimeDetector
                     continue;
                 }
                 if (mimeType.empty || alternative.weight > weight) {
+                    mimeType = alternative.mimeType;
+                    weight = alternative.weight;
+                    conflicts = null;
+                } else if (weight == alternative.weight && mimeType != alternative.mimeType && conflicts.find(alternative.mimeType).empty) {
+                    conflicts ~= alternative.mimeType;
+                }
+            }
+        }
+        
+        if (mimeType.length) {
+            return mimeType ~ conflicts;
+        }
+        
+        foreach(i, mimeCache; _mimeCaches) {
+            foreach(alternative; mimeCache.findMimeTypesByGlob(fileName)) {
+                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
+                    continue;
+                }
+                if (mimeType.empty || weight < alternative.weight) {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                     conflicts = null;
@@ -173,24 +191,6 @@ final class MimeDetectorFromCache : IMimeDetector
             return mimeType ~ conflicts;
         }
         
-        foreach(i, mimeCache; _mimeCaches) {
-            foreach(alternative; mimeCache.findMimeTypesByGlob(fileName)) {
-                if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
-                    continue;
-                }
-                if (mimeType.empty || weight < alternative.weight) {
-                    mimeType = alternative.mimeType;
-                    weight = alternative.weight;
-                    conflicts = null;
-                } else if (weight == alternative.weight && mimeType != alternative.mimeType && conflicts.find(alternative.mimeType).empty) {
-                    conflicts ~= alternative.mimeType;
-                }
-            }
-        }
-        
-        if (mimeType.length) {
-            return mimeType ~ conflicts;
-        }
         return null;
     }
     

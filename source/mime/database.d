@@ -231,6 +231,12 @@ unittest
     auto store = new FilesMimeStore(mimePaths, foptions);
     auto detector = new MimeDetectorFromCache(mimePaths);
     
+    assert(detector.mimeCaches().length == 1);
+    assert(detector.mimeTypeForFileName("sprite.spr").length);
+    assert(detector.mimeTypeForFileName("model01.mdl").length);
+    assert(detector.mimeTypeForFileName("no.exist").empty);
+    assert(detector.mimeTypeForData("IDSP\x02\x00\x00\x00") == "image/x-hlsprite");
+    
     auto database = new MimeDatabase(store, detector);
     
     auto imageSprite = database.mimeType("image/x-hlsprite");
@@ -249,4 +255,22 @@ unittest
     auto qsprite = database.mimeTypeForData("IDSP\x01\x00\x00\x00");
     assert(qsprite !is null);
     assert(qsprite.name == "image/x-qsprite");
+    
+    auto vpk = database.mimeTypeForFileName("pakdir.vpk");
+    assert(vpk !is null);
+    assert(vpk.name == "application/vnd.valve.vpk");
+    
+    //testng generic glob
+    auto modelseq = database.mimeTypeForFileName("model01.mdl");
+    assert(modelseq !is null);
+    assert(modelseq.name == "application/x-hlmdl-sequence");
+    modelseq = database.mimeTypeForFileName("model01.MDL");
+    assert(modelseq !is null && modelseq.name == "application/x-hlmdl-sequence");
+    
+    assert(!database.mimeTypeForFileName("pak1.PAK"));
+    assert(database.mimeTypeForFileName("pak1.pak"));
+    
+    //testing case-sensitive suffix
+    assert(database.mimeTypeForFileName("my.shader"));
+    assert(!database.mimeTypeForFileName("my.SHADER"));
 }

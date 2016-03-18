@@ -8,6 +8,7 @@
     "targetPath" : "lib", 
     "targetType" : "library",
     "dependencies": {
+        "xdgpaths" : "~>0.1.2"
     },
     "subPackages" : ["./examples/mimedatabase", "./examples/mimetest"]
 }

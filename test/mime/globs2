@@ -2,7 +2,7 @@
 # update-mime-database command. DO NOT EDIT!
 0:application/x-jmf:__NOGLOBS__
 0:application/x-jmx:__NOGLOBS__
-50:application/x-md2:*.md2
+50:application/vnd.valve.vpk:*dir.vpk
 50:image/x-sprite32:*.spr32
 50:application/x-hlmdl:*.mdl
 50:application/x-hl2mdl:*.mdl
@@ -10,10 +10,12 @@
 50:application/x-md3:*.md3
 50:application/x-iqm:*.iqm
 50:application/x-md4:*.md4
+50:application/x-md2:*.md2
 50:application/x-lmp:*.lmp
 50:application/x-vmf:*.vmf
 50:application/x-jmx:*.jmx
 50:text/x-qcsrc:*.qc
+50:text/x-q3shader:*.shader:cs
 50:text/x-q3shader:*.shader
 50:image/x-sprite32:*.sp2
 50:image/x-q2sprite:*.sp2
@@ -30,13 +32,14 @@
 50:application/x-wad:*.wad
 50:application/x-wad2:*.wad
 50:application/x-wad3:*.wad
-50:application/vnd.valve.vpk:*dir.vpk
+50:text/x-ent:*.ent
 50:application/x-map:*.map
 50:application/x-gcf:*.gcf
 50:application/x-jmf:*.jmf
 50:text/x-fgd:*.fgd
 50:application/x-rmf:*.rmf
 50:application/x-wal:*.wal
-50:application/x-hlmdl-sequence:*[0-9][0-9].mdl
-50:application/x-pak:*.pak
+50:application/x-pak:pak*.pak:cs
+50:application/x-pak:pak*.pak
+50:application/x-hlmdl-sequence:*[0123456789][0123456789].mdl
 50:image/x-vtf:*.vtf
