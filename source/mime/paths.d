@@ -53,7 +53,7 @@ static if (isFreedesktop) {
      * Usually it's the same as $HOME/.local/share/mime, /usr/local/share/mime and /usr/share/mime.
      */
     @trusted auto mimePaths() {
-        return xdgDataDirs("mime");
+        return xdgAllDataDirs("mime");
     }
     
     /**
