@@ -3,6 +3,6 @@
 	"versions": {
 		"standardpaths": "0.2.0",
 		"isfreedesktop": "0.1.0",
-		"xdgpaths": "0.1.2"
+		"xdgpaths": "0.2.1"
 	}
 }

@@ -51,20 +51,37 @@ unittest
     assert(t.media == string.init && t.subtype == string.init);
 }
 
+private @nogc @trusted bool allSymbolsAreValid(const(char)[] name) nothrow pure
+{
+    import std.ascii : isAlpha, isDigit;
+    for (size_t i=0; i<name.length; ++i) {
+        char c = name[i];
+        if (!(c.isAlpha || c.isDigit || c == '-' || c == '+' || c == '.' || c == '_')) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /**
  * Check if name is valid MIME type name.
  */
 @nogc @safe bool isValidMimeTypeName(const(char)[] name) nothrow pure
 {
     auto t = parseMimeTypeName(name);
-    return t.media.length && t.subtype.length;
+    return t.media.length && t.subtype.length && allSymbolsAreValid(t.media) && allSymbolsAreValid(t.subtype);
 }
 
 ///
 unittest
 {
     assert( isValidMimeTypeName("text/plain"));
+    assert( isValidMimeTypeName("text/plain2"));
+    assert( isValidMimeTypeName("text/vnd.type"));
+    assert( isValidMimeTypeName("x-scheme-handler/http"));
     assert(!isValidMimeTypeName("not mime type"));
+    assert(!isValidMimeTypeName("not()/valid"));
+    assert(!isValidMimeTypeName("not/valid{}"));
     assert(!isValidMimeTypeName("text/"));
     assert(!isValidMimeTypeName("/plain"));
     assert(!isValidMimeTypeName("/"));

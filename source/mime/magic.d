@@ -37,7 +37,7 @@ struct MagicMatch
      * Throws:
      *  Exception if value length does not match type.
      */
-    @safe this(Type type, immutable(ubyte)[] value, immutable(ubyte)[] mask = null, uint startOffset = 0, uint rangeLength = 1)
+    @safe this(Type type, immutable(ubyte)[] value, immutable(ubyte)[] mask = null, uint startOffset = 0, uint rangeLength = 1) pure
     {
         if (mask.length) {
             enforce(value.length == mask.length, "value and mask lengths must be equal");
@@ -67,17 +67,17 @@ struct MagicMatch
     /**
      * Type of match value.
      */
-    @nogc @safe Type type() nothrow const {
+    @nogc @safe Type type() nothrow const pure {
         return _type;
     }
     
     /**
      * The offset into the file to look for a match.
      */
-    @nogc @safe uint startOffset() nothrow const {
+    @nogc @safe uint startOffset() nothrow const pure {
         return _startOffset;
     }
-    @nogc @safe uint startOffset(uint offset) nothrow {
+    @nogc @safe uint startOffset(uint offset) nothrow pure {
         _startOffset = offset;
         return _startOffset;
     }
@@ -85,10 +85,10 @@ struct MagicMatch
     /**
      * The length of the region in the file to check.
      */
-    @nogc @safe uint rangeLength() nothrow const {
+    @nogc @safe uint rangeLength() nothrow const pure {
         return _rangeLength;
     }
-    @nogc @safe uint rangeLength(uint length) nothrow {
+    @nogc @safe uint rangeLength(uint length) nothrow pure {
         _rangeLength = length;
         return _rangeLength;
     }
@@ -96,21 +96,21 @@ struct MagicMatch
     /**
      * The value to compare the file contents with
      */
-    @nogc @safe immutable(ubyte)[] value() nothrow const {
+    @nogc @safe immutable(ubyte)[] value() nothrow const pure {
         return _value;
     }
     
     /**
      * Check if the rule has value mask.
      */
-    @nogc @safe bool hasMask() nothrow const {
+    @nogc @safe bool hasMask() nothrow const pure {
         return _mask.length != 0;
     }
     /**
      * The number to AND the value in the file with before comparing it to `value'
      * See_Also: value
      */
-    @nogc @safe immutable(ubyte)[] mask() nothrow const {
+    @nogc @safe immutable(ubyte)[] mask() nothrow const pure {
         return _mask;
     }
     
@@ -118,15 +118,29 @@ struct MagicMatch
      * Get match subrules
      * Returns: Array of child rules.
      */
-    @nogc @safe auto submatches() nothrow const {
+    @nogc @safe auto submatches() nothrow const pure {
         return _submatches;
     }
     
     /**
      * Add subrule to the children of this rule.
      */
-    @safe void addSubmatch(MagicMatch match) nothrow {
+    @safe void addSubmatch(MagicMatch match) nothrow pure{
         _submatches ~= match;
+    }
+    
+    package MagicMatch clone() const nothrow pure {
+        MagicMatch copy;
+        copy._type = this._type;
+        copy._value = this._value;
+        copy._mask = this._mask;
+        copy._startOffset = this._startOffset;
+        copy._rangeLength = this._rangeLength;
+        
+        foreach(match; _submatches) {
+            copy.addSubmatch(match.clone());
+        }
+        return copy;
     }
     
 private:
@@ -147,18 +161,18 @@ struct MimeMagic
     /**
      * Constructor specifiyng priority for all contained rules.
      */
-    @nogc @safe this(uint weight) {
+    @nogc @safe this(uint weight) nothrow pure {
         _weight = weight;
     }
     
     /**
      * Priority for all contained rules.
      */
-    @nogc @safe uint weight() const nothrow {
+    @nogc @safe uint weight() const nothrow pure {
         return _weight;
     }
     
-    @nogc @safe uint weight(uint priority) nothrow {
+    @nogc @safe uint weight(uint priority) nothrow pure {
         _weight = priority;
         return _weight;
     }
@@ -167,27 +181,36 @@ struct MimeMagic
      * Get match rules
      * Returns: Array of MagicMatch elements.
      */
-    auto matches() const nothrow {
+    auto matches() const nothrow pure {
         return _matches;
     }
     
     /**
      * Add top-level match rule.
      */
-    void addMatch(MagicMatch match) nothrow {
+    void addMatch(MagicMatch match) nothrow pure {
         _matches ~= match;
     }
     
     /**
      * Indicates that magic matches read from less preferable paths must be discarded
      */
-    @nogc @safe bool shouldDeleteMagic() nothrow const {
+    @nogc @safe bool shouldDeleteMagic() nothrow const pure {
         return _deleteMagic;
     }
     
-    @nogc @safe bool shouldDeleteMagic(bool shouldDelete) nothrow {
+    @nogc @safe bool shouldDeleteMagic(bool shouldDelete) nothrow pure {
         _deleteMagic = shouldDelete;
         return _deleteMagic;
+    }
+    
+    package MimeMagic clone() const nothrow pure {
+        auto copy = MimeMagic(this.weight());
+        copy.shouldDeleteMagic = this.shouldDeleteMagic();
+        foreach(match; _matches) {
+            copy.addMatch(match.clone());
+        }
+        return copy;
     }
     
 private:

@@ -23,7 +23,7 @@ private {
  */
 struct MimePattern
 {
-    @nogc @safe this(string glob, uint priority = defaultGlobWeight, bool cs = false) nothrow {
+    @nogc @safe this(string glob, uint priority = defaultGlobWeight, bool cs = false) nothrow pure {
         pattern = glob;
         weight = priority;
         caseSensitive = cs;
@@ -147,12 +147,12 @@ final class MimeType
      * Create MIME type with name.
      * Name should be given in the form of media/subtype.
      */
-    @trusted this(string name) nothrow {
+    @nogc @safe this(string name) nothrow pure {
         _name = name;
     }
     
     ///The name of MIME type.
-    @nogc @safe string name() nothrow const {
+    @nogc @safe string name() nothrow const pure {
         return _name;
     }
     
@@ -166,35 +166,35 @@ final class MimeType
     }
     
     ///Set MIME type name.
-    @nogc @safe string name(string typeName) nothrow {
+    @nogc @safe string name(string typeName) nothrow pure {
         _name = typeName;
         return _name;
     }
     
     ///Array of MIME glob patterns applied to this MIME type.
-    @nogc @safe const(MimePattern)[] patterns() nothrow const {
+    @nogc @safe const(MimePattern)[] patterns() nothrow const pure {
         return _patterns;
     }
     
     ///Aliases to this MIME type.
-    @nogc @safe const(string)[] aliases() nothrow const {
+    @nogc @safe const(string)[] aliases() nothrow const pure {
         return _aliases;
     }
     
     ///First level parents for this MIME type.
-    @nogc @safe const(string)[] parents() nothrow const {
+    @nogc @safe const(string)[] parents() nothrow const pure {
         return _parents;
     }
     
     /**
      * Get icon namee.
      */
-    @nogc @safe string icon() nothrow const {
+    @nogc @safe string icon() nothrow const pure {
         return _icon;
     }
     
     ///Set icon name.
-    @nogc @safe string icon(string iconName) nothrow {
+    @nogc @safe string icon(string iconName) nothrow pure {
         _icon = iconName;
         return _icon;
     }
@@ -205,7 +205,7 @@ final class MimeType
      * The default form is MIME type name with '/' replaces with '-'.
      * Note: This function will allocate every time it's called if no icon explicitly set.
      */
-    @safe string getIcon() nothrow const {
+    @safe string getIcon() nothrow const pure {
         if (_icon.length) {
             return _icon;
         } else {
@@ -228,12 +228,12 @@ final class MimeType
      * Get generic icon name. 
      * Use this if the icon could not be found.
      */
-    @nogc @safe string genericIcon() nothrow const {
+    @nogc @safe string genericIcon() nothrow const pure {
         return _genericIcon;
     }
     
     ///Set generic icon name.
-    @nogc @safe string genericIcon(string iconName) nothrow {
+    @nogc @safe string genericIcon(string iconName) nothrow pure {
         _genericIcon = iconName;
         return _genericIcon;
     }
@@ -244,7 +244,7 @@ final class MimeType
      * The default form is media part of MIME type name with '-x-generic' appended.
      * Note: This function will allocate every time it's called if no generic icon explicitly set.
      */
-    @safe string getGenericIcon() nothrow const {
+    @safe string getGenericIcon() nothrow const pure {
         if (_genericIcon.length) {
             return _genericIcon;
         } else {
@@ -264,12 +264,12 @@ final class MimeType
     }
     
     ///Get namespace uri for XML-based types.
-    @nogc @safe string namespaceUri() nothrow const {
+    @nogc @safe string namespaceUri() nothrow const pure{
         return _namespaceUri;
     }
     
     ///Set namespace uri.
-    @nogc @safe string namespaceUri(string uri) nothrow {
+    @nogc @safe string namespaceUri(string uri) nothrow pure{
         _namespaceUri = uri;
         return _namespaceUri;
     }
@@ -277,7 +277,7 @@ final class MimeType
     /**
      * Add alias for this MIME type.
      */
-    @safe void addAlias(string alias_) nothrow {
+    @safe void addAlias(string alias_) nothrow pure {
         _aliases ~= alias_;
     }
     
@@ -293,14 +293,14 @@ final class MimeType
     }
     
     /// Remove all aliases.
-    @safe void clearAliases() nothrow {
+    @safe void clearAliases() nothrow pure {
         _aliases = null;
     }
     
     /**
      * Add parent type for this MIME type.
      */
-    @safe void addParent(string parent) nothrow {
+    @safe void addParent(string parent) nothrow pure {
         _parents ~= parent;
     }
     
@@ -316,14 +316,14 @@ final class MimeType
     }
     
     /// Remove all parents.
-    @safe void clearParents() nothrow {
+    @safe void clearParents() nothrow pure {
         _parents = null;
     }
     
     /**
      * Add glob pattern for this MIME type.
      */
-    @safe void addPattern(string pattern, uint weight = defaultGlobWeight, bool cs = false) nothrow {
+    @safe void addPattern(string pattern, uint weight = defaultGlobWeight, bool cs = false) nothrow pure {
         _patterns ~= MimePattern(pattern, weight, cs);
     }
     ///
@@ -338,25 +338,90 @@ final class MimeType
     }
     
     ///ditto
-    @safe void addPattern(MimePattern mimePattern) nothrow {
+    @safe void addPattern(MimePattern mimePattern) nothrow pure {
         _patterns ~= mimePattern;
     }
     
     /// Remove all glob patterns.
-    @safe void clearPatterns() nothrow {
+    @safe void clearPatterns() nothrow pure {
         _patterns = null;
     }
     
-    @nogc @safe auto magics() const nothrow {
+    /**
+     * Magic rules for this MIME type.
+     * Returns: Array of MimeMagic.
+     */
+    @nogc @safe auto magics() const nothrow pure {
         return _magics;
     }
     
-    @safe void addMagic(MimeMagic magic) nothrow {
+    /**
+     * Add magic rule.
+     */
+    @safe void addMagic(MimeMagic magic) nothrow pure {
         _magics ~= magic;
     }
     
-    @safe void clearMagic() nothrow {
+    /**
+     * Remove all magic rules.
+     */
+    @safe void clearMagic() nothrow pure {
         _magics = null;
+    }
+    
+    /**
+     * Create MimeType deep copy.
+     * Params:
+     *  cloneMagic = Whether to clone magic (this can be relatively expensive operation).
+     */
+    @trusted MimeType clone(bool cloneMagic = true) nothrow const pure {
+        auto copy = new MimeType(this.name());
+        copy.icon = this.icon();
+        copy.genericIcon = this.genericIcon();
+        copy.namespaceUri = this.namespaceUri();
+        
+        foreach(parent; this.parents()) {
+            copy.addParent(parent);
+        }
+        foreach(aliasName; this.aliases()) {
+            copy.addAlias(aliasName);
+        }
+        foreach(pattern; this.patterns()) {
+            copy.addPattern(pattern);
+        }
+        
+        if (cloneMagic) {
+            foreach(magic; magics()) {
+                copy.addMagic(magic.clone());
+            }
+        }
+        
+        return copy;
+    }
+    
+    ///
+    unittest
+    {
+        auto origin = new MimeType("text/xml");
+        origin.icon = "xml";
+        origin.genericIcon = "text";
+        origin.namespaceUri = "namespace";
+        origin.addParent("text/plain");
+        origin.addAlias("application/xml");
+        origin.addPattern("<?xml");
+        
+        auto clone = origin.clone();
+        assert(clone.name() == origin.name());
+        assert(clone.icon() == origin.icon());
+        assert(clone.genericIcon() == origin.genericIcon());
+        assert(clone.namespaceUri() == origin.namespaceUri());
+        assert(clone.parents() == origin.parents());
+        assert(clone.aliases() == origin.aliases());
+        assert(clone.patterns() == origin.patterns());
+        
+        origin.addParent("text/markup");
+        assert(origin.parents() == ["text/plain", "text/markup"]);
+        assert(clone.parents() == ["text/plain"]);
     }
     
 private:

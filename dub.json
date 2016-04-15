@@ -1,14 +1,14 @@
 {
     "name": "mime",
     "description": "Shared MIME-info Database specification implementation",
-    "copyright": "Copyright © 2015, Roman Chistokhodov",
+    "copyright": "Copyright © 2015-2016, Roman Chistokhodov",
     "license" : "BSL-1.0", 
     "authors": ["Roman Chistokhodov"],
     "targetName" : "mime",
     "targetPath" : "lib", 
     "targetType" : "library",
     "dependencies": {
-        "xdgpaths" : "~>0.1.2"
+        "xdgpaths" : "~>0.2.1"
     },
     "subPackages" : ["./examples/mimedatabase", "./examples/mimetest"]
 }
