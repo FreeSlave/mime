@@ -30,7 +30,7 @@ alias Tuple!(string, "aliasName", string, "mimeType") AliasLine;
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto aliasesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
+auto aliasesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(lineFilter).map!(function(string line) {
         auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {

@@ -135,7 +135,7 @@ private uint parseIndent(ref immutable(char)[] current)
  * Throws: 
  *  Exception on error.
  */
-@trusted void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
+void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
 {
     try {
         enum mimeMagic = "MIME-Magic\0\n";

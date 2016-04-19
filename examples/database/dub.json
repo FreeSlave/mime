@@ -1,11 +1,10 @@
 {
-    "name": "mimetest",
+    "name": "database",
     "description": "A minimal D application.",
-    "copyright": "Copyright © 2016, freeslave",
+    "copyright": "Copyright © 2015, freeslave",
     "authors": ["freeslave"],
     "targetPath" : "bin", 
     "targetType" : "executable", 
-    "targetName" : "mimetest", 
     "dependencies": {
         "mime" : "*"
     }

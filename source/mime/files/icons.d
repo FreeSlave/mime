@@ -31,7 +31,7 @@ alias Tuple!(string, "mimeType", string, "iconName") IconLine;
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto iconsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
+auto iconsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {
     return byLine.filter!(lineFilter).map!(function(string line) {
         auto result = findSplit(line, ":");

@@ -14,9 +14,10 @@ import std.range;
 
 import mime.store;
 import mime.detector;
-import mime.type;
 import mime.text;
 import mime.inode;
+
+public import mime.type;
 
 /**
  * High-level class for accessing Shared MIME-info database.
@@ -32,7 +33,8 @@ final class MimeDatabase
         inodeType = 8, /// Provide inode/* type for files other than regular files.
         textFallback = 16, /// Provide text/plain fallback if data seems to be textual.
         octetStreamFallback = 32, /// Provide application/octet-stream fallback if data seems to be binary.
-        emptyFileFallback = 64 ///Provide application/x-zerosize fallback if mime type can't be detected, but data is known to be zero size.
+        emptyFileFallback = 64, ///Provide application/x-zerosize fallback if mime type can't be detected, but data is known to be zero size.
+        all = globPatterns|magicRules|inodeType|textFallback|octetStreamFallback|emptyFileFallback ///Use all recipes to detect MIME type.
     }
     
     /**
@@ -54,7 +56,7 @@ final class MimeDatabase
     /**
      * Create MimeDatabase object with given store and detector.
      */
-    this(IMimeStore store, IMimeDetector detector)
+    @safe this(IMimeStore store, IMimeDetector detector)
     {
         _store = store;
         _detector = detector;
@@ -93,7 +95,11 @@ final class MimeDatabase
     }
     
     /**
-     * Get MIME type for file using methods describing in options.
+     * Get MIME type for file and its data using methods describing in options.
+     * Params:
+     *  fileName = Name of file
+     *  data = Data chunk read from file (it's not necessary to read the whole data)
+     *  options = Lookup options
      */
     Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, const(void)[] data, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
     {
@@ -184,15 +190,18 @@ final class MimeDatabase
     
     /**
      * Get mime type by name or alias.
-     * Returns: mime.type.MimeType object for given nameOrAlias, resolving alias if needed. Null if no mime type found.
+     * Params:
+     *  nameOrAlias = MIME type name or alias.
+     *  resolve = Try to resolve alias if could not find MIME type with given name.
+     * Returns: mime.type.MimeType for given nameOrAlias, resolving alias if needed. Null if no mime type found.
      */
-    Rebindable!(const(MimeType)) mimeType(const(char)[] nameOrAlias)
+    Rebindable!(const(MimeType)) mimeType(const(char)[] nameOrAlias, bool resolve = true)
     {
         if (nameOrAlias.length == 0) {
             return rebindable(const(MimeType).init);
         }
         auto type = _store.mimeType(nameOrAlias);
-        if (type is null) {
+        if (type is null && resolve) {
             auto resolved = _detector.resolveAlias(nameOrAlias);
             if (resolved.length) {
                 type = _store.mimeType(resolved);
@@ -241,6 +250,7 @@ unittest
     
     auto imageSprite = database.mimeType("image/x-hlsprite");
     auto appSprite = database.mimeType("application/x-hlsprite");
+    assert(database.mimeType("application/x-hlsprite", false) is null);
     assert(imageSprite !is null && imageSprite is appSprite);
     
     assert(database.detector().isSubclassOf("text/x-fgd", "text/plain"));

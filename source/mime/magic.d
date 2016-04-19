@@ -181,14 +181,14 @@ struct MimeMagic
      * Get match rules
      * Returns: Array of MagicMatch elements.
      */
-    auto matches() const nothrow pure {
+    @nogc @safe auto matches() const nothrow pure {
         return _matches;
     }
     
     /**
      * Add top-level match rule.
      */
-    void addMatch(MagicMatch match) nothrow pure {
+    @safe void addMatch(MagicMatch match) nothrow pure {
         _matches ~= match;
     }
     

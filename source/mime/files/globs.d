@@ -33,7 +33,7 @@ alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseS
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto globsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
+auto globsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {
     return byLine.filter!(lineFilter).map!(function(string line) {
         auto splitted = line.splitter(':');
@@ -76,7 +76,7 @@ unittest
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto globs2FileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
+auto globs2FileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {
     return byLine.filter!(lineFilter).map!(function(string line) {
         auto splitted = line.splitter(':');

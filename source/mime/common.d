@@ -15,14 +15,16 @@ package {
 }
 
 private {
-    import std.typecons : Tuple;
+    import std.typecons;
+    import std.traits;
+    import std.range;
 }
 
 /**
  * Parse MIME type name into pair of media and subtype strings.
  * Returns: Tuple of media and subtype strings or pair of empty strings if could not parse name.
  */
-@trusted auto parseMimeTypeName(String)(String name) if (is(String : const(char)[]))
+@nogc @trusted auto parseMimeTypeName(String)(String name) pure nothrow if (isSomeString!String && is(ElementEncodingType!String : char))
 {
     alias Tuple!(String, "media", String, "subtype") MimeTypeName;
     
@@ -136,7 +138,7 @@ enum uint defaultMatchWeight = 50;
 /**
  * Check is pattern is __NOGLOBS__. This means glob patterns from the less preferable MIME paths should be ignored.
  */
-@nogc @safe bool isNoGlobs(T)(const(T)[] pattern) pure nothrow if (is(T : char) || is(T : ubyte) || is(T : byte) || is(T : void)) {
+@nogc @safe bool isNoGlobs(T)(const(T)[] pattern) pure nothrow if (is(T == char) || is(T == ubyte) || is(T == byte) || is(T == void)) {
     return cast(const(ubyte)[])pattern == cast(const(ubyte)[])"__NOGLOBS__";
 }
 
@@ -150,7 +152,7 @@ unittest
 /**
  * Check if value is __NOMAGIC__. This means magic rules from the less preferable MIME paths should be ignored.
  */
-@nogc @trusted bool isNoMagic(T)(const(T)[] value) pure nothrow if (is(T : char) || is(T : ubyte) || is(T : byte) || is(T : void)) {
+@nogc @trusted bool isNoMagic(T)(const(T)[] value) pure nothrow if (is(T == char) || is(T == ubyte) || is(T == byte) || is(T == void)) {
     return cast(const(ubyte)[])value == cast(const(ubyte)[])"__NOMAGIC__";
 }
 
@@ -159,4 +161,45 @@ unittest
 {
     assert(isNoMagic("__NOMAGIC__"));
     assert(!isNoMagic("somemagic"));
+}
+
+/**
+ * Get implicit parent type if mimeType. This is text/plain for all text/* types
+ * and application/octet-stream for all streamable types.
+ * Returns: text/plain for text-based types, application/octet-stream for streamable types, null otherwise.
+ * Note: text/plain and application/octet-stream are not considered as parents of their own.
+ */
+@safe string implicitParent(const(char)[] mimeType) nothrow pure
+{
+    if (mimeType == "text/plain" || mimeType == "application/octet-stream") {
+        return null;
+    }
+    
+    auto t = parseMimeTypeName(mimeType);
+    if (t.media == "text") {
+        return "text/plain";
+    } else if ( t.media == "image" || t.media == "audio" || 
+                t.media == "video" || t.media == "application")
+    {
+        return "application/octet-stream";
+    }
+    return null;
+}
+
+///
+unittest
+{
+    assert(implicitParent("text/hmtl") == "text/plain");
+    assert(implicitParent("text/plain") == null);
+    
+    assert(implicitParent("image/png") == "application/octet-stream");
+    assert(implicitParent("audio/ogg") == "application/octet-stream");
+    assert(implicitParent("video/mpeg") == "application/octet-stream");
+    assert(implicitParent("application/xml") == "application/octet-stream");
+    assert(implicitParent("application/octet-stream") == null);
+    
+    assert(implicitParent("inode/directory") == null);
+    assert(implicitParent("x-content/unix-software") == null);
+    
+    assert(implicitParent("not a mimetype") == null);
 }

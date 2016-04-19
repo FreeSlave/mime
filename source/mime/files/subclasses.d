@@ -30,7 +30,7 @@ alias Tuple!(string, "mimeType", string, "parent") SubclassLine;
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto subclassesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
+auto subclassesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(lineFilter).map!(function(string line) {
         auto splitted = std.algorithm.splitter(line);
         if (!splitted.empty) {

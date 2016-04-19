@@ -10,5 +10,5 @@
     "dependencies": {
         "xdgpaths" : "~>0.2.1"
     },
-    "subPackages" : ["./examples/mimedatabase", "./examples/mimetest"]
+    "subPackages" : ["./examples/database", "./examples/test"]
 }

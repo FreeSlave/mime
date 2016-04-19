@@ -28,7 +28,7 @@ package {
  *  Range of paths where MIME database files are stored.
  * 
  */
-@trusted auto mimePaths(Range)(Range dataPaths) if(isInputRange!Range && is(ElementType!Range : string)) {
+auto mimePaths(Range)(Range dataPaths) if(isInputRange!Range && is(ElementType!Range : string)) {
     return dataPaths.map!(p => buildPath(p, "mime"));
 }
 
@@ -52,7 +52,7 @@ static if (isFreedesktop) {
      *  Range of MIME paths in the order of preference from the most preferable to the least. 
      * Usually it's the same as $HOME/.local/share/mime, /usr/local/share/mime and /usr/share/mime.
      */
-    @trusted auto mimePaths() {
+    @safe auto mimePaths() {
         return xdgAllDataDirs("mime");
     }
     

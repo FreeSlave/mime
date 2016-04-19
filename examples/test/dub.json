@@ -1,11 +1,10 @@
 {
-    "name": "mimedatabase",
+    "name": "test",
     "description": "A minimal D application.",
-    "copyright": "Copyright © 2015, freeslave",
+    "copyright": "Copyright © 2016, freeslave",
     "authors": ["freeslave"],
     "targetPath" : "bin", 
     "targetType" : "executable", 
-    "targetName" : "mimedatabase", 
     "dependencies": {
         "mime" : "*"
     }

@@ -45,19 +45,29 @@ version(Posix)
 }
 
 /**
- * Get inode mime type by fileName.
- * Returns: inode/* mime type name for stated file or null if type is unknown or fileName targets regular file.
- * Note: On non-posix platforms it only cheks if fileName targets directory and returns inode/directory is so.
+ * Get inode mime type by filePath.
+ * Returns: inode/* mime type name for stated path or null if type is unknown or filePath targets regular file.
+ * Note: On non-posix platforms it only cheks if filePath targets directory and returns inode/directory if so.
  */
-@trusted string inodeMimeType(string fileName) nothrow
+@trusted string inodeMimeType(string filePath) nothrow
 {
     version(Posix) {
         import core.sys.posix.sys.stat;
         import std.string : toStringz;
+        import std.path : buildNormalizedPath;
         
         stat_t statbuf;
         try {
-            if (stat(toStringz(fileName), &statbuf) == 0) {
+            if (stat(toStringz(filePath), &statbuf) == 0) {
+                if (S_ISDIR(statbuf.st_mode)) {
+                    string parent = buildNormalizedPath(filePath, "..");
+                    stat_t parentStatbuf;
+                    if (stat(toStringz(parent), &parentStatbuf) == 0) {
+                        if (parentStatbuf.st_dev != statbuf.st_dev) {
+                            return "inode/mount-point";
+                        }
+                    }
+                }
                 return inodeMimeType(statbuf.st_mode);
             }
         } catch(Exception e) {
@@ -69,7 +79,7 @@ version(Posix)
         import std.exception;
         import std.file;
         bool ok;
-        collectException(fileName.isDir, ok);
+        collectException(filePath.isDir, ok);
         if (ok) {
             return "inode/directory";
         } else {

@@ -29,7 +29,7 @@ private {
  * Throws:
  *  MimeFileException on parsing error.
  */
-@trusted auto typesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
+auto typesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(lineFilter).map!(function(string line) {
         line = line.stripRight;
         if (isValidMimeTypeName(line)) {
