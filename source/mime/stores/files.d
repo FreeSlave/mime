@@ -124,7 +124,7 @@ final class FilesMimeStore : IMimeStore
      *  ErrnoException if some important file does not exist or could not be read.
      * See_Also: mime.paths.mimePaths
      */
-    @trusted this(Range)(Range mimePaths, Options options = Options.init) if (isInputRange!Range && is(ElementType!Range : string))
+    this(Range)(Range mimePaths, Options options = Options.init) if (isInputRange!Range && is(ElementType!Range : string))
     {
         foreach(mimePath; mimePaths.retro) {
             bool dirExists;

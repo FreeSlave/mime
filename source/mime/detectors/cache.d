@@ -34,7 +34,7 @@ final class MimeDetectorFromCache : IMimeDetector
      * Params:
      *  mimeCaches = Range of mime.cache.MimeCache objects sorted in order of preference from the mort preferred to the least. All must be non-null.
      */
-    @trusted this(Range)(Range mimeCaches) if (isInputRange!Range && is(ElementType!Range : const(MimeCache)))
+    this(Range)(Range mimeCaches) if (isInputRange!Range && is(ElementType!Range : const(MimeCache)))
     {
         _mimeCaches = mimeCaches.array;
     }
@@ -48,7 +48,7 @@ final class MimeDetectorFromCache : IMimeDetector
      *  mime.cache.MimeCacheException if some existing mime.cache file is invalid.
      * See_Also: mime.paths.mimePaths
      */
-    @trusted this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
+    this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
         foreach(mimePath; mimePaths) {
             string path = buildPath(mimePath, "mime.cache");
