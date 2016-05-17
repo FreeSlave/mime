@@ -133,7 +133,7 @@ private uint parseIndent(ref immutable(char)[] current)
 /**
  * Reads magic file contents and push magic entries to sink.
  * Throws: 
- *  Exception on error.
+ *  MimeMagicFileException on error.
  */
 void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
 {
@@ -210,6 +210,6 @@ unittest
     void emptySink(MagicEntry t) {
         
     }
-    assertThrown!MimeMagicFileException(magicFileReader("MIME-wrong-magic", &sink));
+    assertThrown!MimeMagicFileException(magicFileReader("MIME-wrong-magic", &emptySink));
     
 }

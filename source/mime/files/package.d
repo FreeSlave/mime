@@ -16,3 +16,4 @@ public import mime.files.icons;
 public import mime.files.magic;
 public import mime.files.namespaces;
 public import mime.files.subclasses;
+public import mime.files.types;

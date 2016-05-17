@@ -159,22 +159,26 @@ private:
 struct MimeMagic
 {
     /**
-     * Constructor specifiyng priority for all contained rules.
+     * Constructor.
+     * Params:
+     *  weight = Priority of this magic rule.
      */
     @nogc @safe this(uint weight) nothrow pure {
         _weight = weight;
     }
     
     /**
-     * Priority for all contained rules.
+     * Priority for magic rule.
      */
     @nogc @safe uint weight() const nothrow pure {
         return _weight;
     }
     
+    /**
+     * Set priority for this rule.
+     */
     @nogc @safe uint weight(uint priority) nothrow pure {
-        _weight = priority;
-        return _weight;
+        return _weight = priority;
     }
     
     /**
@@ -200,8 +204,7 @@ struct MimeMagic
     }
     
     @nogc @safe bool shouldDeleteMagic(bool shouldDelete) nothrow pure {
-        _deleteMagic = shouldDelete;
-        return _deleteMagic;
+        return _deleteMagic = shouldDelete;
     }
     
     package MimeMagic clone() const nothrow pure {

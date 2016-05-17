@@ -132,7 +132,7 @@ unittest
 /// Default glob pattern weight to use when it's not explicitly provided.
 enum uint defaultGlobWeight = 50;
 
-/// Default magic match rule priority to use when it's not explicitly provided.
+/// Default magic rule priority to use when it's not explicitly provided.
 enum uint defaultMatchWeight = 50;
 
 /**
