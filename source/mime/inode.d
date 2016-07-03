@@ -43,6 +43,15 @@ version(Posix)
         }
         return null;
     }
+    
+    ///
+    unittest
+    {
+        assert(inodeMimeType(S_IFCHR) == "inode/chardevice");
+        assert(inodeMimeType(S_IFBLK) == "inode/blockdevice");
+        assert(inodeMimeType(S_IFIFO) == "inode/fifo");
+        assert(inodeMimeType(S_IFSOCK) == "inode/socket");
+    }
 }
 
 /**
@@ -92,6 +101,7 @@ version(Posix)
 ///
 unittest
 {
-    assert(inodeMimeType("source") == "inode/directory");
-    assert(inodeMimeType("dub.json") is null);
+    assert(inodeMimeType("source") == "inode/directory"); //directory
+    assert(inodeMimeType("dub.json") is null); //regular file
+    assert(inodeMimeType("test/|nonexistent|") is null); //nonexistent path
 }
