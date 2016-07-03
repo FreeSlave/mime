@@ -15,9 +15,10 @@ version(Posix)
     import core.sys.posix.sys.stat;
     
     /**
-     * Get mime type from stat mode.
+     * Get mime type for stat mode.
+     * 
+     * $(BLUE This function is Posix only).
      * Returns: inode/* mime type name for mode or null if unknown. Regular files don't have inode/* type.
-     * Note: This function is Posix-only.
      */
     @trusted string inodeMimeType(mode_t mode) nothrow
     {
@@ -45,7 +46,7 @@ version(Posix)
 }
 
 /**
- * Get inode mime type by filePath.
+ * Get inode mime type for file path.
  * Returns: inode/* mime type name for stated path or null if type is unknown or filePath targets regular file.
  * Note: On non-posix platforms it only cheks if filePath targets directory and returns inode/directory if so.
  */
@@ -86,4 +87,11 @@ version(Posix)
             return null;
         }
     }
+}
+
+///
+unittest
+{
+    assert(inodeMimeType("source") == "inode/directory");
+    assert(inodeMimeType("dub.json") is null);
 }

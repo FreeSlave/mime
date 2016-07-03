@@ -31,9 +31,9 @@ final class MimeDatabase
         magicRules   = 2,   /// Match file content against magic rules. With MatchOptions.globPatterns flag it's used only in conflicts.
         //namespaceUri = 4, /// Try to clarify mime type in case it's XML.
         inodeType = 8, /// Provide inode/* type for files other than regular files.
-        textFallback = 16, /// Provide text/plain fallback if data seems to be textual.
-        octetStreamFallback = 32, /// Provide application/octet-stream fallback if data seems to be binary.
-        emptyFileFallback = 64, ///Provide application/x-zerosize fallback if mime type can't be detected, but data is known to be zero size.
+        textFallback = 16, /// Provide $(D text/plain) fallback if data seems to be textual.
+        octetStreamFallback = 32, /// Provide $(D application/octet-stream) fallback if data seems to be binary.
+        emptyFileFallback = 64, ///Provide $(B application/x-zerosize) fallback if mime type can't be detected, but data is known to be zero size.
         all = globPatterns|magicRules|inodeType|textFallback|octetStreamFallback|emptyFileFallback ///Use all recipes to detect MIME type.
     }
     
@@ -80,6 +80,7 @@ final class MimeDatabase
     
     /**
      * Get MIME type for given fileName.
+     * See_Also: $(D mimeTypeForFile)
      */
     Rebindable!(const(MimeType)) mimeTypeForFileName(string fileName)
     {
@@ -88,6 +89,8 @@ final class MimeDatabase
     
     /**
      * Get MIME type for given data.
+     * Note: This does NOT provide any fallbacks like text/plain, application/octet-stream or application/x-zerosize.
+     * See_Also: $(D mimeTypeForFile)
      */
     Rebindable!(const(MimeType)) mimeTypeForData(const(void)[] data)
     {
@@ -103,7 +106,7 @@ final class MimeDatabase
      */
     Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, const(void)[] data, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
     {
-        return mimeTypeForFileImpl(fileName, data, options);
+        return mimeTypeForFileImpl(fileName, data, options, true);
     }
     
     /**
@@ -112,10 +115,10 @@ final class MimeDatabase
      */
     Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
     {
-        return mimeTypeForFileImpl(fileName, null, options);
+        return mimeTypeForFileImpl(fileName, null, options, false);
     }
     
-    private auto mimeTypeForFileImpl(string fileName, const(void)[] data, Match options)
+    private auto mimeTypeForFileImpl(string fileName, const(void)[] data, Match options, const bool dataPassed)
     {
         import std.file;
         import std.exception;
@@ -138,15 +141,21 @@ final class MimeDatabase
             }
         }
         
-        if (data is null && (options & Match.emptyFileFallback) && mimeTypes.length == 0) {
-            ulong size;
-            auto e = collectException(fileName.getSize, size);
-            if (e is null && size == 0) {
-                return mimeType("application/x-zerosize");
+        if ((options & Match.emptyFileFallback) && mimeTypes.length == 0) {
+            if (!dataPassed) {
+                ulong size;
+                auto e = collectException(fileName.getSize, size);
+                if (e is null && size == 0) {
+                    return mimeType("application/x-zerosize");
+                }
+            } else {
+                if (data.length == 0) {
+                    return mimeType("application/x-zerosize");
+                }
             }
         }
         
-        if (data is null && (options & (Match.magicRules | Match.textFallback | Match.octetStreamFallback ))) {
+        if (!dataPassed && (options & (Match.magicRules|Match.textFallback|Match.octetStreamFallback))) {
             try {
                 data = std.file.read(fileName, 256);
             } catch(Exception e) {
@@ -247,7 +256,10 @@ unittest
     assert(detector.mimeTypeForData("IDSP\x02\x00\x00\x00") == "image/x-hlsprite");
     
     auto database = new MimeDatabase(store, detector);
+    assert(database.detector() is detector);
+    assert(database.store() is store);
     
+    assert(database.mimeType(string.init) is null);
     auto imageSprite = database.mimeType("image/x-hlsprite");
     auto appSprite = database.mimeType("application/x-hlsprite");
     assert(database.mimeType("application/x-hlsprite", false) is null);
@@ -269,6 +281,12 @@ unittest
     auto vpk = database.mimeTypeForFileName("pakdir.vpk");
     assert(vpk !is null);
     assert(vpk.name == "application/vnd.valve.vpk");
+    
+    auto iqm = database.mimeTypeForFile("model.iqm", MimeDatabase.Match.globPatterns);
+    assert(iqm !is null);
+    assert(iqm.name == "application/x-iqm");
+    
+    assert(database.mimeTypeForFile("file.unknown", MimeDatabase.Match.globPatterns) is null);
     
     //testng generic glob
     auto modelseq = database.mimeTypeForFileName("model01.mdl");

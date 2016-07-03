@@ -41,12 +41,33 @@ unittest
 
 
 static if (isFreedesktop) {
-    import std.process : environment;
-    import std.exception : collectException;
+    version(unittest) {
+        import std.process : environment;
+        
+        package struct EnvGuard
+        {
+            this(string env) {
+                envVar = env;
+                envValue = environment.get(env);
+            }
+            
+            ~this() {
+                if (envValue is null) {
+                    environment.remove(envVar);
+                } else {
+                    environment[envVar] = envValue;
+                }
+            }
+            
+            string envVar;
+            string envValue;
+        }
+    }
     
     /**
      * Get shared MIME database paths in system.
-     * This function is available only of freedesktop systems.
+     * 
+     * $(BLUE This function is Freedesktop only).
      * Note: This function does not check if paths exist and appear to be directories.
      * Returns:
      *  Range of MIME paths in the order of preference from the most preferable to the least. 
@@ -56,14 +77,39 @@ static if (isFreedesktop) {
         return xdgAllDataDirs("mime");
     }
     
+    ///
+    unittest
+    {
+        auto dataHomeGuard = EnvGuard("XDG_DATA_HOME");
+        auto dataDirsGuard = EnvGuard("XDG_DATA_DIRS");
+        
+        environment["XDG_DATA_HOME"] = "/home/user/data";
+        environment["XDG_DATA_DIRS"] = "/usr/local/data:/usr/data";
+        
+        assert(mimePaths() == [
+            "/home/user/data/mime", "/usr/local/data/mime", "/usr/data/mime"
+        ]);
+    }
+    
     /**
      * Get writable path where shared MIME database is stored.
+     * 
+     * $(BLUE This function is Freedesktop only).
      * Returns:
      *  Writable MIME path for the current user ($HOME/.local/share/mime).
      * Note: this function does not check if the path exist and appears to be directory.
-     * This function is available only of freedesktop systems.
      */
     @safe string writableMimePath() nothrow {
         return xdgDataHome("mime");
+    }
+    
+    ///
+    unittest
+    {
+        auto dataHomeGuard = EnvGuard("XDG_DATA_HOME");
+        
+        environment["XDG_DATA_HOME"] = "/home/user/data";
+        
+        assert(writableMimePath() == "/home/user/data/mime");
     }
 }
