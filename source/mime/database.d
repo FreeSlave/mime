@@ -254,22 +254,64 @@ unittest
     assert(detector.mimeTypeForFileName("model01.mdl").length);
     assert(detector.mimeTypeForFileName("no.exist").empty);
     assert(detector.mimeTypeForData("IDSP\x02\x00\x00\x00") == "image/x-hlsprite");
+    assert(detector.resolveAlias("application/nonexistent") is null);
+    
+    assert(detector.mimeTypeForNamespaceUri("http://www.w3.org/1999/ent") == "text/x-ent");
+    assert(detector.mimeTypeForNamespaceUri("nonexisten").empty);
     
     auto database = new MimeDatabase(store, detector);
     assert(database.detector() is detector);
     assert(database.store() is store);
     
     assert(database.mimeType(string.init) is null);
+    
     auto imageSprite = database.mimeType("image/x-hlsprite");
     auto appSprite = database.mimeType("application/x-hlsprite");
     assert(database.mimeType("application/x-hlsprite", false) is null);
     assert(imageSprite !is null && imageSprite is appSprite);
     
     assert(database.detector().isSubclassOf("text/x-fgd", "text/plain"));
+    assert(!database.detector().isSubclassOf("text/x-fgd", "application/octet-stream"));
+    
     auto fgdType = database.mimeTypeForFileName("name.fgd");
     assert(fgdType !is null);
     assert(fgdType.name == "text/x-fgd");
     
+    //testing Match options
+    auto iqm = database.mimeTypeForFile("model.iqm", MimeDatabase.Match.globPatterns);
+    assert(iqm !is null);
+    assert(iqm.name == "application/x-iqm");
+    
+    auto spriteType = database.mimeTypeForFile("sprite.spr", MimeDatabase.Match.globPatterns);
+    assert(spriteType !is null);
+    
+    auto sprite32 = database.mimeTypeForFile("sprite.spr", "IDSP\x20\x00\x00\x00", MimeDatabase.Match.magicRules);
+    assert(sprite32 !is null);
+    assert(sprite32.name == "image/x-sprite32");
+    
+    auto zeroType = database.mimeTypeForFile("nonexistent", (void[]).init, MimeDatabase.Match.emptyFileFallback);
+    assert(zeroType !is null);
+    assert(zeroType.name == "application/x-zerosize");
+    
+    zeroType = database.mimeTypeForFile("test/emptyfile", MimeDatabase.Match.emptyFileFallback);
+    assert(zeroType !is null);
+    assert(zeroType.name == "application/x-zerosize");
+    
+    auto textType = database.mimeTypeForFile("test/mime/types", MimeDatabase.Match.textFallback);
+    assert(textType !is null);
+    assert(textType.name == "text/plain");
+    
+    auto dirType = database.mimeTypeForFile("test", MimeDatabase.Match.inodeType);
+    assert(dirType !is null);
+    assert(dirType.name == "inode/directory");
+    
+    auto octetStreamType = database.mimeTypeForFile("test/mime/mime.cache", MimeDatabase.Match.octetStreamFallback);
+    assert(octetStreamType !is null);
+    assert(octetStreamType.name == "application/octet-stream");
+    
+    assert(database.mimeTypeForFile("file.unknown", MimeDatabase.Match.globPatterns) is null);
+    
+    //testing data
     auto hlsprite = database.mimeTypeForData("IDSP\x02\x00\x00\x00");
     assert(hlsprite !is null);
     assert(hlsprite.name == "image/x-hlsprite");
@@ -278,17 +320,16 @@ unittest
     assert(qsprite !is null);
     assert(qsprite.name == "image/x-qsprite");
     
+    //testing case-insensitive suffix
     auto vpk = database.mimeTypeForFileName("pakdir.vpk");
     assert(vpk !is null);
     assert(vpk.name == "application/vnd.valve.vpk");
     
-    auto iqm = database.mimeTypeForFile("model.iqm", MimeDatabase.Match.globPatterns);
-    assert(iqm !is null);
-    assert(iqm.name == "application/x-iqm");
+    vpk = database.mimeTypeForFileName("pakdir.VPK");
+    assert(vpk !is null);
+    assert(vpk.name == "application/vnd.valve.vpk");
     
-    assert(database.mimeTypeForFile("file.unknown", MimeDatabase.Match.globPatterns) is null);
-    
-    //testng generic glob
+    //testing generic glob
     auto modelseq = database.mimeTypeForFileName("model01.mdl");
     assert(modelseq !is null);
     assert(modelseq.name == "application/x-hlmdl-sequence");

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="text/plain">
+        <comment>plain text document</comment>
+    </mime-type>
+    <mime-type type="application/x-zerosize">
+        <comment>empty document</comment>
+    </mime-type>
+    <mime-type type="inode/directory">
+        <comment>folder</comment>
+    </mime-type>
+    <mime-type type="application/octet-stream">
+        <comment>unknown</comment>
+    </mime-type>
+</mime-info>
