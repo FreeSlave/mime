@@ -10,6 +10,7 @@ import mime.detectors.cache;
 import mime.stores.files;
 import mime.database;
 import mime.paths;
+import mime.files.treemagic;
 
 void main(string[] args)
 {
@@ -43,6 +44,16 @@ void main(string[] args)
                 stderr.writefln("%s: parse error: %s. Context: %s", cachePath, e.msg, e.context);
             } catch(Exception e) {
                 stderr.writefln("%s: error: %s", cachePath, e.msg);
+            }
+        }
+        auto treemagicPath = buildPath(mimePath, "treemagic");
+        collectException(treemagicPath.isFile, ok);
+        if (ok) {
+            try {
+                auto data = assumeUnique(read(treemagicPath));
+                treeMagicFileReader(data, (TreeMagicEntry t) {});
+            } catch(Exception e) {
+                stderr.writefln("%s: error: %s", treemagicPath, e.msg);
             }
         }
     }

@@ -47,7 +47,7 @@ void printInfo(MimeDatabase database, string[] mimeTypes)
 void resolveAliases(MimeDatabase database, string[] aliases)
 {
     foreach(nameOrAlias; aliases) {
-        auto mimeType = database.mimeType(nameOrAlias);
+        auto mimeType = database.mimeType(nameOrAlias, Yes.resolveAlias);
         if (!mimeType) {
             writefln("Could not resolve alias %s", nameOrAlias);
         } else {

@@ -11,6 +11,7 @@
 module mime.database;
 
 import std.range;
+import std.typecons;
 
 import mime.store;
 import mime.detector;
@@ -204,7 +205,7 @@ final class MimeDatabase
      *  resolve = Try to resolve alias if could not find MIME type with given name.
      * Returns: $(D mime.type.MimeType) for given nameOrAlias, resolving alias if needed. Null if no mime type found.
      */
-    Rebindable!(const(MimeType)) mimeType(const(char)[] nameOrAlias, bool resolve = true)
+    Rebindable!(const(MimeType)) mimeType(const(char)[] nameOrAlias, Flag!"resolveAlias" resolve = Yes.resolveAlias)
     {
         if (nameOrAlias.length == 0) {
             return rebindable(const(MimeType).init);
@@ -267,7 +268,7 @@ unittest
     
     auto imageSprite = database.mimeType("image/x-hlsprite");
     auto appSprite = database.mimeType("application/x-hlsprite");
-    assert(database.mimeType("application/x-hlsprite", false) is null);
+    assert(database.mimeType("application/x-hlsprite", No.resolveAlias) is null);
     assert(imageSprite !is null && imageSprite is appSprite);
     
     assert(database.detector().isSubclassOf("text/x-fgd", "text/plain"));

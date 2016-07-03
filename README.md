@@ -23,7 +23,7 @@
 
 Run to detect mime types of files.
 
-    dub run :database -- detect README.md source .gitignore lib/libmime.a examples/mimedatabase/bin/mimedatabase /var/run/acpid.socket dub.json /dev/sda
+    dub run :database -- detect README.md source .gitignore lib/libmime.a examples/database/bin/mime_database /var/run/acpid.socket dub.json /dev/sda
     
 Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows with KDE installed it would be:
 
