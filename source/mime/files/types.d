@@ -27,7 +27,7 @@ private {
  * Returns:
  *  Range of mime type names.
  * Throws:
- *  MimeFileException on parsing error.
+ *  $(D mime.files.common.MimeFileException) on parsing error.
  */
 auto typesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(lineFilter).map!(function(string line) {

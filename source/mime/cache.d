@@ -99,6 +99,7 @@ private @nogc @safe auto parseWeightAndFlags(uint value) nothrow pure {
  */
 class MimeCacheException : Exception
 {
+    ///
     this(string msg, string context = null, string file = __FILE__, size_t line = __LINE__, Throwable next = null) pure nothrow @safe {
         super(msg, file, line, next);
         _context = context;
@@ -117,7 +118,7 @@ private:
 /**
  * Class for reading mime.cache files. Mime cache is mainly optimized for MIME type detection by file name.
  * This class is somewhat low level and tricky to use directly. 
- * Also it knows nothing about mime.type.MimeType.
+ * Also it knows nothing about $(D mime.type.MimeType).
  * Note: 
  *  This class does not try to provide more information than the underlying mime.cache file has.
  */
@@ -132,7 +133,7 @@ final class MimeCache
      * and must be copied with $(B dup) or $(B idup) if their lifetime is longer than this object's one.
      * Throws: 
      *  FileException if could not map file into memory.
-     *  MimeCacheException if provided file is not valid mime cache or unsupported version.
+     *  $(D MimeCacheException) if provided file is not valid mime cache or unsupported version.
      */
     @trusted this(string fileName) {
         _mmapped = new MmFile(fileName);
@@ -142,7 +143,7 @@ final class MimeCache
     /**
      * Read mime cache from given data.
      * Throws:
-     *  MimeCacheException if provided file is not valid mime cache or unsupported version.
+     *  $(D MimeCacheException) if provided file is not valid mime cache or unsupported version.
      */
     @safe this(immutable(void)[] data, string fileName = null) {
         this(data, fileName, 0);
@@ -257,7 +258,7 @@ final class MimeCache
     
     /**
      * MIME type aliases.
-     * Returns: SortedRange of AliasEntry tuples sorted by aliasName.
+     * Returns: SortedRange of $(D AliasEntry) tuples sorted by aliasName.
      */
     @trusted auto aliases() const {
         return aliasesImpl().assumeSorted!aliasesCmp;
@@ -334,7 +335,7 @@ final class MimeCache
     
     /**
      * Glob patterns that are not literal nor suffixes.
-     * Returns: Range of GlobEntry tuples.
+     * Returns: Range of $(D GlobEntry) tuples.
      */
     @trusted auto globs() const {
         auto globCount = readValue!uint(_header.globListOffset, "glob count");
@@ -350,7 +351,7 @@ final class MimeCache
     
     /**
      * Literal patterns.
-     * Returns: SortedRange of LiteralEntry tuples sorted by literal.
+     * Returns: SortedRange of $(D LiteralEntry) tuples sorted by literal.
      */
     @trusted auto literals() const {
         return literalsImpl.assumeSorted!literalsCmp;
@@ -372,7 +373,7 @@ final class MimeCache
     
     /**
      * Icons for MIME types.
-     * Returns: SortedRange of IconEntry tuples sorted by mimeType.
+     * Returns: SortedRange of $(D IconEntry) tuples sorted by mimeType.
      */
     @trusted auto icons() const {
         return commonIcons(_header.iconsListOffset);
@@ -380,7 +381,7 @@ final class MimeCache
     
     /**
      * Generic icons for MIME types.
-     * Returns: SortedRange of IconEntry tuples sorted by mimeType.
+     * Returns: SortedRange of $(D IconEntry) tuples sorted by mimeType.
      */
     @trusted auto genericIcons() const {
         return commonIcons(_header.genericIconsListOffset);
@@ -390,7 +391,7 @@ final class MimeCache
     
     /**
      * XML namespaces for MIME types.
-     * Returns: SortedRange of NamespaceEntry tuples sorted by namespaceUri.
+     * Returns: SortedRange of $(D NamespaceEntry) tuples sorted by namespaceUri.
      */
     @trusted auto namespaces() const {
         return namespacesImpl().assumeSorted!namespacesCmp;
@@ -458,7 +459,7 @@ final class MimeCache
      * Find all MIME type alternatives for data matching it against magic rules.
      * Params:
      *  data = data to check against magic.
-     * Returns: Range of MimeTypeAlternative tuples matching given data sorted by weight descending.
+     * Returns: Range of $(D MimeTypeAlternative) tuples matching given data sorted by weight descending.
      */
     @trusted auto findMimeTypesByData(const(void)[] data) const
     {
@@ -487,7 +488,7 @@ final class MimeCache
      * Find all MIME type alternatives for fileName using glob patterns which are not literals or suffices.
      * Params:
      *  fileName = name to match against glob patterns.
-     * Returns: Range of MimeTypeAlternativeByName with pattern set to glob pattern matching fileName.
+     * Returns: Range of $(D MimeTypeAlternativeByName) with pattern set to glob pattern matching fileName.
      */
     @trusted auto findMimeTypesByGlob(const(char)[] fileName) const {
         fileName = fileName.baseName;
@@ -504,7 +505,7 @@ final class MimeCache
      * Find all MIME type alternatives for fileName using literal patterns like Makefile.
      * Params:
      *  fileName = name to match against literal patterns.
-     * Returns: Range of MimeTypeAlternativeByName with pattern set to literal matching fileName.
+     * Returns: Range of $(D MimeTypeAlternativeByName) with pattern set to literal matching fileName.
      * Note: Depending on whether found literal is case sensitive or not literal can be equal to base fileName or not.
      */
     @trusted auto findMimeTypesByLiteral(const(char)[] fileName) const {
@@ -528,8 +529,8 @@ final class MimeCache
      * Due to mime cache format characteristics it uses output range instead of returning the input one.
      * Params: 
      *  fileName = name to match against suffix patterns.
-     *  sink = output range where MimeTypeAlternativeByName objects with pattern set to suffix matching fileName will be put.
-     * Note: pattern property of MimeTypeAlternativeByName objects will not have leading "*" to avoid allocating.
+     *  sink = output range where $(D MimeTypeAlternativeByName) objects with pattern set to suffix matching fileName will be put.
+     * Note: pattern property of $(D MimeTypeAlternativeByName) objects will not have leading "*" to avoid allocating.
      */
     @trusted void findMimeTypesBySuffix(OutRange)(const(char)[] fileName, OutRange sink) const if (isOutputRange!(OutRange, MimeTypeAlternativeByName))
     {
@@ -541,8 +542,8 @@ final class MimeCache
     
     /**
      * All magic matches in this mime cache. Matches don't include magic rules themselves, but they reference matchlets.
-     * Returns: Range of MatchEntry tuples.
-     * See_Also: magicMatchlets
+     * Returns: Range of $(D MatchEntry) tuples.
+     * See_Also: $(D magicMatchlets)
      */
     @trusted auto magicMatches() const {
         return magicMatchesImpl().assumeSorted!magicMatchesCmp;
@@ -574,9 +575,9 @@ final class MimeCache
     
     /**
      * One level magic matchlets.
-     * matchletCount and firstMatchletOffset should be taken from MatchEntry or upper level MatchletEntry.
-     * Returns: Range of MatchletEntry tuples which are direct descendants of MatchEntry or another MatchletEntry.
-     * See_Also: magicMatches
+     * matchletCount and firstMatchletOffset should be taken from $(D MatchEntry) or upper level $(D MatchletEntry).
+     * Returns: Range of $(D MatchletEntry) tuples which are direct descendants of $(D MatchEntry) or another $(D MatchletEntry).
+     * See_Also: $(D magicMatches)
      */
     @trusted auto magicMatchlets(uint matchletCount, uint firstMatchletOffset) const {
         return iota(matchletCount)

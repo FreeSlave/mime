@@ -4,15 +4,18 @@
 
 [![Build Status](https://travis-ci.org/MyLittleRobo/mime.svg?branch=master)](https://travis-ci.org/MyLittleRobo/mime) [![Coverage Status](https://coveralls.io/repos/github/MyLittleRobo/mime/badge.svg?branch=master)](https://coveralls.io/github/MyLittleRobo/mime?branch=master)
 
-## Generating documentation
+## Features
 
-Ddoc:
+### Implemented features
 
-    dub build --build=docs
-    
-Ddox:
+* Reading and using mime.cache files to match file names against glob patterns, match file contents against magic rules, resolve aliases and find mime type parents.
+* Reading various shared MIME-info database files in mime/ subfolder, e.g. globs2, magic and others.
 
-    dub build --build=ddox
+### Missing features
+
+* Reading MIME types from mime/packages sources and mime/MEDIA folders (requires xml library).
+* Determining MIME type by XMLnamespace if document is xml (requires streaming xml library).
+* treemagic support.
 
 ## Examples
     
@@ -38,21 +41,8 @@ Run to resolve aliases:
 
 Run to test if this library is capable of parsing your local shared MIME-info database:
 
-    dub run mime:test
+    dub run :test
     
 As with mimedatabase example you may specify paths to *mime* folder(s) via command line:
 
-    dub run mime:test -- --mimepath=C:\ProgramData\KDE\share\mime
-    
-## Features
-
-### Implemented features
-
-* Reading and using mime.cache files to match file names against glob patterns, match file contents against magic rules, resolve aliases and find mime type parents.
-* Reading various shared MIME-info database files in mime/ subfolder, e.g. globs2, magic and others.
-
-### Missing features
-
-* Reading MIME types from mime/packages sources and mime/MEDIA folders (requires xml library).
-* Determining MIME type by XMLnamespace if document is xml (requires streaming xml library).
-* treemagic support.
+    dub run :test -- --mimepath=C:\ProgramData\KDE\share\mime

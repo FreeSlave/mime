@@ -187,7 +187,7 @@ final class MimeType
     }
     
     /**
-     * Get icon namee.
+     * Get icon name.
      */
     @nogc @safe string icon() nothrow const pure {
         return _icon;
@@ -349,7 +349,7 @@ final class MimeType
     
     /**
      * Magic rules for this MIME type.
-     * Returns: Array of MimeMagic.
+     * Returns: Array of $(D mime.magic.MimeMagic).
      */
     @nogc @safe auto magics() const nothrow pure {
         return _magics;

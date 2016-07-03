@@ -26,9 +26,9 @@ alias Tuple!(string, "namespaceUri", string, "localName", string, "mimeType") Na
 /**
  * Parse mime/XMLnamespaces file by line ignoring empty lines and comments.
  * Returns:
- *  Range of NamespaceLine tuples.
+ *  Range of $(D NamespaceLine) tuples.
  * Throws:
- *  MimeFileException on parsing error.
+ *  $(D mime.files.common.MimeFileException) on parsing error.
  */
 auto namespacesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(lineFilter).map!(function(string line) {

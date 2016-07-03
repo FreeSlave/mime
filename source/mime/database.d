@@ -24,7 +24,7 @@ public import mime.type;
  */
 final class MimeDatabase
 {
-    /// Options for mimeTypeForFile
+    /// Options for $(D mimeTypeForFile)
     enum Match
     {
         globPatterns = 1,   /// Match file name against glob patterns.
@@ -42,7 +42,7 @@ final class MimeDatabase
      * It uses mime.detectors.cache.MimeDetectorFromCache as MIME type detector and mime.stores.files.FilesMimeStore as MIME type store.
      * Params:
      *  mimePaths = Range of paths to base mime directories where needed files will be read.
-     * See_Also: mime.paths.mimePaths, mime.detectors.cache.MimeDetectorFromCache, mime.stores.files.FilesMimeStore
+     * See_Also: $(D mime.paths.mimePaths), $(D mime.detectors.cache.MimeDetectorFromCache), $(D mime.stores.files.FilesMimeStore)
      */
     this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
@@ -193,7 +193,7 @@ final class MimeDatabase
      * Params:
      *  nameOrAlias = MIME type name or alias.
      *  resolve = Try to resolve alias if could not find MIME type with given name.
-     * Returns: mime.type.MimeType for given nameOrAlias, resolving alias if needed. Null if no mime type found.
+     * Returns: $(D mime.type.MimeType) for given nameOrAlias, resolving alias if needed. Null if no mime type found.
      */
     Rebindable!(const(MimeType)) mimeType(const(char)[] nameOrAlias, bool resolve = true)
     {

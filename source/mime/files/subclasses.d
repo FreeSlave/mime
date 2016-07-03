@@ -26,9 +26,9 @@ alias Tuple!(string, "mimeType", string, "parent") SubclassLine;
 /**
  * Parse mime/subclasses file by line ignoring empty lines and comments.
  * Returns:
- *  Range of SubclassLine tuples.
+ *  Range of $(D SubclassLine) tuples.
  * Throws:
- *  MimeFileException on parsing error.
+ *  $(D mime.files.common.MimeFileException) on parsing error.
  */
 auto subclassesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(lineFilter).map!(function(string line) {
