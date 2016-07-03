@@ -12,4 +12,18 @@
     <mime-type type="application/octet-stream">
         <comment>unknown</comment>
     </mime-type>
+    <mime-type type="x-content/image-dcf">
+        <comment>digital photos</comment>
+        <treemagic>
+            <treematch type="directory" path="dcim" non-empty="true"/>
+        </treemagic>
+    </mime-type>
+    <mime-type type="x-content/unix-software">
+        <comment>UNIX software</comment>
+        <treemagic>
+            <treematch type="file" path=".autorun" match-case="true"/>
+            <treematch type="file" path="autorun" match-case="true"/>
+            <treematch type="file" path="autorun.sh" match-case="true"/>
+        </treemagic>
+    </mime-type>
 </mime-info>

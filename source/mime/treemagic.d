@@ -1,20 +1,24 @@
 module mime.treemagic;
 
 import std.exception;
+import std.file;
+import std.path;
+
 import mime.common;
+import mime.files.treemagic;
 
 struct TreeMatch
 {
     ///Required type of file
     enum Type : ubyte {
+        ///Any type
+        any,
         ///Regular file
-        file = 1,
+        file,
         ///Directory
         directory,
         ///Link
-        link,
-        ///Any type
-        any
+        link
     }
     
     enum Options : ubyte {
@@ -30,21 +34,31 @@ struct TreeMatch
         mimeType = 8
     }
     
+    ///
     @nogc @safe this(string itemPath, Type itemType, Options itemOptions = Options.none) pure nothrow {
         path = itemPath;
         type = itemType;
         options = itemOptions;
     }
     
+    ///Path to match.
     string path;
+    
+    ///Type of path.
     Type type;
+    
+    ///Path options.
     Options options;
+    
+    ///MIME type name. Set only if $(D options) flags have mimeType.
     string mimeType;
     
+    ///
     @nogc @safe auto submatches() nothrow const pure {
         return _submatches;
     }
     
+    ///
     @safe void addSubmatch(TreeMatch match) nothrow pure {
         _submatches ~= match;
     }
@@ -98,19 +112,31 @@ private:
 
 private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch match) nothrow
 {
-    import std.file;
-    import std.path;
-    
-    string path = buildPath(mountPoint, match.path);
-    bool ok;
-    
+    import std.stdio;
+    string path;
     uint attrs;
-    try {
-        attrs = getLinkAttributes(path);
-    } catch(Exception e) {
-        return false;
+    
+    if (match.options & TreeMatch.Options.matchCase) {
+        path = buildPath(mountPoint, match.path);
+        try {
+            attrs = getLinkAttributes(path);
+        } catch(Exception e) {
+            return false;
+        }
+    } else {
+        try {
+            foreach(entry; dirEntries(mountPoint, SpanMode.shallow)) {
+                if (filenameCmp!(CaseSensitive.no)(entry.name, buildPath(mountPoint, match.path)) == 0) {
+                    path = entry.name;
+                    attrs = entry.linkAttributes();
+                }
+            }
+        } catch(Exception e) {
+            return false;
+        }
     }
     
+    bool ok;
     final switch(match.type) {
         case TreeMatch.Type.file:
             ok = attrIsFile(attrs);
@@ -136,12 +162,9 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
                 ok = filenameCmp(path.extension, ".exe") == 0;
             }
         }
-        if (ok && (match.options & TreeMatch.Options.matchCase)) {
-            //TODO: implement
-        }
         if (ok && (match.options & TreeMatch.Options.nonEmpty)) {
             try {
-                ok = dirEntries(path, SpanMode.shallow).empty;
+                ok = !dirEntries(path, SpanMode.shallow).empty;
             } catch(Exception e) {
                 return false;
             }
@@ -176,4 +199,59 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
         }
     }
     return false;
+}
+
+/**
+ * Detect MIME type of mounted device using treemagic file.
+ * Params:
+ *  mountPoint = Path to mount point of device.
+ *  treemagicPath = Path to treemagic file.
+ * Returns: MIME type name or null if could not detect.
+ * See_Also: $(D mime.files.treeMagicFileReader)
+ */
+@trusted string treeMimeType(string mountPoint, string treemagicPath)
+{
+    auto data = assumeUnique(read(treemagicPath));
+    
+    string mimeType;
+    void sink(TreeMagicEntry t) {
+        if (mimeType.length == 0 && matchTreeMagic(mountPoint, t.magic)) {
+            mimeType = t.mimeType;
+        }
+    }
+    treeMagicFileReader(data, &sink);
+    return mimeType;
+}
+
+/**
+ * Detect MIME type of mounted device using treemagic files.
+ * Params:
+ *  mountPoint = Path to mount point of device.
+ *  mimePaths = Base mime directories where treemagic files are usually placed.
+ * Returns: MIME type name or null if could not detect.
+ * See_Also: $(D mime.paths.mimePaths)
+ */
+@safe string treeMimeType(string mountPoint, in string[] mimePaths) nothrow
+{
+    foreach(mimePath; mimePaths) {
+        try {
+            string treemagicPath = buildPath(mimePath, "treemagic");
+            string mimeType = treeMimeType(mountPoint, treemagicPath);
+            if (mimeType.length) {
+                return mimeType;
+            }
+        } catch(Exception e) {
+            
+        }
+    }
+    return null;
+}
+
+///
+unittest
+{
+    auto mimePaths = ["test/mime"];
+    assert(treeMimeType("test/media/photos", mimePaths) == "x-content/image-dcf");
+    assert(treeMimeType("test/media/installer", mimePaths) == "x-content/unix-software");
+    assert(treeMimeType("test", mimePaths) == null);
 }

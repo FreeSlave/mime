@@ -193,4 +193,9 @@ unittest
         assert(autorun.options == (TreeMatch.Options.executable | TreeMatch.Options.matchCase));
     }
     treeMagicFileReader(data, &sink);
+    
+    void emptySink(TreeMagicEntry t) {
+        
+    }
+    assertThrown!TreeMagicFileException(treeMagicFileReader("MIME-wrong-magic", &emptySink));
 }
