@@ -26,9 +26,9 @@ alias Tuple!(string, "aliasName", string, "mimeType") AliasLine;
 /**
  * Parse mime/aliases file by line ignoring empty lines and comments.
  * Returns:
- *  Range of AliasLine tuples.
+ *  Range of $(D AliasLine) tuples.
  * Throws:
- *  MimeFileException on parsing error.
+ *  $(D mime.files.common.MimeFileException) on parsing error.
  */
 auto aliasesFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string)) {
     return byLine.filter!(lineFilter).map!(function(string line) {

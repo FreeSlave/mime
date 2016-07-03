@@ -29,9 +29,9 @@ alias Tuple!(uint, "weight", string, "mimeType", string, "pattern", bool, "caseS
 /**
  * Parse mime/globs file by line ignoring empty lines and comments.
  * Returns:
- *  Range of GlobLine tuples.
+ *  Range of $(D GlobLine) tuples.
  * Throws:
- *  MimeFileException on parsing error.
+ *  $(D mime.files.common.MimeFileException) on parsing error.
  */
 auto globsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {
@@ -72,9 +72,9 @@ unittest
 /**
  * Parse mime/globs2 file by line ignoring empty lines and comments.
  * Returns:
- *  Range of GlobLine tuples.
+ *  Range of $(D GlobLine) tuples.
  * Throws:
- *  MimeFileException on parsing error.
+ *  $(D mime.files.common.MimeFileException) on parsing error.
  */
 auto globs2FileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {

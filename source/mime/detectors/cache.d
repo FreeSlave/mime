@@ -25,7 +25,7 @@ private {
 }
 
 /**
- * Implementation of mime.detector.IMimeDetector interface using mmappable mime.cache files.
+ * Implementation of $(D mime.detector.IMimeDetector) interface using mmappable mime.cache files.
  */
 final class MimeDetectorFromCache : IMimeDetector
 {
@@ -45,8 +45,8 @@ final class MimeDetectorFromCache : IMimeDetector
      *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
      * Throws:
      *  FileException if some existing mime.cache could not be memory mapped.
-     *  mime.cache.MimeCacheException if some existing mime.cache file is invalid.
-     * See_Also: mime.paths.mimePaths
+     *  $(D mime.cache.MimeCacheException) if some existing mime.cache file is invalid.
+     * See_Also: $(D mime.paths.mimePaths)
      */
     this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
@@ -60,7 +60,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeForFileName
+     * See_Also: $(D mime.detector.IMimeDetector.mimeTypeForFileName)
      */
     const(char)[] mimeTypeForFileName(const(char)[] fileName)
     {
@@ -121,7 +121,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypesForFileName
+     * See_Also: $(D mime.detector.IMimeDetector.mimeTypesForFileName)
      */
     const(char[])[] mimeTypesForFileName(const(char)[] fileName)
     {
@@ -205,7 +205,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeForData
+     * See_Also: $(D mime.detector.IMimeDetector.mimeTypeForData)
      */
     const(char)[] mimeTypeForData(const(void)[] data)
     {
@@ -231,7 +231,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypesForData
+     * See_Also: $(D mime.detector.IMimeDetector.mimeTypesForData)
      */
     const(char[])[] mimeTypesForData(const(void)[] data)
     {
@@ -275,7 +275,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.mimeTypeForNamespaceUri
+     * See_Also: $(D mime.detector.IMimeDetector.mimeTypeForNamespaceUri)
      */
     const(char)[] mimeTypeForNamespaceUri(const(char)[] namespaceUri)
     {
@@ -289,7 +289,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.resolveAlias
+     * See_Also: $(D mime.detector.IMimeDetector.resolveAlias)
      */
     const(char)[] resolveAlias(const(char)[] aliasName)
     {
@@ -303,7 +303,7 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * See_Also: mime.detector.IMimeDetector.isSubclassOf
+     * See_Also: $(D mime.detector.IMimeDetector.isSubclassOf)
      */
     bool isSubclassOf(const(char)[] mimeType, const(char)[] parent)
     {
@@ -316,8 +316,8 @@ final class MimeDetectorFromCache : IMimeDetector
     }
     
     /**
-     * Get used MimeCache objects.
-     * Returns: All loaded mime.cache.MimeCache objects.
+     * Get $(D mime.cache.MimeCache) objects.
+     * Returns: All loaded $(D mime.cache.MimeCache) objects.
      */
     const(MimeCache[]) mimeCaches()
     {

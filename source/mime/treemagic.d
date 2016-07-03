@@ -1,27 +1,49 @@
-module treemagic;
+module mime.treemagic;
 
 import std.exception;
 import mime.common;
 
 struct TreeMatch
 {
-    enum Type {
-        file,
+    ///Required type of file
+    enum Type : ubyte {
+        ///Regular file
+        file = 1,
+        ///Directory
         directory,
-        link
+        ///Link
+        link,
+        ///Any type
+        any
     }
     
-    @nogc @safe this(string itemPath, Type itemType) pure nothrow {
+    enum Options : ubyte {
+        ///No specific options.
+        none = 0,
+        ///Path must have executable permissions.
+        executable = 1,
+        ///Path match is case-sensitive.
+        matchCase = 2,
+        ///File or directory must non-empty.
+        nonEmpty = 4,
+        ///File must be of type mimeType.
+        mimeType = 8
+    }
+    
+    @nogc @safe this(string itemPath, Type itemType, Options itemOptions = Options.none) pure nothrow {
         path = itemPath;
         type = itemType;
+        options = itemOptions;
     }
     
     string path;
     Type type;
-    bool matchCase;
-    bool executable;
-    bool nonEmpty;
+    Options options;
     string mimeType;
+    
+    @nogc @safe auto submatches() nothrow const pure {
+        return _submatches;
+    }
     
     @safe void addSubmatch(TreeMatch match) nothrow pure {
         _submatches ~= match;
@@ -54,7 +76,22 @@ struct TreeMagic
     @nogc @safe uint weight(uint priority) nothrow pure {
         return _weight = priority;
     }
+    
+    /**
+     * Get path match rules
+     * Returns: Array of $(D TreeMatch) elements.
+     */
+    @nogc @safe auto matches() const nothrow pure {
+        return _matches;
+    }
+    
+    /**
+     * Add top-level match rule.
+     */
+    @safe void addMatch(TreeMatch match) nothrow pure {
+        _matches ~= match;
+    }
 private:
-    uint weight = defaultMatchWeight;
-    TreeMatch[] matches;
+    uint _weight = defaultMatchWeight;
+    TreeMatch[] _matches;
 }

@@ -33,7 +33,7 @@ final class MimeMagicFileException : Exception
 
 alias Tuple!(immutable(char)[], "mimeType", MimeMagic, "magic") MagicEntry;
 
-private MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
+private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
 {
     enforce(current.length && current[0] == '>', "Expected '>' at the start of match rule");
     current = current[1..$];
@@ -133,7 +133,7 @@ private uint parseIndent(ref immutable(char)[] current)
 /**
  * Reads magic file contents and push magic entries to sink.
  * Throws: 
- *  MimeMagicFileException on error.
+ *  $(D MimeMagicFileException) on error.
  */
 void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
 {
@@ -182,7 +182,11 @@ void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutp
 ///
 unittest
 {
-    auto data = "MIME-Magic\0\n[60:text/x-diff]\n>0=__NOMAGIC__\n0>4=\x00\x02\x55\x40&\xff\xf0~2+8\n1>12=\x00\x04\x55\x40\xff\xf0~4+10\n";
+    auto data = 
+    "MIME-Magic\0\n[60:text/x-diff]\n"
+        ">0=__NOMAGIC__\n"
+        "0>4=\x00\x02\x55\x40&\xff\xf0~2+8\n"
+            "1>12=\x00\x04\x55\x40\xff\xf0~4+10\n";
     
     void sink(MagicEntry t) {
         assert(t.mimeType == "text/x-diff");

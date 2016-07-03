@@ -107,8 +107,8 @@ struct MagicMatch
         return _mask.length != 0;
     }
     /**
-     * The number to AND the value in the file with before comparing it to `value'
-     * See_Also: value
+     * The number to AND the value in the file with before comparing it to $(D value)
+     * See_Also: $(D value)
      */
     @nogc @safe immutable(ubyte)[] mask() nothrow const pure {
         return _mask;
@@ -183,7 +183,7 @@ struct MimeMagic
     
     /**
      * Get match rules
-     * Returns: Array of MagicMatch elements.
+     * Returns: Array of $(D MagicMatch) elements.
      */
     @nogc @safe auto matches() const nothrow pure {
         return _matches;

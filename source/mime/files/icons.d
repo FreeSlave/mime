@@ -27,9 +27,9 @@ alias Tuple!(string, "mimeType", string, "iconName") IconLine;
 /**
  * Parse mime/icons or mime/generic-icons file by line ignoring empty lines and comments.
  * Returns:
- *  Range of IconLine tuples.
+ *  Range of $(D IconLine) tuples.
  * Throws:
- *  MimeFileException on parsing error.
+ *  $(D mime.files.common.MimeFileException) on parsing error.
  */
 auto iconsFileReader(Range)(Range byLine) if(isInputRange!Range && is(ElementType!Range : string))
 {

@@ -49,21 +49,18 @@ private @safe bool isValidUnicodeTail(const(char)[] tail) nothrow pure
             }
         }
     }
-    catch(UTFException e) {
+    catch(Exception e) {
         auto tail = str[index+1..$];
         if (tail.length < 3 && isValidUnicodeTail(tail)) {
             auto s = str[index];
-            if ((0b1111_0000 & s) && (0b0000_1000 & ~s)) {
+            if (((0b1111_0000 & s) == 0b1111_0000) && (0b0000_1000 & ~s)) {
                 return tail.length < 3;
-            } else if ((0b1110_0000 & s) && (0b0001_0000 & ~s)) {
+            } else if (((0b1110_0000 & s) == 0b1110_0000) && (0b0001_0000 & ~s)) {
                 return tail.length < 2;
-            } else if ((0b1100_0000 & s) && (0b0010_0000 & ~s)) {
+            } else if (((0b1100_0000 & s) == 0b1100_0000) && (0b0010_0000 & ~s)) {
                 return tail.length < 1;
             }
         }
-        return false;
-    }
-    catch(Exception e) {
         return false;
     }
     
@@ -79,9 +76,14 @@ unittest
     assert(isTextualData("English and кириллица"));
     assert(isTextualData("Copyright ©"));
     assert(isTextualData("0A a!\n\r\t~(){}.?"));
+    assert(isTextualData("Hello \U0001F603"));
     
-    auto slice = "日本語"[0..$-1]; //case when utf-8 data is splitted
-    assert(isTextualData(slice));
+    assert(isTextualData("日本語"[0..$-1]));
+    assert(isTextualData("Русский язык"[0..$-1]));
+    assert(isTextualData("Hello \U0001F603"[0..$-1]));
+    assert(isTextualData("text \u00A2"[0..$-1]));
+    
+    assert(!isTextualData("text\U000F0000text"));//private use
     
     assert(!isTextualData(""));
     assert(!isTextualData("abc\x01"));
