@@ -49,7 +49,7 @@ private bool fileExists(string fileName) {
 }
 
 /**
- * Implementation of mime.store.IMimeStore interface that uses various files from mime/ subfolder to read MIME types.
+ * Implementation of $(D mime.store.IMimeStore) interface that uses various files from mime/ subfolder to read MIME types.
  */
 final class FilesMimeStore : IMimeStore
 {
@@ -120,9 +120,10 @@ final class FilesMimeStore : IMimeStore
      *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
      *  options = Options for file reading and error reporting.
      * Throws:
-     *  MimeFileException if some info file has errors.
+     *  $(D MimeFileException) if some info file has errors.
+     *  $(D MimeMagicFileException) if magic file has errors.
      *  ErrnoException if some important file does not exist or could not be read.
-     * See_Also: mime.paths.mimePaths
+     * See_Also: $(D mime.paths.mimePaths)
      */
     this(Range)(Range mimePaths, Options options = Options.init) if (isInputRange!Range && is(ElementType!Range : string))
     {
@@ -251,14 +252,14 @@ final class FilesMimeStore : IMimeStore
     }
     
     /**
-     * See_Also: mime.store.IMimeStore.byMimeType
+     * See_Also: $(D mime.store.IMimeStore.byMimeType)
      */
     InputRange!(const(MimeType)) byMimeType() {
         return inputRangeObject(_mimeTypes.byValue().map!(val => cast(const(MimeType))val));
     }
     
     /**
-     * See_Also: mime.store.IMimeStore.mimeType
+     * See_Also: $(D mime.store.IMimeStore.mimeType)
      */
     Rebindable!(const(MimeType)) mimeType(const char[] name) {
         return rebindable(mimeTypeImpl(name));

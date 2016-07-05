@@ -122,6 +122,10 @@ struct MagicMatch
         return _submatches;
     }
     
+    package @nogc @safe auto submatches() nothrow pure {
+        return _submatches;
+    }
+    
     /**
      * Add subrule to the children of this rule.
      */
@@ -129,7 +133,7 @@ struct MagicMatch
         _submatches ~= match;
     }
     
-    package MagicMatch clone() const nothrow pure {
+    package @trusted MagicMatch clone() const nothrow pure {
         MagicMatch copy;
         copy._type = this._type;
         copy._value = this._value;
@@ -141,6 +145,24 @@ struct MagicMatch
             copy.addSubmatch(match.clone());
         }
         return copy;
+    }
+    
+    unittest
+    {
+        auto origin = MagicMatch(MagicMatch.Type.string_, [0x01, 0x02]);
+        origin.addSubmatch(MagicMatch(MagicMatch.Type.string_, [0x03, 0x04, 0x05]));
+        origin.addSubmatch(MagicMatch(MagicMatch.Type.string_, [0x06, 0x07]));
+        
+        const corigin = origin;
+        assert(corigin.submatches().length == 2);
+        
+        auto shallow = origin;
+        shallow.submatches()[0].startOffset = 4;
+        assert(origin.submatches()[0].startOffset() == 4);
+        
+        auto clone = origin.clone();
+        clone.submatches()[1].rangeLength = 3;
+        assert(origin.submatches()[1].rangeLength() == 1);
     }
     
 private:
@@ -189,6 +211,10 @@ struct MimeMagic
         return _matches;
     }
     
+    package @nogc @safe auto matches() nothrow pure {
+        return _matches;
+    }
+    
     /**
      * Add top-level match rule.
      */
@@ -207,13 +233,33 @@ struct MimeMagic
         return _deleteMagic = shouldDelete;
     }
     
-    package MimeMagic clone() const nothrow pure {
+    package @trusted MimeMagic clone() const nothrow pure {
         auto copy = MimeMagic(this.weight());
         copy.shouldDeleteMagic = this.shouldDeleteMagic();
         foreach(match; _matches) {
             copy.addMatch(match.clone());
         }
         return copy;
+    }
+    
+    unittest
+    {
+        auto origin = MimeMagic(60);
+        origin.addMatch(MagicMatch(MagicMatch.Type.string_, [0x01, 0x02]));
+        origin.addMatch(MagicMatch(MagicMatch.Type.string_, [0x03, 0x04, 0x05]));
+        
+        auto shallow = origin;
+        shallow.matches()[0].startOffset = 4;
+        assert(origin.matches()[0].startOffset() == 4);
+        
+        const corigin = origin;
+        assert(corigin.matches().length == 2);
+        
+        auto clone = origin.clone();
+        clone.weight = 50;
+        assert(origin.weight == 60);
+        clone.matches()[1].rangeLength = 3;
+        assert(origin.matches()[1].rangeLength() == 1);
     }
     
 private:

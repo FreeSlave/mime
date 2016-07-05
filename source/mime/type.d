@@ -371,29 +371,19 @@ final class MimeType
     
     /**
      * Create MimeType deep copy.
-     * Params:
-     *  cloneMagic = Whether to clone magic (this can be relatively expensive operation).
      */
-    @trusted MimeType clone(bool cloneMagic = true) nothrow const pure {
+    @safe MimeType clone() nothrow const pure {
         auto copy = new MimeType(this.name());
         copy.icon = this.icon();
         copy.genericIcon = this.genericIcon();
         copy.namespaceUri = this.namespaceUri();
         
-        foreach(parent; this.parents()) {
-            copy.addParent(parent);
-        }
-        foreach(aliasName; this.aliases()) {
-            copy.addAlias(aliasName);
-        }
-        foreach(pattern; this.patterns()) {
-            copy.addPattern(pattern);
-        }
+        copy._parents = this.parents().dup;
+        copy._aliases = this.aliases().dup;
+        copy._patterns = this.patterns().dup;
         
-        if (cloneMagic) {
-            foreach(magic; magics()) {
-                copy.addMagic(magic.clone());
-            }
+        foreach(magic; this.magics()) {
+            copy.addMagic(magic.clone());
         }
         
         return copy;
@@ -410,6 +400,14 @@ final class MimeType
         origin.addAlias("application/xml");
         origin.addPattern("<?xml");
         
+        auto firstMagic = MimeMagic(50);
+        firstMagic.addMatch(MagicMatch(MagicMatch.Type.string_, [0x01, 0x02]));
+        origin.addMagic(firstMagic);
+        
+        auto secondMagic = MimeMagic(60);
+        secondMagic.addMatch(MagicMatch(MagicMatch.Type.string_, [0x03, 0x04]));
+        origin.addMagic(secondMagic);
+        
         auto clone = origin.clone();
         assert(clone.name() == origin.name());
         assert(clone.icon() == origin.icon());
@@ -418,10 +416,13 @@ final class MimeType
         assert(clone.parents() == origin.parents());
         assert(clone.aliases() == origin.aliases());
         assert(clone.patterns() == origin.patterns());
+        assert(clone.magics().length == origin.magics().length);
         
         origin.addParent("text/markup");
         assert(origin.parents() == ["text/plain", "text/markup"]);
         assert(clone.parents() == ["text/plain"]);
+        
+        
     }
     
 private:
