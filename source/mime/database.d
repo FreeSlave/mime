@@ -6,6 +6,7 @@
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2016
+ * See_Also: $(LINK2 https://www.freedesktop.org/wiki/Specifications/shared-mime-info-spec/, Shared MIME database specification)
  */
 
 module mime.database;

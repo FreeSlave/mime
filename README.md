@@ -4,6 +4,8 @@
 
 [![Build Status](https://travis-ci.org/MyLittleRobo/mime.svg?branch=master)](https://travis-ci.org/MyLittleRobo/mime) [![Coverage Status](https://coveralls.io/repos/github/MyLittleRobo/mime/badge.svg?branch=master)](https://coveralls.io/github/MyLittleRobo/mime?branch=master)
 
+[Online documentation](https://mylittlerobo.github.io/d-freedesktop/docs/mime.html)
+
 ## Features
 
 ### Implemented features

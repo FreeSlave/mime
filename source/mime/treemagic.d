@@ -5,7 +5,7 @@
  * License: 
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
- *  Roman Chistokhodov, 2015-2016
+ *  Roman Chistokhodov, 2016
  */
 
 module mime.treemagic;
