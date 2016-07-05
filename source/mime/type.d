@@ -12,6 +12,7 @@ module mime.type;
 
 import mime.common;
 public import mime.magic;
+public import mime.treemagic;
 
 private {
     import std.algorithm;
@@ -370,6 +371,27 @@ final class MimeType
     }
     
     /**
+     * Treemagic rules for this MIME type.
+     */
+    @nogc @safe auto treeMagics() const nothrow pure {
+        return _treemagics;
+    }
+    
+    /**
+     * Add treemagic rule.
+     */
+    @safe void addTreeMagic(TreeMagic magic) nothrow pure {
+        _treemagics ~= magic;
+    }
+    
+    /**
+     * Remove all treemagic rules.
+     */
+    @safe void clearTreeMagic() nothrow pure {
+        _treemagics = null;
+    }
+    
+    /**
      * Create MimeType deep copy.
      */
     @safe MimeType clone() nothrow const pure {
@@ -378,12 +400,24 @@ final class MimeType
         copy.genericIcon = this.genericIcon();
         copy.namespaceUri = this.namespaceUri();
         
-        copy._parents = this.parents().dup;
-        copy._aliases = this.aliases().dup;
-        copy._patterns = this.patterns().dup;
+        foreach(parent; this.parents()) {
+            copy.addParent(parent);
+        }
+        
+        foreach(aliasName; this.aliases()) {
+            copy.addAlias(aliasName);
+        }
+        
+        foreach(pattern; this.patterns()) {
+            copy.addPattern(pattern);
+        }
         
         foreach(magic; this.magics()) {
             copy.addMagic(magic.clone());
+        }
+        
+        foreach(magic; this.treeMagics()) {
+            copy.addTreeMagic(magic.clone());
         }
         
         return copy;
@@ -408,6 +442,8 @@ final class MimeType
         secondMagic.addMatch(MagicMatch(MagicMatch.Type.string_, [0x03, 0x04]));
         origin.addMagic(secondMagic);
         
+        origin.addTreeMagic(TreeMagic(50));
+        
         auto clone = origin.clone();
         assert(clone.name() == origin.name());
         assert(clone.icon() == origin.icon());
@@ -418,11 +454,12 @@ final class MimeType
         assert(clone.patterns() == origin.patterns());
         assert(clone.magics().length == origin.magics().length);
         
+        clone.clearTreeMagic();
+        assert(origin.treeMagics().length == 1);
+        
         origin.addParent("text/markup");
         assert(origin.parents() == ["text/plain", "text/markup"]);
         assert(clone.parents() == ["text/plain"]);
-        
-        
     }
     
 private:
@@ -434,4 +471,5 @@ private:
     string _namespaceUri;
     MimePattern[] _patterns;
     MimeMagic[] _magics;
+    TreeMagic[] _treemagics;
 }

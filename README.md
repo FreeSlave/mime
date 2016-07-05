@@ -10,12 +10,12 @@
 
 * Reading and using mime.cache files to match file names against glob patterns, match file contents against magic rules, resolve aliases and find mime type parents.
 * Reading various shared MIME-info database files in mime/ subfolder, e.g. globs2, magic and others.
+* treemagic support.
 
 ### Missing features
 
 * Reading MIME types from mime/packages sources and mime/MEDIA folders (requires xml library).
 * Determining MIME type by XMLnamespace if document is xml (requires streaming xml library).
-* treemagic support.
 
 ## Examples
     

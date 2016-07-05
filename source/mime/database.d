@@ -246,6 +246,7 @@ unittest
     foptions.globs2 = opt;
     foptions.globs = opt;
     foptions.magic = opt;
+    foptions.treemagic = opt;
     
     auto store = new FilesMimeStore(mimePaths, foptions);
     auto detector = new MimeDetectorFromCache(mimePaths);

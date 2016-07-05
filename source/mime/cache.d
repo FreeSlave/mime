@@ -117,6 +117,7 @@ private:
 
 /**
  * Class for reading mime.cache files. Mime cache is mainly optimized for MIME type detection by file name.
+ * 
  * This class is somewhat low level and tricky to use directly. 
  * Also it knows nothing about $(D mime.type.MimeType).
  * Note: 

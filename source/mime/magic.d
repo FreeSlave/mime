@@ -14,7 +14,7 @@ import std.exception;
 import mime.common;
 
 /**
- * One of magic rules in magic definition. Represents <match> element in source XML.
+ * One of magic rules in magic definition. Represents &lt;match&gt; element in source XML.
  */
 struct MagicMatch
 {
@@ -176,7 +176,7 @@ private:
 }
 
 /**
- * Magic definition. Represents <magic> element in souce XML.
+ * Magic definition. Represents &lt;magic&gt; element in souce XML.
  */
 struct MimeMagic
 {

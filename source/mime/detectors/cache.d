@@ -59,9 +59,6 @@ final class MimeDetectorFromCache : IMimeDetector
         }
     }
     
-    /**
-     * See_Also: $(D mime.detector.IMimeDetector.mimeTypeForFileName)
-     */
     const(char)[] mimeTypeForFileName(const(char)[] fileName)
     {
         const(char)[] mimeType;
@@ -120,9 +117,6 @@ final class MimeDetectorFromCache : IMimeDetector
         return mimeType;
     }
     
-    /**
-     * See_Also: $(D mime.detector.IMimeDetector.mimeTypesForFileName)
-     */
     const(char[])[] mimeTypesForFileName(const(char)[] fileName)
     {
         const(char)[][] conflicts;
@@ -204,9 +198,6 @@ final class MimeDetectorFromCache : IMimeDetector
         return false;
     }
     
-    /**
-     * See_Also: $(D mime.detector.IMimeDetector.mimeTypeForData)
-     */
     const(char)[] mimeTypeForData(const(void)[] data)
     {
         const(char)[] mimeType;
@@ -230,9 +221,6 @@ final class MimeDetectorFromCache : IMimeDetector
         return mimeType;
     }
     
-    /**
-     * See_Also: $(D mime.detector.IMimeDetector.mimeTypesForData)
-     */
     const(char[])[] mimeTypesForData(const(void)[] data)
     {
         const(char)[][] conflicts;
@@ -274,9 +262,6 @@ final class MimeDetectorFromCache : IMimeDetector
         return false;
     }
     
-    /**
-     * See_Also: $(D mime.detector.IMimeDetector.mimeTypeForNamespaceUri)
-     */
     const(char)[] mimeTypeForNamespaceUri(const(char)[] namespaceUri)
     {
         foreach(mimeCache; _mimeCaches) {
@@ -288,9 +273,6 @@ final class MimeDetectorFromCache : IMimeDetector
         return null;
     }
     
-    /**
-     * See_Also: $(D mime.detector.IMimeDetector.resolveAlias)
-     */
     const(char)[] resolveAlias(const(char)[] aliasName)
     {
         foreach(mimeCache; _mimeCaches) {
@@ -302,9 +284,6 @@ final class MimeDetectorFromCache : IMimeDetector
         return null;
     }
     
-    /**
-     * See_Also: $(D mime.detector.IMimeDetector.isSubclassOf)
-     */
     bool isSubclassOf(const(char)[] mimeType, const(char)[] parent)
     {
         foreach(mimeCache; _mimeCaches) {

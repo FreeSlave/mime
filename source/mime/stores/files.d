@@ -30,6 +30,7 @@ private {
     import mime.files.namespaces;
     import mime.files.subclasses;
     import mime.files.types;
+    import mime.files.treemagic;
 }
 
 public import mime.files.common;
@@ -42,17 +43,12 @@ private @trusted auto fileReader(string fileName) {
     }
 }
 
-private bool fileExists(string fileName) {
-    bool ok;
-    collectException(fileName.isFile, ok);
-    return ok;
-}
-
 /**
  * Implementation of $(D mime.store.IMimeStore) interface that uses various files from mime/ subfolder to read MIME types.
  */
 final class FilesMimeStore : IMimeStore
 {
+    ///
     alias Tuple!(string, "fileName", Exception, "e") FileError;
     
     /**
@@ -62,7 +58,7 @@ final class FilesMimeStore : IMimeStore
     {
         enum : ubyte {
             skip = 0, ///Don't try to read file.
-            read = 1, ///Try do read file.
+            read = 1, ///Try to read file. Give up on any error without throwing it.
             throwReadError = 2, ///Throw on file reading error.
             throwParseError = 4, ///Throw on file parsing error.
             saveErrors = 8, ///Save non-thrown errors to retrieve later via errors method.
@@ -79,19 +75,23 @@ final class FilesMimeStore : IMimeStore
         ubyte genericIcons = optional; ///Options for reading generic-icons file.
         ubyte XMLnamespaces = optional;///Options for reading XMLnamespaces file.
         ubyte globs2 = optional;       ///Options for reading globs2 file.
-        ubyte globs = optional;        ///Options for reading globs file. Used only if globs2 file could not or was not read.
-        ubyte magic = optional;        ///Options for reading magic file.
+        ubyte globs = optional;        ///Options for reading globs file. Used only if globs2 file could not be read.
+        ubyte magic = skip;            ///Options for reading magic file.
+        ubyte treemagic = skip;        ///Options for reading treemagic file.
     }
     
     private void handleError(Exception e, ubyte option, string fileName)
     {
         auto me = cast(MimeFileException)e;
         auto mme = cast(MimeMagicFileException)e;
-        if ((me !is null || mme !is null) && option & Options.throwParseError) {
+        auto tme = cast(TreeMagicFileException)e;
+        if ((me !is null || mme !is null || tme !is null) && option & Options.throwParseError) {
             if (me) {
                 throw me;
-            } else {
+            } else if (mme) {
                 throw mme;
+            } else if (tme) {
+                throw tme;
             }
         }
         
@@ -105,7 +105,7 @@ final class FilesMimeStore : IMimeStore
             }   
         }
         
-        if (ee is null && fe is null && me is null && mme is null) {
+        if (ee is null && fe is null && me is null && mme is null && tme is null) {
             throw e;
         }
         
@@ -120,9 +120,10 @@ final class FilesMimeStore : IMimeStore
      *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
      *  options = Options for file reading and error reporting.
      * Throws:
-     *  $(D MimeFileException) if some info file has errors.
-     *  $(D MimeMagicFileException) if magic file has errors.
-     *  ErrnoException if some important file does not exist or could not be read.
+     *  $(D mime.files.common.MimeFileException) if some info file has errors.
+     *  $(D mime.files.magic.MimeMagicFileException) if magic file has errors.
+     *  $(D mime.files.treemagic.TreeMagicFileException) if treemagic file has errors.
+     *  ErrnoException or FileException if some important file does not exist or could not be read.
      * See_Also: $(D mime.paths.mimePaths)
      */
     this(Range)(Range mimePaths, Options options = Options.init) if (isInputRange!Range && is(ElementType!Range : string))
@@ -179,7 +180,7 @@ final class FilesMimeStore : IMimeStore
                         auto mimeType = ensureMimeType(iconLine.mimeType);
                         mimeType.icon = iconLine.iconName;
                     }
-                } catch(ErrnoException e) {
+                } catch(Exception e) {
                     handleError(e, options.icons, iconsPath);
                 }
             }
@@ -248,19 +249,60 @@ final class FilesMimeStore : IMimeStore
                     handleError(e, options.magic, magicPath);
                 }
             }
+            
+            if (options.treemagic & Options.read) {
+                auto treemagicPath = buildPath(mimePath, "treemagic");
+                try {
+                    void treeSink(TreeMagicEntry t) {
+                        auto mimeType = ensureMimeType(t.mimeType);
+                        mimeType.addTreeMagic(t.magic);
+                    }
+                    treeMagicFileReader(assumeUnique(std.file.read(treemagicPath)), &treeSink);
+                } catch(Exception e) {
+                    handleError(e, options.treemagic, treemagicPath);
+                }
+            }
         }
     }
     
-    /**
-     * See_Also: $(D mime.store.IMimeStore.byMimeType)
-     */
+    unittest
+    {
+        auto mimePaths = ["test/errors"];
+        const skipAll = Options(0,0,0,0,0,0,0,0,0,0);
+        
+        void fileTest(string name, T = MimeFileException)(ubyte opt = Options.required) {
+            Options options = skipAll;
+            mixin("options." ~ name ~ " = opt;");
+            assertThrown!T(new FilesMimeStore(mimePaths, options));
+        }
+        
+        fileTest!("types");
+        fileTest!("aliases");
+        fileTest!("subclasses");
+        fileTest!("genericIcons");
+        fileTest!("icons");
+        fileTest!("XMLnamespaces");
+        fileTest!("globs");
+        fileTest!("globs2", ErrnoException);
+        
+        Options magic = skipAll;
+        magic.magic = Options.required;
+        assertThrown!MimeMagicFileException(new FilesMimeStore(mimePaths, magic));
+        
+        Options treemagic = skipAll;
+        treemagic.treemagic = Options.required;
+        assertThrown!TreeMagicFileException(new FilesMimeStore(mimePaths, treemagic));
+        
+        const opt = Options.allowFail | Options.saveErrors;
+        const all = Options(opt, opt, opt, opt, opt, opt, opt, opt, opt, opt);
+        auto store = new FilesMimeStore(mimePaths, all);
+        assert(store.errors().length == 10);
+    }
+    
     InputRange!(const(MimeType)) byMimeType() {
         return inputRangeObject(_mimeTypes.byValue().map!(val => cast(const(MimeType))val));
     }
     
-    /**
-     * See_Also: $(D mime.store.IMimeStore.mimeType)
-     */
     Rebindable!(const(MimeType)) mimeType(const char[] name) {
         return rebindable(mimeTypeImpl(name));
     }

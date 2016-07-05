@@ -1,3 +1,13 @@
+/**
+ * Treemagic rules object representation.
+ * Authors: 
+ *  $(LINK2 https://github.com/MyLittleRobo, Roman Chistokhodov)
+ * License: 
+ *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+ * Copyright:
+ *  Roman Chistokhodov, 2015-2016
+ */
+
 module mime.treemagic;
 
 import std.exception;
@@ -7,6 +17,9 @@ import std.path;
 import mime.common;
 import mime.files.treemagic;
 
+/**
+ * One of treemagic rules in treemagic definition. Represents &lt;treematch&gt; element in source XML.
+ */
 struct TreeMatch
 {
     ///Required type of file
@@ -58,15 +71,53 @@ struct TreeMatch
         return _submatches;
     }
     
+    package @nogc @safe auto submatches() nothrow pure {
+        return _submatches;
+    }
+    
     ///
     @safe void addSubmatch(TreeMatch match) nothrow pure {
         _submatches ~= match;
+    }
+    
+    package @trusted TreeMatch clone() const nothrow pure {
+        TreeMatch copy;
+        copy.type = this.type;
+        copy.path = this.path;
+        copy.options = this.options;
+        copy.mimeType = this.mimeType;
+        
+        foreach(match; _submatches) {
+            copy.addSubmatch(match.clone());
+        }
+        return copy;
+    }
+    
+    unittest
+    {
+        auto origin = TreeMatch("dir", Type.directory);
+        origin.addSubmatch(TreeMatch("file", Type.file));
+        origin.addSubmatch(TreeMatch("link", Type.link));
+        
+        const corigin = origin;
+        assert(corigin.submatches().length == 2);
+        
+        auto shallow = origin;
+        shallow.submatches()[0].type = Type.any;
+        assert(origin.submatches()[0].type == Type.any);
+        
+        auto clone = origin.clone();
+        clone.submatches()[1].path = "short";
+        assert(origin.submatches()[1].path == "link");
     }
     
 private:
     TreeMatch[] _submatches;
 }
 
+/**
+ * Treemagic definition. Represents &lt;treemagic&gt; element in souce XML.
+ */
 struct TreeMagic
 {
     /**
@@ -99,12 +150,45 @@ struct TreeMagic
         return _matches;
     }
     
+    package @nogc @safe auto matches() nothrow pure {
+        return _matches;
+    }
+    
     /**
      * Add top-level match rule.
      */
     @safe void addMatch(TreeMatch match) nothrow pure {
         _matches ~= match;
     }
+    
+    package @trusted TreeMagic clone() const nothrow pure {
+        auto copy = TreeMagic(this.weight());
+        foreach(match; _matches) {
+            copy.addMatch(match.clone());
+        }
+        return copy;
+    }
+    
+    unittest
+    {
+        auto origin = TreeMagic(60);
+        origin.addMatch(TreeMatch("path", TreeMatch.Type.directory));
+        origin.addMatch(TreeMatch("path", TreeMatch.Type.directory));
+        
+        auto shallow = origin;
+        shallow.matches()[0].type = TreeMatch.Type.file;
+        assert(origin.matches()[0].type == TreeMatch.Type.file);
+        
+        const corigin = origin;
+        assert(corigin.matches().length == 2);
+        
+        auto clone = origin.clone();
+        clone.weight = 50;
+        assert(origin.weight == 60);
+        clone.matches()[1].type = TreeMatch.Type.link;
+        assert(origin.matches()[1].type == TreeMatch.Type.directory);
+    }
+    
 private:
     uint _weight = defaultMatchWeight;
     TreeMatch[] _matches;
@@ -157,7 +241,12 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
             version(Posix) {
                 import core.sys.posix.unistd;
                 import std.string : toStringz;
-                ok = access(toStringz(path), X_OK) == 0;
+                try {
+                    ok = access(toStringz(path), X_OK) == 0;
+                } catch(Exception e) {
+                    ok = false;
+                }
+                
             } else version(Windows) {
                 ok = filenameCmp(path.extension, ".exe") == 0;
             }
