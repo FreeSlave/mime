@@ -31,6 +31,7 @@ final class MimeMagicFileException : Exception
     }
 }
 
+///MIME type name and corresponding magic.
 alias Tuple!(immutable(char)[], "mimeType", MimeMagic, "magic") MagicEntry;
 
 private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)

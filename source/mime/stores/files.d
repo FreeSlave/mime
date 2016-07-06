@@ -82,30 +82,27 @@ final class FilesMimeStore : IMimeStore
     
     private void handleError(Exception e, ubyte option, string fileName)
     {
-        auto me = cast(MimeFileException)e;
-        auto mme = cast(MimeMagicFileException)e;
-        auto tme = cast(TreeMagicFileException)e;
-        if ((me !is null || mme !is null || tme !is null) && option & Options.throwParseError) {
-            if (me) {
-                throw me;
-            } else if (mme) {
-                throw mme;
-            } else if (tme) {
-                throw tme;
+        bool known;
+        if (cast(MimeFileException)e !is null || 
+            cast(MimeMagicFileException)e !is null || 
+            cast(TreeMagicFileException)e !is null)
+        {
+            if (option & Options.throwParseError) {
+                throw e;
             }
+            known = true;
         }
         
-        auto ee = cast(ErrnoException)e;
-        auto fe = cast(FileException)e;
-        if ((ee !is null || fe !is null) && option & Options.throwReadError) {
-            if (ee) {
-                throw ee;
-            } else {
-                throw fe;
-            }   
+        if (cast(ErrnoException)e !is null || 
+            cast(FileException)e !is null)
+        {
+            if (option & Options.throwReadError) {
+                throw e;
+            }
+            known = true;
         }
         
-        if (ee is null && fe is null && me is null && mme is null && tme is null) {
+        if (!known) {
             throw e;
         }
         

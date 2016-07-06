@@ -33,6 +33,7 @@ final class TreeMagicFileException : Exception
     }
 }
 
+///MIME type name and corresponding treemagic.
 alias Tuple!(immutable(char)[], "mimeType", TreeMagic, "magic") TreeMagicEntry;
 
 private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint myIndent)
