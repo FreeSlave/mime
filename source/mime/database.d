@@ -232,7 +232,7 @@ unittest
     import mime.stores.files;
     import mime.detectors.cache;
     
-    auto mimePaths = ["./test/mime"];
+    auto mimePaths = ["./test/mime", "./test/discard"];
     
     alias FilesMimeStore.Options FOptions;
     FOptions foptions;
@@ -252,9 +252,10 @@ unittest
     auto store = new FilesMimeStore(mimePaths, foptions);
     auto detector = new MimeDetectorFromCache(mimePaths);
     
-    assert(detector.mimeCaches().length == 1);
+    assert(detector.mimeCaches().length == 2);
     assert(detector.mimeTypeForFileName("sprite.spr").length);
     assert(detector.mimeTypeForFileName("model01.mdl").length);
+    assert(detector.mimeTypeForFileName("liblist.gam").length);
     assert(detector.mimeTypeForFileName("no.exist").empty);
     assert(detector.mimeTypeForData("IDSP\x02\x00\x00\x00") == "image/x-hlsprite");
     assert(detector.resolveAlias("application/nonexistent") is null);
@@ -323,6 +324,10 @@ unittest
     assert(qsprite !is null);
     assert(qsprite.name == "image/x-qsprite");
     
+    auto q2sprite = database.mimeTypeForData("IDS2");
+    assert(q2sprite !is null);
+    assert(q2sprite.name == "image/x-q2sprite");
+    
     //testing case-insensitive suffix
     auto vpk = database.mimeTypeForFileName("pakdir.vpk");
     assert(vpk !is null);
@@ -345,4 +350,17 @@ unittest
     //testing case-sensitive suffix
     assert(database.mimeTypeForFileName("my.shader"));
     assert(!database.mimeTypeForFileName("my.SHADER"));
+    
+    //testing literal
+    assert(database.mimeTypeForFileName("liblist.gam"));
+    assert(database.mimeTypeForFileName("GNUmakefile"));
+    
+    //testing discard magic
+    assert(!database.mimeTypeForData("PAK"));
+    assert(!database.detector.mimeTypeForData("PAK"));
+    assert(!database.mimeTypeForFileName("file.qwad"));
+    
+    //conflicts
+    assert(database.mimeTypeForFileName("file.jmf"));
+    assert(database.mimeTypeForData("PACK"));
 }

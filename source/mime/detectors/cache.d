@@ -84,7 +84,10 @@ final class MimeDetectorFromCache : IMimeDetector
                 if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..i])) {
                     continue;
                 }
-                if (mimeType.empty || weight < alternative.weight || (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) {
+                if (mimeType.empty || 
+                    weight < alternative.weight || 
+                    (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) 
+                {
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                     lastPatternLength = alternative.pattern.length;
@@ -102,7 +105,10 @@ final class MimeDetectorFromCache : IMimeDetector
             if (shouldDiscardGlob(alternative.mimeType, _mimeCaches[0..mimeCacheIndex])) {
                 return;
             }
-            if (mimeType.empty || weight < alternative.weight || (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) {
+            if (mimeType.empty || 
+                weight < alternative.weight || 
+                (weight == alternative.weight && lastPatternLength < alternative.pattern.length)) 
+            {
                 mimeType = alternative.mimeType;
                 weight = alternative.weight;
                 lastPatternLength = alternative.pattern.length;
@@ -132,7 +138,10 @@ final class MimeDetectorFromCache : IMimeDetector
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                     conflicts = null;
-                } else if (weight == alternative.weight && mimeType != alternative.mimeType && conflicts.find(alternative.mimeType).empty) {
+                } else if (weight == alternative.weight && 
+                    mimeType != alternative.mimeType && 
+                    conflicts.find(alternative.mimeType).empty) 
+                {
                     conflicts ~= alternative.mimeType;
                 }
             }
@@ -151,7 +160,10 @@ final class MimeDetectorFromCache : IMimeDetector
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                     conflicts = null;
-                } else if (weight == alternative.weight && mimeType != alternative.mimeType && conflicts.find(alternative.mimeType).empty) {
+                } else if (weight == alternative.weight && 
+                    mimeType != alternative.mimeType && 
+                    conflicts.find(alternative.mimeType).empty) 
+                {
                     conflicts ~= alternative.mimeType;
                 }
             }
@@ -171,7 +183,10 @@ final class MimeDetectorFromCache : IMimeDetector
                 mimeType = alternative.mimeType;
                 weight = alternative.weight;
                 conflicts = null;
-            } else if (weight == alternative.weight && mimeType != alternative.mimeType && conflicts.find(alternative.mimeType).empty) {
+            } else if (weight == alternative.weight && 
+                mimeType != alternative.mimeType && 
+                conflicts.find(alternative.mimeType).empty) 
+            {
                 conflicts ~= alternative.mimeType;
             }
         }
@@ -191,7 +206,12 @@ final class MimeDetectorFromCache : IMimeDetector
     private bool shouldDiscardGlob(const(char)[] mimeType, const(MimeCache)[] mimeCaches)
     {
         foreach(mimeCache; mimeCaches) {
-            if (!mimeCache.findMimeTypesByLiteral("__NOGLOBS__").map!(alternative => alternative.mimeType).find(mimeType).empty) {
+            auto range = mimeCache
+                .findMimeTypesByLiteral("__NOGLOBS__")
+                .map!(alternative => alternative.mimeType)
+                .find(mimeType);
+                
+            if (!range.empty) {
                 return true;
             }
         }
@@ -238,7 +258,10 @@ final class MimeDetectorFromCache : IMimeDetector
                     mimeType = alternative.mimeType;
                     weight = alternative.weight;
                     conflicts = null;
-                } else if (weight == alternative.weight && mimeType != alternative.mimeType && conflicts.find(alternative.mimeType).empty) {
+                } else if (weight == alternative.weight && 
+                    mimeType != alternative.mimeType && 
+                    conflicts.find(alternative.mimeType).empty) 
+                {
                     conflicts ~= alternative.mimeType;
                 } else if (weight > alternative.weight) {
                     break; //stop since there're no alternatives with equal or better weight left.

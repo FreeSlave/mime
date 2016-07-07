@@ -36,6 +36,8 @@ inode/directory
 text/plain
 text/x-ent
 text/x-fgd
+text/x-liblist
+text/x-makefile
 text/x-q3shader
 text/x-qchdr
 text/x-qcsrc

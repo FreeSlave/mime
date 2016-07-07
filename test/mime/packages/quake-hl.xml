@@ -80,6 +80,12 @@
         <glob pattern="*.shader" case-sensitive="true"/>
     </mime-type>
     
+    <mime-type type="text/x-liblist">
+        <comment>Half-Life game library list</comment>
+        <sub-class-of type="text/plain"/>
+        <glob pattern="liblist.gam"/>
+    </mime-type>
+        
     <!-- Map source formats -->
     <mime-type type="application/x-map">
         <comment>Map source file</comment>
@@ -110,6 +116,7 @@
         <magic priority="50">
             <match value="PACK" type="string" offset="0"/>
         </magic>
+        <magic-deleteall/>
         <glob pattern="pak*.pak" case-sensitive="true"/>
     </mime-type>
     

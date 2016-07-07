@@ -1,6 +1,8 @@
-text/x-qchdr text/x-chdr
 application/x-jmx application/x-jmf
-text/x-qcsrc text/x-csrc
-text/x-ent text/xml
+text/x-qchdr text/x-chdr
+text/x-liblist text/plain
+text/x-makefile text/plain
 text/x-q3shader text/plain
+text/x-ent text/xml
+text/x-qcsrc text/x-csrc
 text/x-fgd text/plain
