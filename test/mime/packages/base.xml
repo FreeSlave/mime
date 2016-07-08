@@ -32,4 +32,12 @@
             <treematch type="file" path="autorun.sh" match-case="true"/>
         </treemagic>
     </mime-type>
+    <mime-type type="application/x-general-glob">
+        <comment>General glob</comment>
+        <glob pattern="general*glob"/>
+    </mime-type>
+    <mime-type type="application/x-general-long-glob">
+        <comment>General glob</comment>
+        <glob pattern="general*_long_glob"/>
+    </mime-type>
 </mime-info>

@@ -6,6 +6,7 @@
 50:application/x-iqm:*.iqm
 50:text/x-q3shader:*.shader:cs
 50:text/x-q3shader:*.shader
+50:application/x-general-long-glob:general*_long_glob
 50:image/x-sprite32:*.sp2
 50:image/x-q2sprite:*.sp2
 50:image/x-qsprite:*.spr
@@ -39,8 +40,9 @@
 50:text/x-qcsrc:*.qc
 50:text/x-makefile:gnumakefile
 50:text/x-qchdr:*.qh
+50:application/x-general-glob:general*glob
 50:application/x-vmf:*.vmf
 50:application/x-map:*.map
-50:text/x-makefile:makefile
 50:application/x-jmx:*.jmx
 50:text/x-fgd:*.fgd
+50:text/x-makefile:makefile

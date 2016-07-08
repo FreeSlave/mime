@@ -232,7 +232,7 @@ unittest
     import mime.stores.files;
     import mime.detectors.cache;
     
-    auto mimePaths = ["./test/mime", "./test/discard"];
+    auto mimePaths = ["./test/mime", "./test/discard", "./test/nonexistent"];
     
     alias FilesMimeStore.Options FOptions;
     FOptions foptions;
@@ -250,6 +250,7 @@ unittest
     foptions.treemagic = opt;
     
     auto store = new FilesMimeStore(mimePaths, foptions);
+    assert(!store.byMimeType().empty);
     auto detector = new MimeDetectorFromCache(mimePaths);
     
     assert(detector.mimeCaches().length == 2);
@@ -261,7 +262,7 @@ unittest
     assert(detector.resolveAlias("application/nonexistent") is null);
     
     assert(detector.mimeTypeForNamespaceUri("http://www.w3.org/1999/ent") == "text/x-ent");
-    assert(detector.mimeTypeForNamespaceUri("nonexisten").empty);
+    assert(detector.mimeTypeForNamespaceUri("nonexistent").empty);
     
     auto database = new MimeDatabase(store, detector);
     assert(database.detector() is detector);
@@ -343,6 +344,11 @@ unittest
     assert(modelseq.name == "application/x-hlmdl-sequence");
     modelseq = database.mimeTypeForFileName("model01.MDL");
     assert(modelseq !is null && modelseq.name == "application/x-hlmdl-sequence");
+    
+    auto generalGlob = database.mimeTypeForFileName("general_test_long_glob");
+    assert(generalGlob !is null);
+    assert(generalGlob.name == "application/x-general-long-glob");
+    assert(database.detector.mimeTypeForFileName("general_test_long_glob"));
     
     assert(!database.mimeTypeForFileName("pak1.PAK"));
     assert(database.mimeTypeForFileName("pak1.pak"));

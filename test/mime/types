@@ -1,6 +1,8 @@
 application/octet-stream
 application/vnd.valve.vpk
 application/x-gcf
+application/x-general-glob
+application/x-general-long-glob
 application/x-hl2bsp
 application/x-hl2mdl
 application/x-hlbsp

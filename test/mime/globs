@@ -4,6 +4,7 @@ image/x-sprite32:*.spr32
 application/x-pak:pak*.pak
 application/x-iqm:*.iqm
 text/x-q3shader:*.shader
+application/x-general-long-glob:general*_long_glob
 image/x-sprite32:*.sp2
 image/x-q2sprite:*.sp2
 image/x-qsprite:*.spr
@@ -37,8 +38,9 @@ application/x-gcf:*.gcf
 text/x-qcsrc:*.qc
 text/x-makefile:gnumakefile
 text/x-qchdr:*.qh
+application/x-general-glob:general*glob
 application/x-vmf:*.vmf
 application/x-map:*.map
-text/x-makefile:makefile
 application/x-jmx:*.jmx
 text/x-fgd:*.fgd
+text/x-makefile:makefile
