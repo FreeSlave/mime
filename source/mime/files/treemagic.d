@@ -92,7 +92,7 @@ private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint my
                     options |= TreeMatch.Options.mimeType;
                     mimeType = option;
                 } else {
-                    throw new Exception("Unexpected option" ~ option);
+                    throw new Exception("Unexpected option " ~ option);
                 }
             }
         }
@@ -184,24 +184,36 @@ unittest
     auto data = 
     "MIME-TreeMagic\0\n[50:x-content/video-bluray]\n"
         ">\"BDAV\"=directory,non-empty\n"
-            "1>\"autorun\"=file,executable,match-case\n";
+            "1>\"autorun\"=file,executable,match-case\n"
+            "1>\"testlink\"=link\n"
+        ">\"testfile\"=any,application/x-executable,executable\n";
     
     void sink(TreeMagicEntry t) {
         assert(t.mimeType == "x-content/video-bluray");
         assert(t.magic.weight == 50);
-        assert(t.magic.matches.length == 1);
+        assert(t.magic.matches.length == 2);
         
         auto submatch = t.magic.matches[0];
         assert(submatch.path == "BDAV");
         assert(submatch.type == TreeMatch.Type.directory);
         assert(submatch.options == TreeMatch.Options.nonEmpty);
-        assert(submatch.submatches.length == 1);
+        assert(submatch.submatches.length == 2);
+        
+        auto otherSubmatch = t.magic.matches[1];
+        assert(otherSubmatch.path == "testfile");
+        assert(otherSubmatch.type == TreeMatch.Type.any);
+        assert(otherSubmatch.options == (TreeMatch.Options.executable | TreeMatch.Options.mimeType));
+        assert(otherSubmatch.mimeType == "application/x-executable");
         
         auto autorun = submatch.submatches[0];
         assert(autorun.path == "autorun");
         assert(autorun.submatches.length == 0);
         assert(autorun.type == TreeMatch.Type.file);
         assert(autorun.options == (TreeMatch.Options.executable | TreeMatch.Options.matchCase));
+        
+        auto testlink = submatch.submatches[1];
+        assert(testlink.path == "testlink");
+        assert(testlink.type == TreeMatch.Type.link);
     }
     treeMagicFileReader(data, &sink);
     
@@ -209,4 +221,12 @@ unittest
         
     }
     assertThrown!TreeMagicFileException(treeMagicFileReader("MIME-wrong-magic", &emptySink));
+    
+    data = "MIME-TreeMagic\0\n[50:x-content/video-bluray]\n"
+        ">\"BDAV\"=unknown\n";
+    assertThrown!TreeMagicFileException(treeMagicFileReader(data, &emptySink));
+    
+    data = "MIME-TreeMagic\0\n[50:x-content/video-bluray]\n"
+        ">\"BDAV\"=directory,unexpected\n";
+    assertThrown!TreeMagicFileException(treeMagicFileReader(data, &emptySink));
 }

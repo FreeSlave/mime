@@ -213,6 +213,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
                 if (filenameCmp!(CaseSensitive.no)(entry.name, buildPath(mountPoint, match.path)) == 0) {
                     path = entry.name;
                     attrs = entry.linkAttributes();
+                    break;
                 }
             }
         } catch(Exception e) {
