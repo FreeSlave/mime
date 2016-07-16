@@ -1,0 +1,42 @@
+2372a2373,2396
+> typedef struct
+> {
+>   GetValueFunc *get_value;
+>   gpointer      data;
+>   guint count;
+> 
+> } CountData;
+> 
+> static void
+> count_map_entry (gpointer key,
+> 		 gpointer data)
+> {
+>   CountData *count_data = (CountData *)data;
+>   gchar **values;
+> 
+>   values = (* count_data->get_value) (count_data->data, key);
+>   count_data->count += g_strv_length (values) / 3;
+>   g_strfreev (values);
+> }
+> 
+> static gchar **
+> get_glob_list_value (gpointer  data, 
+>              gchar    *key);
+> 
+2384a2409,2410
+>   CountData count_data;
+>   guint count;
+2394c2420,2430
+<   if (!write_card32 (cache, keys->len))
+---
+>   if (get_value == &get_glob_list_value) {
+>       count_data.count = 0;
+>     count_data.data = map;
+>     count_data.get_value = get_value;
+>     g_ptr_array_foreach (keys, count_map_entry, &count_data);
+>     count = count_data.count;
+>   } else {
+>       count = keys->len;
+>   }
+> 
+>   if (!write_card32 (cache, count))

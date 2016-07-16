@@ -359,7 +359,17 @@ unittest
     
     //testing literal
     assert(database.mimeTypeForFileName("liblist.gam"));
-    assert(database.mimeTypeForFileName("GNUmakefile"));
+    assert(database.mimeTypeForFileName("makefile"));
+    
+    //testing discard glob
+    assert(!database.mimeTypeForFileName("GNUmakefile"));
+    assert(!database.detector.mimeTypeForFileName("GNUmakefile"));
+    
+    assert(!database.mimeTypeForFileName("file.qvm3"));
+    assert(!database.detector.mimeTypeForFileName("file.qvm3"));
+    
+    assert(!database.mimeTypeForFileName("model01.sequence"));
+    assert(!database.detector.mimeTypeForFileName("model01.sequence"));
     
     //testing discard magic
     assert(!database.mimeTypeForData("PAK"));

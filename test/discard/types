@@ -1,5 +1,8 @@
 application/java-multimedia-file
+application/x-hlmdl-sequence
 application/x-otherpak
 application/x-pak
+application/x-qvm
 image/x-somesprite
-text/x-gnumakefile
+text/x-makefile
+text/x-othermakefile

@@ -1,0 +1,3 @@
+update-mime-database from shared-mime-info 1.6 has bugs with writing the number of literal and glob patterns.
+These tests use patched version to make 100% coverage of mime/detectors/cache.d possible.
+Patch is provided as update-mime-database.c.patch file.

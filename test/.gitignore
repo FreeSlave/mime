@@ -1,0 +1,1 @@
+update-mime-database

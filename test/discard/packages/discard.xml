@@ -10,7 +10,12 @@
         <comment>Java multimedia file</comment>
         <glob pattern="*.jmf"/>
     </mime-type>
-    <mime-type type="text/x-gnumakefile">
+    <mime-type type="text/x-othermakefile">
+        <comment>Makefile</comment>
+        <sub-class-of type="text/plain"/>
+        <glob pattern="makefile"/>
+    </mime-type>
+    <mime-type type="text/x-makefile">
         <comment>Makefile</comment>
         <sub-class-of type="text/plain"/>
         <glob pattern="GNUmakefile"/>
@@ -26,5 +31,14 @@
         <magic priority="50">
             <match value="IDS2" type="string" offset="0"/>
         </magic>
+    </mime-type>
+    <mime-type type="application/x-hlmdl-sequence">
+        <comment>Half-Life model sequence</comment>
+        <generic-icon name="application-x-hlmdl"/>
+        <glob pattern="**[0123456789][0123456789].sequence"/>
+    </mime-type>
+    <mime-type type="application/x-qvm">
+        <comment>Quake III virtual machine bytecode</comment>
+        <glob pattern="*.qvm3"/>
     </mime-type>
 </mime-info>

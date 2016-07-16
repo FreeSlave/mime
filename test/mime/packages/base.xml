@@ -16,7 +16,7 @@
         <comment>Makefile</comment>
         <sub-class-of type="text/plain"/>
         <glob pattern="makefile"/>
-        <glob pattern="GNUmakefile"/>
+        <glob-deleteall/>
     </mime-type>
     <mime-type type="x-content/image-dcf">
         <comment>digital photos</comment>
