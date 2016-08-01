@@ -1,42 +1,72 @@
-2372a2373,2396
-> typedef struct
-> {
->   GetValueFunc *get_value;
->   gpointer      data;
->   guint count;
-> 
-> } CountData;
-> 
-> static void
-> count_map_entry (gpointer key,
-> 		 gpointer data)
-> {
->   CountData *count_data = (CountData *)data;
->   gchar **values;
-> 
->   values = (* count_data->get_value) (count_data->data, key);
->   count_data->count += g_strv_length (values) / 3;
->   g_strfreev (values);
-> }
-> 
-> static gchar **
-> get_glob_list_value (gpointer  data, 
->              gchar    *key);
-> 
-2384a2409,2410
->   CountData count_data;
->   guint count;
-2394c2420,2430
-<   if (!write_card32 (cache, keys->len))
+From 595cca695684ef8339c651516adfdb02312f4d0b Mon Sep 17 00:00:00 2001
+From: Matthias Clasen <mclasen@redhat.com>
+Date: Mon, 11 Jul 2016 16:00:27 -0400
+Subject: [PATCH] Write the correct length for literal and glob lists to the
+ cache
+
+As pointed out in bugzilla, we were not counting 'duplicates'
+properly here.
+
+https://bugs.freedesktop.org/show_bug.cgi?id=94409
 ---
->   if (get_value == &get_glob_list_value) {
->       count_data.count = 0;
->     count_data.data = map;
->     count_data.get_value = get_value;
->     g_ptr_array_foreach (keys, count_map_entry, &count_data);
->     count = count_data.count;
->   } else {
->       count = keys->len;
->   }
-> 
->   if (!write_card32 (cache, count))
+ update-mime-database.c | 30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
+
+diff --git a/update-mime-database.c b/update-mime-database.c
+index e793bed..5af14d7 100644
+--- a/update-mime-database.c
++++ b/update-mime-database.c
+@@ -2370,6 +2370,26 @@ add_key (gpointer key,
+     g_ptr_array_add (filter_data->keys, key);
+ }
+ 
++typedef struct
++{
++  GetValueFunc *get_value;
++  gpointer      data;
++  guint count;
++  gboolean weighted;
++} CountData;
++
++static void
++count_map_entry (gpointer key,
++		 gpointer data)
++{
++  CountData *count_data = (CountData *)data;
++  gchar **values;
++
++  values = (* count_data->get_value) (count_data->data, key);
++  count_data->count += g_strv_length (values) / (count_data->weighted ? 3 : 2);
++  g_strfreev (values);
++}
++
+ static gboolean
+ write_map (FILE         *cache,
+ 	   GHashTable   *strings,
+@@ -2382,6 +2402,7 @@ write_map (FILE         *cache,
+   GPtrArray *keys;
+   MapData map_data;
+   FilterData filter_data;
++  CountData count_data;
+ 
+   keys = g_ptr_array_new ();
+   
+@@ -2391,7 +2412,14 @@ write_map (FILE         *cache,
+ 
+   g_ptr_array_sort (keys, strcmp2);
+ 
+-  if (!write_card32 (cache, keys->len))
++  count_data.data = map;
++  count_data.count = 0;
++  count_data.get_value = get_value;
++  count_data.weighted = weighted;
++
++  g_ptr_array_foreach (keys, count_map_entry, &count_data);
++
++  if (!write_card32 (cache, count_data.count))
+     return FALSE;
+ 
+   map_data.cache = cache;
+-- 
+2.9.2
+
