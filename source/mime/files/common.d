@@ -31,3 +31,15 @@ private:
 
 package enum string lineFilter = "!a.empty && a[0] != '#'";
 
+package uint parseIndent(ref immutable(char)[] current)
+{
+    import std.exception : enforce;
+    import std.conv : parse;
+    enforce(current.length);
+    uint indent = 0;
+
+    if (current[0] != '>') {
+        indent = parse!uint(current);
+    }
+    return indent;
+}

@@ -21,6 +21,7 @@ private {
     import std.string;
     import std.traits;
     import std.typecons;
+    import mime.files.common;
 }
 
 ///Exception thrown on parse errors while reading shared MIME database magic file.
@@ -118,17 +119,6 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
     }
 
     return match;
-}
-
-private uint parseIndent(ref immutable(char)[] current)
-{
-    enforce(current.length);
-    uint indent = 0;
-
-    if (current[0] != '>') {
-        indent = parse!uint(current);
-    }
-    return indent;
 }
 
 /**
