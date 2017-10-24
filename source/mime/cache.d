@@ -321,13 +321,18 @@ final class MimeCache
      * Returns: true if mimeType is subclass of parent. False otherwise.
      */
     @trusted bool isSubclassOf(const(char)[] mimeType, const(char)[] parent) const {
-        //TODO: should check for circular references?
-        return isSubclassOfHelper(mimeType, parent);
+        return isSubclassOfHelper(mimeType, parent, 0);
     }
 
-    private @trusted bool isSubclassOfHelper(const(char)[] mimeType, const(char)[] parent) const {
+    // Just some number to protect from stack overflow or circular subclassing (in specially crafted files).
+    // Could not find any real limit in spec.
+    private static immutable maxSubclassDepth = 8;
+    private @trusted bool isSubclassOfHelper(const(char)[] mimeType, const(char)[] parent, uint depth) const {
+        if (depth > maxSubclassDepth) {
+            return false;
+        }
         foreach(candidate; parents(mimeType)) {
-            if (candidate == parent || isSubclassOfHelper(candidate, parent)) {
+            if (candidate == parent || isSubclassOfHelper(candidate, parent, depth+1)) {
                 return true;
             }
         }
