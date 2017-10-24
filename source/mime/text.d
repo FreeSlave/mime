@@ -1,8 +1,8 @@
 /**
  * Text utility functions.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2016
@@ -29,13 +29,13 @@ private @safe bool isValidUnicodeTail(const(char)[] tail) nothrow pure
 {
     import std.utf;
     import std.uni;
-    
+
     if (!data.length) {
         return false;
     }
-    
+
     auto str = cast(const(char)[])data;
-    
+
     size_t index;
     try {
         while (index < str.length) {
@@ -63,7 +63,7 @@ private @safe bool isValidUnicodeTail(const(char)[] tail) nothrow pure
         }
         return false;
     }
-    
+
     return true;
 }
 
@@ -77,14 +77,14 @@ unittest
     assert(isTextualData("Copyright ©"));
     assert(isTextualData("0A a!\n\r\t~(){}.?"));
     assert(isTextualData("Hello \U0001F603"));
-    
+
     assert(isTextualData("日本語"[0..$-1]));
     assert(isTextualData("Русский язык"[0..$-1]));
     assert(isTextualData("Hello \U0001F603"[0..$-1]));
     assert(isTextualData("text \u00A2"[0..$-1]));
-    
+
     assert(!isTextualData("text\U000F0000text"));//private use
-    
+
     assert(!isTextualData(""));
     assert(!isTextualData("abc\x01"));
     assert(!isTextualData("\xFF\xFE"));

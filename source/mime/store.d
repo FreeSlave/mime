@@ -1,10 +1,10 @@
 /**
  * MIME type store interface.
  * Implementers should be capable of returning requested MIME types if they exist.
- * 
- * Authors: 
+ *
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2015-2016
@@ -27,7 +27,7 @@ interface IMimeStore
      * Returns: Range of stored $(D mime.type.MimeType) objects.
      */
     InputRange!(const(MimeType)) byMimeType();
-    
+
     /**
      * Get mime type for name.
      * Returns: $(D mime.type.MimeType) for given name.

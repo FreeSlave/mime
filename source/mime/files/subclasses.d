@@ -1,8 +1,8 @@
 /**
  * Parsing mime/subclasses files.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2015-2016
@@ -21,7 +21,7 @@ private {
 }
 
 ///Represents one line in subclasses file.
-alias Tuple!(string, "mimeType", string, "parent") SubclassLine; 
+alias Tuple!(string, "mimeType", string, "parent") SubclassLine;
 
 /**
  * Parse mime/subclasses file by line ignoring empty lines and comments.
@@ -51,6 +51,6 @@ unittest
     string[] lines = ["application/javascript application/ecmascript", "text/x-markdown text/plain"];
     auto expected = [SubclassLine("application/javascript", "application/ecmascript"), SubclassLine("text/x-markdown", "text/plain")];
     assert(equal(subclassesFileReader(lines), expected));
-    
+
     assertThrown!MimeFileException(subclassesFileReader(["application/javascript"]).array, "must throw");
 }

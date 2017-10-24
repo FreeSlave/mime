@@ -1,8 +1,8 @@
 /**
  * Parsing mime/magic files.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2015-2016
@@ -41,7 +41,7 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
     uint startOffset = parse!uint(current);
     enforce(current.length && current[0] == '=', "Expected '=' after start-offset");
     current = current[1..$];
-    
+
     immutable(ubyte)[] value;
     enum noMagic = "__NOMAGIC__";
     if (current.length >= noMagic.length && current[0..noMagic.length] == noMagic) {
@@ -52,15 +52,15 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
         bigEndianLength[0] = cast(ubyte)current[0];
         bigEndianLength[1] = cast(ubyte)current[1];
         current = current[2..$];
-        
+
         auto valueLength = bigEndianToNative!ushort(bigEndianLength);
         enforce(current.length >= valueLength, "Value is out of bounds");
-        
+
         value = cast(immutable(ubyte)[])(current[0..valueLength]);
     }
-    
+
     current = current[value.length..$];
-    
+
     typeof(value) mask;
     if (current.length && current[0] == '&') {
         current = current[1..$];
@@ -68,19 +68,19 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
         mask = cast(typeof(value))(current[0..value.length]);
         current = current[value.length..$];
     }
-    
+
     uint wordSize = 1;
     if (current.length && current[0] == '~') {
         current = current[1..$];
         wordSize = parse!uint(current);
     }
-    
+
     uint rangeLength = 1;
     if (current.length && current[0] == '+') {
         current = current[1..$];
         rangeLength = parse!uint(current);
     }
-    
+
     size_t charIndex;
     bool foundNewLine = false;
     for (charIndex = 0; charIndex < current.length; ++charIndex) {
@@ -90,20 +90,20 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
             break;
         }
     }
-    
+
     enforce(foundNewLine, "Expected new line character after match rule definition");
-    
+
     auto type = MagicMatch.Type.string_;
-    
+
     //Not sure if this is right...
     if (wordSize == 2 && value.length == 2) {
         type = MagicMatch.Type.host16;
     } else if (wordSize == 4 && value.length == 4) {
         type = MagicMatch.Type.host32;
     }
-    
+
     auto match = MagicMatch(type, value, mask, startOffset, rangeLength);
-    
+
     //read sub rules
     while (current.length && current[0] != '[') {
         auto copy = current;
@@ -116,7 +116,7 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
             break;
         }
     }
-    
+
     return match;
 }
 
@@ -124,7 +124,7 @@ private uint parseIndent(ref immutable(char)[] current)
 {
     enforce(current.length);
     uint indent = 0;
-    
+
     if (current[0] != '>') {
         indent = parse!uint(current);
     }
@@ -133,7 +133,7 @@ private uint parseIndent(ref immutable(char)[] current)
 
 /**
  * Reads magic file contents and push magic entries to sink.
- * Throws: 
+ * Throws:
  *  $(D MimeMagicFileException) on error.
  */
 void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
@@ -144,28 +144,28 @@ void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutp
         if (!content.startsWith(mimeMagic)) {
             throw new Exception("Not mime magic file");
         }
-        
+
         auto current = content[mimeMagic.length..$];
-        
+
         while(current.length) {
             enforce(current[0] == '[', "Expected '[' at the start of magic section");
             current = current[1..$];
-            
+
             auto result = findSplit(current[0..$], "]\n");
             enforce(result[1].length, "Could not find \"]\\n\"");
             current = result[2];
-            
+
             auto sectionResult = findSplit(result[0], ":");
             enforce(sectionResult[1].length, "Priority and MIME type must be splitted by ':'");
-            
+
             uint priority = parse!uint(sectionResult[0]);
             auto mimeType = sectionResult[2];
-            
+
             auto magic = MimeMagic(priority);
-            
+
             while (current.length && current[0] != '[') {
                 uint indent = parseIndent(current);
-                
+
                 MagicMatch match = parseMagicMatch(current, indent);
                 if (isNoMagic(match.value)) {
                     magic.shouldDeleteMagic = true;
@@ -183,18 +183,18 @@ void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutp
 ///
 unittest
 {
-    auto data = 
-    "MIME-Magic\0\n[60:text/x-diff]\n"
-        ">0=__NOMAGIC__\n"
-        "0>4=\x00\x02\x55\x40&\xff\xf0~2+8\n"
+    auto data =
+        "MIME-Magic\0\n[60:text/x-diff]\n" ~
+        ">0=__NOMAGIC__\n" ~
+        "0>4=\x00\x02\x55\x40&\xff\xf0~2+8\n" ~
             "1>12=\x00\x04\x55\x40\xff\xf0~4+10\n";
-    
+
     void sink(MagicEntry t) {
         assert(t.mimeType == "text/x-diff");
         assert(t.magic.weight == 60);
         assert(t.magic.matches.length == 1);
         assert(t.magic.shouldDeleteMagic);
-        
+
         auto match = t.magic.matches[0];
         assert(match.startOffset == 4);
         assert(match.value.length == 2);
@@ -202,7 +202,7 @@ unittest
         assert(match.type == MagicMatch.Type.host16);
         assert(match.rangeLength == 8);
         assert(match.submatches.length == 1);
-        
+
         auto submatch = match.submatches[0];
         assert(submatch.startOffset == 12);
         assert(submatch.value.length == 4);
@@ -211,10 +211,10 @@ unittest
         assert(submatch.rangeLength == 10);
     }
     magicFileReader(data, &sink);
-    
+
     void emptySink(MagicEntry t) {
-        
+
     }
     assertThrown!MimeMagicFileException(magicFileReader("MIME-wrong-magic", &emptySink));
-    
+
 }

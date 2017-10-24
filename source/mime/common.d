@@ -1,8 +1,8 @@
 /**
  * Common functions and constants to work with MIME types.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2015-2016
@@ -27,10 +27,10 @@ private {
 @nogc @trusted auto parseMimeTypeName(String)(String name) pure nothrow if (isSomeString!String && is(ElementEncodingType!String : char))
 {
     alias Tuple!(String, "media", String, "subtype") MimeTypeName;
-    
+
     String media;
     String subtype;
-    
+
     size_t i;
     for (i=0; i<name.length; ++i) {
         if (name[i] == '/') {
@@ -39,7 +39,7 @@ private {
             break;
         }
     }
-    
+
     return MimeTypeName(media, subtype);
 }
 
@@ -48,7 +48,7 @@ unittest
 {
     auto t = parseMimeTypeName("text/plain");
     assert(t.media == "text" && t.subtype == "plain");
-    
+
     t = parseMimeTypeName("not mime type");
     assert(t.media == string.init && t.subtype == string.init);
 }
@@ -174,11 +174,11 @@ unittest
     if (mimeType == "text/plain" || mimeType == "application/octet-stream") {
         return null;
     }
-    
+
     auto t = parseMimeTypeName(mimeType);
     if (t.media == "text") {
         return "text/plain";
-    } else if ( t.media == "image" || t.media == "audio" || 
+    } else if ( t.media == "image" || t.media == "audio" ||
                 t.media == "video" || t.media == "application")
     {
         return "application/octet-stream";
@@ -191,15 +191,15 @@ unittest
 {
     assert(implicitParent("text/hmtl") == "text/plain");
     assert(implicitParent("text/plain") == null);
-    
+
     assert(implicitParent("image/png") == "application/octet-stream");
     assert(implicitParent("audio/ogg") == "application/octet-stream");
     assert(implicitParent("video/mpeg") == "application/octet-stream");
     assert(implicitParent("application/xml") == "application/octet-stream");
     assert(implicitParent("application/octet-stream") == null);
-    
+
     assert(implicitParent("inode/directory") == null);
     assert(implicitParent("x-content/unix-software") == null);
-    
+
     assert(implicitParent("not a mimetype") == null);
 }

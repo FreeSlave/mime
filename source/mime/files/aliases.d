@@ -1,8 +1,8 @@
 /**
  * Parsing mime/aliases files.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2015-2016
@@ -51,6 +51,6 @@ unittest
     string[] lines = ["application/acrobat application/pdf", "application/ico image/vnd.microsoft.icon"];
     auto expected = [AliasLine("application/acrobat", "application/pdf"), AliasLine("application/ico", "image/vnd.microsoft.icon")];
     assert(equal(aliasesFileReader(lines), expected));
-    
+
     assertThrown!MimeFileException(aliasesFileReader(["application/aliasonly"]).array, "must throw");
 }

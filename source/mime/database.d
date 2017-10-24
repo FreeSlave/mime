@@ -1,8 +1,8 @@
 /**
  * Access to Shared MIME-info database.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2016
@@ -38,10 +38,10 @@ final class MimeDatabase
         emptyFileFallback = 64, ///Provide $(B application/x-zerosize) fallback if mime type can't be detected, but data is known to be zero size.
         all = globPatterns|magicRules|inodeType|textFallback|octetStreamFallback|emptyFileFallback ///Use all recipes to detect MIME type.
     }
-    
+
     /**
-     * Constructor based on MIME paths. 
-     * It uses mime.detectors.cache.MimeDetectorFromCache as MIME type detector and mime.stores.files.FilesMimeStore as MIME type store.
+     * Constructor based on MIME paths.
+     * It uses $(D mime.detectors.cache.MimeDetectorFromCache) as MIME type detector and $(D mime.stores.files.FilesMimeStore) as MIME type store.
      * Params:
      *  mimePaths = Range of paths to base mime directories where needed files will be read.
      * See_Also: $(D mime.paths.mimePaths), $(D mime.detectors.cache.MimeDetectorFromCache), $(D mime.stores.files.FilesMimeStore)
@@ -50,11 +50,11 @@ final class MimeDatabase
     {
         import mime.stores.files;
         import mime.detectors.cache;
-        
+
         _store = new FilesMimeStore(mimePaths);
         _detector = new MimeDetectorFromCache(mimePaths);
     }
-    
+
     /**
      * Create MimeDatabase object with given store and detector.
      */
@@ -63,7 +63,7 @@ final class MimeDatabase
         _store = store;
         _detector = detector;
     }
-    
+
     /**
      * Get MIME types store used in MimeDatabase instance.
      */
@@ -71,7 +71,7 @@ final class MimeDatabase
     {
         return _store;
     }
-    
+
     /**
      * Get MIME type detector used in MimeDatabase instance.
      */
@@ -79,7 +79,7 @@ final class MimeDatabase
     {
         return _detector;
     }
-    
+
     /**
      * Get MIME type for given fileName.
      * See_Also: $(D mimeTypeForFile)
@@ -88,7 +88,7 @@ final class MimeDatabase
     {
         return findExistingAlternative(_detector.mimeTypesForFileName(fileName));
     }
-    
+
     /**
      * Get MIME type for given data.
      * Note: This does NOT provide any fallbacks like text/plain, application/octet-stream or application/x-zerosize.
@@ -98,7 +98,7 @@ final class MimeDatabase
     {
         return findExistingAlternative(_detector.mimeTypesForData(data));
     }
-    
+
     /**
      * Get MIME type for file and its data using methods describing in options.
      * Params:
@@ -110,7 +110,7 @@ final class MimeDatabase
     {
         return mimeTypeForFileImpl(fileName, data, options, true);
     }
-    
+
     /**
      * Get MIME type for file using methods describing in options.
      * File contents will be read automatically if needed.
@@ -119,19 +119,19 @@ final class MimeDatabase
     {
         return mimeTypeForFileImpl(fileName, null, options, false);
     }
-    
+
     private auto mimeTypeForFileImpl(string fileName, const(void)[] data, Match options, const bool dataPassed)
     {
         import std.file;
         import std.exception;
-        
+
         if (data is null && (options & Match.inodeType)) {
             string inodeType = inodeMimeType(fileName);
             if (inodeType.length) {
                 return mimeType(inodeType);
             }
         }
-        
+
         const(char[])[] mimeTypes;
         if (options & Match.globPatterns) {
             mimeTypes = _detector.mimeTypesForFileName(fileName);
@@ -142,7 +142,7 @@ final class MimeDatabase
                 }
             }
         }
-        
+
         if ((options & Match.emptyFileFallback) && mimeTypes.length == 0) {
             if (!dataPassed) {
                 ulong size;
@@ -156,7 +156,7 @@ final class MimeDatabase
                 }
             }
         }
-        
+
         if (!dataPassed && (options & (Match.magicRules|Match.textFallback|Match.octetStreamFallback))) {
             try {
                 data = std.file.read(fileName, 256);
@@ -164,7 +164,7 @@ final class MimeDatabase
                 //pass
             }
         }
-        
+
         if (data.length && (options & Match.magicRules)) {
             auto conflicts = _detector.mimeTypesForData(data);
             auto type = findExistingAlternative(conflicts);
@@ -184,10 +184,10 @@ final class MimeDatabase
         if (data.length && (options & Match.octetStreamFallback)) {
             return mimeType("application/octet-stream");
         }
-        
+
         return rebindable(const(MimeType).init);
     }
-    
+
     private auto findExistingAlternative(const(char[])[] conflicts)
     {
         foreach(name; conflicts) {
@@ -198,7 +198,7 @@ final class MimeDatabase
         }
         return rebindable(const(MimeType).init);
     }
-    
+
     /**
      * Get mime type by name or alias.
      * Params:
@@ -220,7 +220,7 @@ final class MimeDatabase
         }
         return type;
     }
-    
+
 private:
     IMimeStore _store;
     IMimeDetector _detector;
@@ -231,13 +231,13 @@ unittest
 {
     import mime.stores.files;
     import mime.detectors.cache;
-    
+
     auto mimePaths = ["./test/mime", "./test/discard", "./test/nonexistent"];
-    
+
     alias FilesMimeStore.Options FOptions;
     FOptions foptions;
     ubyte opt = FOptions.required;
-    
+
     foptions.types = opt;
     foptions.aliases = opt;
     foptions.subclasses = opt;
@@ -248,11 +248,11 @@ unittest
     foptions.globs = opt;
     foptions.magic = opt;
     foptions.treemagic = opt;
-    
+
     auto store = new FilesMimeStore(mimePaths, foptions);
     assert(!store.byMimeType().empty);
     auto detector = new MimeDetectorFromCache(mimePaths);
-    
+
     assert(detector.mimeCaches().length == 2);
     assert(detector.mimeTypeForFileName("sprite.spr").length);
     assert(detector.mimeTypeForFileName("model01.mdl").length);
@@ -260,122 +260,122 @@ unittest
     assert(detector.mimeTypeForFileName("no.exist").empty);
     assert(detector.mimeTypeForData("IDSP\x02\x00\x00\x00") == "image/x-hlsprite");
     assert(detector.resolveAlias("application/nonexistent") is null);
-    
+
     assert(detector.mimeTypeForNamespaceUri("http://www.w3.org/1999/ent") == "text/x-ent");
     assert(detector.mimeTypeForNamespaceUri("nonexistent").empty);
-    
+
     auto database = new MimeDatabase(store, detector);
     assert(database.detector() is detector);
     assert(database.store() is store);
-    
+
     assert(database.mimeType(string.init) is null);
-    
+
     auto imageSprite = database.mimeType("image/x-hlsprite");
     auto appSprite = database.mimeType("application/x-hlsprite");
     assert(database.mimeType("application/x-hlsprite", No.resolveAlias) is null);
     assert(imageSprite !is null && imageSprite is appSprite);
-    
+
     assert(database.detector().isSubclassOf("text/x-fgd", "text/plain"));
     assert(!database.detector().isSubclassOf("text/x-fgd", "application/octet-stream"));
-    
+
     auto fgdType = database.mimeTypeForFileName("name.fgd");
     assert(fgdType !is null);
     assert(fgdType.name == "text/x-fgd");
-    
+
     //testing Match options
     auto iqm = database.mimeTypeForFile("model.iqm", MimeDatabase.Match.globPatterns);
     assert(iqm !is null);
     assert(iqm.name == "application/x-iqm");
-    
+
     auto spriteType = database.mimeTypeForFile("sprite.spr", MimeDatabase.Match.globPatterns);
     assert(spriteType !is null);
-    
+
     auto sprite32 = database.mimeTypeForFile("sprite.spr", "IDSP\x20\x00\x00\x00", MimeDatabase.Match.magicRules);
     assert(sprite32 !is null);
     assert(sprite32.name == "image/x-sprite32");
-    
+
     auto zeroType = database.mimeTypeForFile("nonexistent", (void[]).init, MimeDatabase.Match.emptyFileFallback);
     assert(zeroType !is null);
     assert(zeroType.name == "application/x-zerosize");
-    
+
     zeroType = database.mimeTypeForFile("test/emptyfile", MimeDatabase.Match.emptyFileFallback);
     assert(zeroType !is null);
     assert(zeroType.name == "application/x-zerosize");
-    
+
     auto textType = database.mimeTypeForFile("test/mime/types", MimeDatabase.Match.textFallback);
     assert(textType !is null);
     assert(textType.name == "text/plain");
-    
+
     auto dirType = database.mimeTypeForFile("test", MimeDatabase.Match.inodeType);
     assert(dirType !is null);
     assert(dirType.name == "inode/directory");
-    
+
     auto octetStreamType = database.mimeTypeForFile("test/mime/mime.cache", MimeDatabase.Match.octetStreamFallback);
     assert(octetStreamType !is null);
     assert(octetStreamType.name == "application/octet-stream");
-    
+
     assert(database.mimeTypeForFile("file.unknown", MimeDatabase.Match.globPatterns) is null);
-    
+
     //testing data
     auto hlsprite = database.mimeTypeForData("IDSP\x02\x00\x00\x00");
     assert(hlsprite !is null);
     assert(hlsprite.name == "image/x-hlsprite");
-    
+
     auto qsprite = database.mimeTypeForData("IDSP\x01\x00\x00\x00");
     assert(qsprite !is null);
     assert(qsprite.name == "image/x-qsprite");
-    
+
     auto q2sprite = database.mimeTypeForData("IDS2");
     assert(q2sprite !is null);
     assert(q2sprite.name == "image/x-q2sprite");
-    
+
     //testing case-insensitive suffix
     auto vpk = database.mimeTypeForFileName("pakdir.vpk");
     assert(vpk !is null);
     assert(vpk.name == "application/vnd.valve.vpk");
-    
+
     vpk = database.mimeTypeForFileName("pakdir.VPK");
     assert(vpk !is null);
     assert(vpk.name == "application/vnd.valve.vpk");
-    
+
     //testing generic glob
     auto modelseq = database.mimeTypeForFileName("model01.mdl");
     assert(modelseq !is null);
     assert(modelseq.name == "application/x-hlmdl-sequence");
     modelseq = database.mimeTypeForFileName("model01.MDL");
     assert(modelseq !is null && modelseq.name == "application/x-hlmdl-sequence");
-    
+
     auto generalGlob = database.mimeTypeForFileName("general_test_long_glob");
     assert(generalGlob !is null);
     assert(generalGlob.name == "application/x-general-long-glob");
     assert(database.detector.mimeTypeForFileName("general_test_long_glob"));
-    
+
     assert(!database.mimeTypeForFileName("pak1.PAK"));
     assert(database.mimeTypeForFileName("pak1.pak"));
-    
+
     //testing case-sensitive suffix
     assert(database.mimeTypeForFileName("my.shader"));
     assert(!database.mimeTypeForFileName("my.SHADER"));
-    
+
     //testing literal
     assert(database.mimeTypeForFileName("liblist.gam"));
     assert(database.mimeTypeForFileName("makefile"));
-    
+
     //testing discard glob
     assert(!database.mimeTypeForFileName("GNUmakefile"));
     assert(!database.detector.mimeTypeForFileName("GNUmakefile"));
-    
+
     assert(!database.mimeTypeForFileName("file.qvm3"));
     assert(!database.detector.mimeTypeForFileName("file.qvm3"));
-    
+
     assert(!database.mimeTypeForFileName("model01.sequence"));
     assert(!database.detector.mimeTypeForFileName("model01.sequence"));
-    
+
     //testing discard magic
     assert(!database.mimeTypeForData("PAK"));
     assert(!database.detector.mimeTypeForData("PAK"));
     assert(!database.mimeTypeForFileName("file.qwad"));
-    
+
     //conflicts
     assert(database.mimeTypeForFileName("file.jmf"));
     assert(database.mimeTypeForData("PACK"));

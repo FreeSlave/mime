@@ -1,8 +1,8 @@
 /**
  * Parsing mime/types files.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2016
@@ -45,6 +45,6 @@ unittest
 {
     string[] lines = ["#comment", "", "application/x-md2", "application/x-md3"];
     assert(equal(lines[2..$], typesFileReader(lines)));
-    
+
     assertThrown(typesFileReader(["notmimetype"]).array, "must throw");
 }

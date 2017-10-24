@@ -1,8 +1,8 @@
 /**
  * Parsing mime/icons and mime/generic-icons files.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2015-2016
@@ -49,6 +49,6 @@ unittest
     string[] lines = ["application/x-archive:package-x-generic", "application/x-perl:text-x-script"];
     auto expected = [IconLine("application/x-archive", "package-x-generic"), IconLine("application/x-perl", "text-x-script")];
     assert(equal(iconsFileReader(lines), expected));
-    
+
     assertThrown!MimeFileException(iconsFileReader(["application/nocolon"]).array, "must throw");
 }

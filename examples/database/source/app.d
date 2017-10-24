@@ -10,16 +10,16 @@ void detectTypes(MimeDatabase database, string[] filePaths)
 {
     foreach(filePath; filePaths) {
         writefln("MIME type of '%s' according to", filePath);
-        
+
         auto mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.globPatterns);
         writefln("\tglob patterns:\t%s", mimeType ? mimeType.name : "unknown");
-        
+
         mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.magicRules);
         writefln("\tmagic rules:\t%s", mimeType ? mimeType.name : "unknown");
-        
+
         mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.textFallback | MimeDatabase.Match.octetStreamFallback | MimeDatabase.Match.emptyFileFallback);
         writefln("\ttext or binary:\t%s", mimeType ? mimeType.name : "unknown");
-        
+
         mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.inodeType);
         writefln("\tinode type:\t%s", mimeType ? mimeType.name : "unknown");
     }
@@ -63,10 +63,10 @@ void resolveAliases(MimeDatabase database, string[] aliases)
 void main(string[] args)
 {
     string[] mimePaths;
-    getopt(args, 
+    getopt(args,
         "mimepath", "Set mime path to search files in.", &mimePaths
     );
-    
+
     version(OSX) {} else version(Posix) {
         if (!mimePaths.length) {
             mimePaths = mime.paths.mimePaths().array;
@@ -76,9 +76,9 @@ void main(string[] args)
         stderr.writeln("No mime paths set");
         return;
     }
-    
+
     auto database = new MimeDatabase(mimePaths);
-    
+
     string[] posArgs;
     string command;
     if (args.length < 2) {
@@ -88,7 +88,7 @@ void main(string[] args)
         posArgs = args[2..$];
         command = args[1];
     }
-    
+
     switch(command) {
         case "detect":
         {

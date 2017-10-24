@@ -1,8 +1,8 @@
 /**
  * Treemagic rules object representation.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2016
@@ -33,7 +33,7 @@ struct TreeMatch
         ///Link
         link
     }
-    
+
     enum Options : ubyte {
         ///No specific options.
         none = 0,
@@ -46,71 +46,71 @@ struct TreeMatch
         ///File must be of type mimeType.
         mimeType = 8
     }
-    
+
     ///
     @nogc @safe this(string itemPath, Type itemType, Options itemOptions = Options.none) pure nothrow {
         path = itemPath;
         type = itemType;
         options = itemOptions;
     }
-    
+
     ///Path to match.
     string path;
-    
+
     ///Type of path.
     Type type;
-    
+
     ///Path options.
     Options options;
-    
+
     ///MIME type name. Set only if $(D options) flags have mimeType.
     string mimeType;
-    
+
     ///
     @nogc @safe auto submatches() nothrow const pure {
         return _submatches;
     }
-    
+
     package @nogc @safe auto submatches() nothrow pure {
         return _submatches;
     }
-    
+
     ///
     @safe void addSubmatch(TreeMatch match) nothrow pure {
         _submatches ~= match;
     }
-    
+
     package @trusted TreeMatch clone() const nothrow pure {
         TreeMatch copy;
         copy.type = this.type;
         copy.path = this.path;
         copy.options = this.options;
         copy.mimeType = this.mimeType;
-        
+
         foreach(match; _submatches) {
             copy.addSubmatch(match.clone());
         }
         return copy;
     }
-    
+
     unittest
     {
         auto origin = TreeMatch("dir", Type.directory);
         origin.addSubmatch(TreeMatch("file", Type.file));
         origin.addSubmatch(TreeMatch("link", Type.link));
-        
+
         const corigin = origin;
         assert(corigin.submatches().length == 2);
-        
+
         auto shallow = origin;
         shallow.submatches()[0].type = Type.any;
         assert(origin.submatches()[0].type == Type.any);
-        
+
         auto clone = origin.clone();
         clone.submatches()[1].path = "short";
         assert(origin.submatches()[1].path == "link");
     }
-    
+
 private:
     TreeMatch[] _submatches;
 }
@@ -134,14 +134,14 @@ struct TreeMagic
     @nogc @safe uint weight() const nothrow pure {
         return _weight;
     }
-    
+
     /**
      * Set priority for this rule.
      */
     @nogc @safe uint weight(uint priority) nothrow pure {
         return _weight = priority;
     }
-    
+
     /**
      * Get path match rules
      * Returns: Array of $(D TreeMatch) elements.
@@ -149,18 +149,18 @@ struct TreeMagic
     @nogc @safe auto matches() const nothrow pure {
         return _matches;
     }
-    
+
     package @nogc @safe auto matches() nothrow pure {
         return _matches;
     }
-    
+
     /**
      * Add top-level match rule.
      */
     @safe void addMatch(TreeMatch match) nothrow pure {
         _matches ~= match;
     }
-    
+
     package @trusted TreeMagic clone() const nothrow pure {
         auto copy = TreeMagic(this.weight());
         foreach(match; _matches) {
@@ -168,27 +168,27 @@ struct TreeMagic
         }
         return copy;
     }
-    
+
     unittest
     {
         auto origin = TreeMagic(60);
         origin.addMatch(TreeMatch("path", TreeMatch.Type.directory));
         origin.addMatch(TreeMatch("path", TreeMatch.Type.directory));
-        
+
         auto shallow = origin;
         shallow.matches()[0].type = TreeMatch.Type.file;
         assert(origin.matches()[0].type == TreeMatch.Type.file);
-        
+
         const corigin = origin;
         assert(corigin.matches().length == 2);
-        
+
         auto clone = origin.clone();
         clone.weight = 50;
         assert(origin.weight == 60);
         clone.matches()[1].type = TreeMatch.Type.link;
         assert(origin.matches()[1].type == TreeMatch.Type.directory);
     }
-    
+
 private:
     uint _weight = defaultMatchWeight;
     TreeMatch[] _matches;
@@ -199,7 +199,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
     import std.stdio;
     string path;
     uint attrs;
-    
+
     if (match.options & TreeMatch.Options.matchCase) {
         path = buildPath(mountPoint, match.path);
         try {
@@ -220,7 +220,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
             return false;
         }
     }
-    
+
     bool ok;
     final switch(match.type) {
         case TreeMatch.Type.file:
@@ -236,7 +236,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
             ok = true;
             break;
     }
-    
+
     if (ok) {
         if (ok && (match.options & TreeMatch.Options.executable) && attrIsFile(attrs)) {
             version(Posix) {
@@ -247,7 +247,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
                 } catch(Exception e) {
                     ok = false;
                 }
-                
+
             } else version(Windows) {
                 ok = filenameCmp(path.extension, ".exe") == 0;
             }
@@ -262,7 +262,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
         if (ok && (match.options & TreeMatch.Options.mimeType)) {
             //TODO: implement
         }
-        
+
         if (ok && match.submatches().length) {
             foreach(submatch; match.submatches()) {
                 if (matchTreeMatch(mountPoint, submatch)) {
@@ -272,7 +272,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
             return false;
         }
     }
-    
+
     return ok;
 }
 
@@ -302,7 +302,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
 @trusted string treeMimeType(string mountPoint, string treemagicPath)
 {
     auto data = assumeUnique(read(treemagicPath));
-    
+
     string mimeType;
     void sink(TreeMagicEntry t) {
         if (mimeType.length == 0 && matchTreeMagic(mountPoint, t.magic)) {
@@ -331,7 +331,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
                 return mimeType;
             }
         } catch(Exception e) {
-            
+
         }
     }
     return null;

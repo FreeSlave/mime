@@ -1,22 +1,22 @@
 /**
  * inode/* MIME types.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2016
  */
- 
+
 module mime.inode;
 
 version(Posix)
 {
     import core.sys.posix.sys.stat;
-    
+
     /**
      * Get mime type for stat mode.
-     * 
+     *
      * $(BLUE This function is Posix only).
      * Returns: inode/* mime type name for mode or null if unknown. Regular files don't have inode/* type.
      */
@@ -43,7 +43,7 @@ version(Posix)
         }
         return null;
     }
-    
+
     ///
     unittest
     {
@@ -65,7 +65,7 @@ version(Posix)
         import core.sys.posix.sys.stat;
         import std.string : toStringz;
         import std.path : buildNormalizedPath;
-        
+
         stat_t statbuf;
         try {
             if (stat(toStringz(filePath), &statbuf) == 0) {
@@ -83,7 +83,7 @@ version(Posix)
         } catch(Exception e) {
             //pass
         }
-        
+
         return null;
     } else {
         import std.exception;

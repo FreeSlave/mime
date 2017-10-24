@@ -1,8 +1,8 @@
 /**
  * Parsing mime/XMLnamespaces files.
- * Authors: 
+ * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
- * License: 
+ * License:
  *  $(LINK2 http://www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
  * Copyright:
  *  Roman Chistokhodov, 2015-2016
@@ -55,7 +55,7 @@ unittest
     string[] lines = ["http://www.w3.org/1999/xhtml html application/xhtml+xml", "http://www.w3.org/2000/svg svg image/svg+xml"];
     auto expected = [NamespaceLine("http://www.w3.org/1999/xhtml", "html", "application/xhtml+xml"), NamespaceLine("http://www.w3.org/2000/svg", "svg", "image/svg+xml")];
     assert(equal(namespacesFileReader(lines), expected));
-    
+
     assertThrown!MimeFileException(namespacesFileReader(["http://www.example.org nameonly"]).array, "must throw");
     assertThrown!MimeFileException(namespacesFileReader(["http://www.example.org"]).array, "must throw");
 }

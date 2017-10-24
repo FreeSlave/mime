@@ -15,10 +15,10 @@ import mime.files.treemagic;
 void main(string[] args)
 {
     string[] mimePaths;
-    getopt(args, 
+    getopt(args,
         "mimepath", "Set mime path to search files in.", &mimePaths
     );
-    
+
     version(OSX) {} else version(Posix) {
         if (!mimePaths.length) {
             mimePaths = mime.paths.mimePaths().array;
@@ -28,9 +28,9 @@ void main(string[] args)
         stderr.writeln("No mime paths set");
         return;
     }
-    
+
     writefln("Using mime paths: %s", mimePaths);
-    
+
     MimeCache[] mimeCaches;
     foreach(mimePath; mimePaths) {
         auto cachePath = buildPath(mimePath, "mime.cache");
@@ -57,11 +57,11 @@ void main(string[] args)
             }
         }
     }
-    
+
     alias FilesMimeStore.Options FOptions;
     FOptions foptions;
     ubyte opt = FOptions.read | FOptions.saveErrors;
-    
+
     foptions.types = opt;
     foptions.aliases = opt;
     foptions.subclasses = opt;
@@ -71,7 +71,7 @@ void main(string[] args)
     foptions.globs2 = opt;
     foptions.globs = opt;
     foptions.magic = opt;
-    
+
     auto mimeStore = new FilesMimeStore(mimePaths, foptions);
     foreach(error; mimeStore.errors) {
         auto me = cast(MimeFileException)error.e;
