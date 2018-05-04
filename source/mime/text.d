@@ -13,7 +13,7 @@ module mime.text;
 private @safe bool isValidUnicodeTail(const(char)[] tail) nothrow pure
 {
     for (size_t i=0; i<tail.length; ++i) {
-        if ( !(0b1000_0000 & tail[i]) || !(0b0100_0000 & ~tail[i]) ) {
+        if ( !(0b1000_0000 & tail[i]) || !(0b0100_0000 & ~cast(int)(tail[i])) ) {
             return false;
         }
     }
@@ -53,11 +53,11 @@ private @safe bool isValidUnicodeTail(const(char)[] tail) nothrow pure
         auto tail = str[index+1..$];
         if (tail.length < 3 && isValidUnicodeTail(tail)) {
             auto s = str[index];
-            if (((0b1111_0000 & s) == 0b1111_0000) && (0b0000_1000 & ~s)) {
+            if (((0b1111_0000 & s) == 0b1111_0000) && (0b0000_1000 & ~cast(int)s)) {
                 return tail.length < 3;
-            } else if (((0b1110_0000 & s) == 0b1110_0000) && (0b0001_0000 & ~s)) {
+            } else if (((0b1110_0000 & s) == 0b1110_0000) && (0b0001_0000 & ~cast(int)s)) {
                 return tail.length < 2;
-            } else if (((0b1100_0000 & s) == 0b1100_0000) && (0b0010_0000 & ~s)) {
+            } else if (((0b1100_0000 & s) == 0b1100_0000) && (0b0010_0000 & ~cast(int)s)) {
                 return tail.length < 1;
             }
         }
