@@ -1,3 +1,8 @@
+/+dub.sdl:
+name "test"
+dependency "mime" path="../"
++/
+
 import std.array;
 import std.exception;
 import std.file;

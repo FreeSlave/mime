@@ -1,3 +1,8 @@
+/+dub.sdl:
+name "database"
+dependency "mime" path="../"
++/
+
 import std.stdio;
 import std.getopt;
 import std.array;
@@ -21,7 +26,7 @@ void detectTypes(MimeDatabase database, string[] filePaths)
         writefln("\ttext or binary:\t%s", mimeType ? mimeType.name : "unknown");
 
         mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.inodeType);
-        writefln("\tinode type:\t%s", mimeType ? mimeType.name : "unknown");
+        writefln("\tinode type:\t%s", mimeType ? mimeType.name : "unknown (regular file?)");
     }
 }
 

@@ -8,7 +8,6 @@
     "targetPath" : "lib", 
     "targetType" : "library",
     "dependencies": {
-        "xdgpaths" : "~>0.2.2"
-    },
-    "subPackages" : ["./examples/database", "./examples/test"]
+        "xdgpaths" : "~>0.2.5"
+    }
 }

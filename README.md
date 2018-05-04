@@ -25,26 +25,26 @@
 
 Run to detect mime types of files.
 
-    dub run :database -- detect README.md source .gitignore lib/libmime.a examples/database/bin/mime_database /var/run/acpid.socket dub.json /dev/sda
+    dub examples/database.d detect README.md source .gitignore lib/libmime.a /bin/sh /var/run/acpid.socket dub.json /dev/sda
 
 Automated mime path detection works only on Freedesktop platforms. On other systmes or for testing purposes it's possible to use mimepath option to set alternate path to mime/ subfolder. E.g. on Windows with KDE installed it would be:
 
-    dub run :database -- --mimepath=C:\ProgramData\KDE\share\mime detect README.md source .gitignore lib/mime.lib examples/mimedatabase/bin/mimedatabase.exe dub.json
+    dub examples/database.d --mimepath=C:\ProgramData\KDE\share\mime detect README.md source .gitignore lib/mime.lib C:/Windows/System32/notepad.exe dub.json
 
 Run to print info about MIME types:
 
-    dub run :database -- info application/pdf application/x-executable image/png text/plain text/html text/xml
+    dub examples/database.d info application/pdf application/x-executable image/png text/plain text/html text/xml
 
 Run to resolve aliases:
 
-    dub run :database -- resolve application/wwf application/x-pdf application/pgp text/rtf text/xml
+    dub examples/database.d resolve application/wwf application/x-pdf application/pgp text/rtf text/xml
 
 ### [Mime Test](examples/test/source/app.d)
 
 Run to test if this library is capable of parsing your local shared MIME-info database:
 
-    dub run :test
+    dub examples/test.d
 
 As with mimedatabase example you may specify paths to *mime* folder(s) via command line:
 
-    dub run :test -- --mimepath=C:\ProgramData\KDE\share\mime
+    dub examples/test.d --mimepath=C:\ProgramData\KDE\share\mime
