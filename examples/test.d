@@ -20,8 +20,10 @@ import mime.files.treemagic;
 void main(string[] args)
 {
     string[] mimePaths;
+    bool verbose;
     getopt(args,
-        "mimepath", "Set mime path to search files in.", &mimePaths
+        "mimepath", "Set mime path to search files in.", &mimePaths,
+        "verbose", "Print name of each examined file to standard output", &verbose
     );
 
     version(OSX) {} else version(Posix) {
@@ -42,6 +44,9 @@ void main(string[] args)
         bool ok;
         collectException(cachePath.isFile, ok);
         if (ok) {
+            if (verbose) {
+                writeln("Reading mime cache file: ", cachePath);
+            }
             try {
                 auto mimeCache = new MimeCache(cachePath);
                 mimeCaches ~= mimeCache;
@@ -54,6 +59,9 @@ void main(string[] args)
         auto treemagicPath = buildPath(mimePath, "treemagic");
         collectException(treemagicPath.isFile, ok);
         if (ok) {
+            if (verbose) {
+                writeln("Reading treemagic file: ", treemagicPath);
+            }
             try {
                 auto data = assumeUnique(read(treemagicPath));
                 treeMagicFileReader(data, (TreeMagicEntry t) {});

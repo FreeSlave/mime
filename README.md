@@ -45,6 +45,10 @@ Run to test if this library is capable of parsing your local shared MIME-info da
 
     dub examples/test.d
 
+Run to see names of parsed files:
+
+    dub examples/test.d --verbose
+
 As with mimedatabase example you may specify paths to *mime* folder(s) via command line:
 
     dub examples/test.d --mimepath=C:\ProgramData\KDE\share\mime
