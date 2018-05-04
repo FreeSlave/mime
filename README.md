@@ -21,7 +21,7 @@
 
 ## Examples
 
-### [Mime Database](examples/database/source/app.d)
+### [Mime Database](examples/database.d)
 
 Run to detect mime types of files.
 
@@ -39,7 +39,7 @@ Run to resolve aliases:
 
     dub examples/database.d resolve application/wwf application/x-pdf application/pgp text/rtf text/xml
 
-### [Mime Test](examples/test/source/app.d)
+### [Mime Test](examples/test.d)
 
 Run to test if this library is capable of parsing your local shared MIME-info database:
 
