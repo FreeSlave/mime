@@ -41,20 +41,6 @@ private struct MimeCacheHeader
     uint genericIconsListOffset;
 }
 
-private @nogc @trusted void swapByteOrder(T)(ref T t) nothrow pure  {
-
-    static if( __VERSION__ < 2067 ) { //swapEndian was not @nogc
-        ubyte[] bytes = (cast(ubyte*)&t)[0..T.sizeof];
-        for (size_t i=0; i<bytes.length/2; ++i) {
-            ubyte tmp = bytes[i];
-            bytes[i] = bytes[T.sizeof-1-i];
-            bytes[T.sizeof-1-i] = tmp;
-        }
-    } else {
-        t = swapEndian(t);
-    }
-}
-
 ///Alias entry in mime cache.
 alias Tuple!(const(char)[], "aliasName", const(char)[], "mimeType") AliasEntry;
 
@@ -692,7 +678,7 @@ private:
         if (data.length >= offset + T.sizeof) {
             T value = *(cast(const(T)*)data[offset..(offset+T.sizeof)].ptr);
             static if (endian == Endian.littleEndian) {
-                swapByteOrder(value);
+                value = swapEndian(value);
             }
             return value;
         } else {

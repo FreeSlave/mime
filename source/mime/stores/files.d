@@ -36,11 +36,7 @@ private {
 public import mime.files.common;
 
 private @trusted auto fileReader(string fileName) {
-    static if( __VERSION__ < 2067 ) {
-        return File(fileName, "r").byLine().map!(s => s.idup);
-    } else {
-        return File(fileName, "r").byLineCopy();
-    }
+    return File(fileName, "r").byLineCopy();
 }
 
 /**
