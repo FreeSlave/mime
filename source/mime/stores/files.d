@@ -339,9 +339,9 @@ private:
             auto mimeType = ensureMimeType(globLine.mimeType);
 
             if (globLine.pattern.isNoGlobs()) {
-                mimeType.clearPatterns();
+                mimeType.clearGlobs();
             } else {
-                mimeType.addPattern(globLine.pattern, globLine.weight, globLine.caseSensitive);
+                mimeType.addGlob(globLine.pattern, globLine.weight, globLine.caseSensitive);
             }
         }
     }

@@ -37,13 +37,15 @@ void printInfo(MimeDatabase database, string[] mimeTypes)
         if (mimeType is null) {
             writefln("Could not find mime type named %s\n", type);
         } else {
+            import std.algorithm.iteration : map;
+            import std.format : format;
             writefln("Information for %s:", type);
             writefln("MIME type: %s", mimeType.name);
             writefln("Icon: %s", mimeType.getIcon());
             writefln("Generic-Icon: %s", mimeType.getGenericIcon());
             writefln("Aliases: %s", mimeType.aliases);
             writefln("Parents: %s", mimeType.parents);
-            writefln("Patterns: %s", mimeType.patterns);
+            writefln("Glob patterns: %-(%s, %)", mimeType.globs.map!(glob => format(`("%s":%s%s)`, glob.pattern, glob.weight, glob.caseSensitive ? ":case-sensitive" : "")));
             writeln();
         }
     }

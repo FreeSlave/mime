@@ -1,5 +1,5 @@
 /**
- * Struct represented single MIME type.
+ * Struct that represents a MIME type.
  * Authors:
  *  $(LINK2 https://github.com/FreeSlave, Roman Chistokhodov)
  * License:
@@ -12,131 +12,12 @@ module mime.type;
 
 import mime.common;
 public import mime.magic;
+public import mime.glob;
 public import mime.treemagic;
 
 private {
     import std.algorithm;
     import std.range;
-}
-
-/**
- * Glob pattern for detecting MIME type of file by name.
- */
-struct MimePattern
-{
-    @nogc @safe this(string glob, uint priority = defaultGlobWeight, bool cs = false) nothrow pure {
-        pattern = glob;
-        weight = priority;
-        caseSensitive = cs;
-    }
-
-    ///Glob pattern as string.
-    string pattern;
-    ///Priority of pattern.
-    uint weight;
-    ///Tells whether the pattern should be considered case sensitive or not.
-    bool caseSensitive;
-
-    ///Member version of static isLiteral. Uses pattern as argument.
-    @nogc @safe bool isLiteral() nothrow pure const {
-        return isLiteral(pattern);
-    }
-    ///
-    unittest
-    {
-        auto mimePattern = MimePattern("Makefile");
-        assert(mimePattern.isLiteral());
-    }
-
-    ///Member version of static isSuffix. Uses pattern as argument.
-    @nogc @safe bool isSuffix() nothrow pure const {
-        return isSuffix(pattern);
-    }
-    ///
-    unittest
-    {
-        auto mimePattern = MimePattern("*.txt");
-        assert(mimePattern.isSuffix());
-    }
-
-    ///Member version of static isGenericGlob. Uses pattern as argument.
-    @nogc @safe bool isGenericGlob() nothrow pure const {
-        return isGenericGlob(pattern);
-    }
-    ///
-    unittest
-    {
-        auto mimePattern = MimePattern("lib*.so.[0-9]");
-        assert(mimePattern.isGenericGlob());
-    }
-
-    private @nogc @safe static bool isGlobSymbol(char c) nothrow pure {
-        return c == '*' || c == '[' || c == '?';
-    }
-
-    /**
-     * Check if glob is literal, i.e. does not have special glob match characters.
-     */
-    @nogc @safe static bool isLiteral(string glob) nothrow pure {
-        if (glob.length == 0) {
-            return false;
-        }
-        for (size_t i=0; i<glob.length; ++i) {
-            if (isGlobSymbol(glob[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    ///
-    unittest
-    {
-        assert(isLiteral("Makefile"));
-        assert(!isLiteral(""));
-        assert(!isLiteral("pak[0-9].pak"));
-    }
-
-    /**
-     * Check if glob is suffix, i.e. starts with '*' and does not have special glob match characters in the rest of pattern.
-     */
-    @nogc @safe static bool isSuffix(string glob) nothrow pure {
-        if (glob.length > 1 && glob[0] == '*') {
-            for (size_t i=1; i<glob.length; ++i) {
-                if (isGlobSymbol(glob[i])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    ///
-    unittest
-    {
-        assert(isSuffix("*.jpg"));
-        assert(!isSuffix(""));
-        assert(!isSuffix("*"));
-        assert(!isSuffix("*dir[0-9]"));
-    }
-
-    /**
-     * Check if glob is some glob pattern other than literal and suffix.
-     */
-    @nogc @safe static bool isGenericGlob(string glob) nothrow pure {
-        return glob.length > 0 && !isLiteral(glob) && !isSuffix(glob);
-    }
-
-    ///
-    unittest
-    {
-        assert(isGenericGlob("lib*.so"));
-        assert(isGenericGlob("*dir[0-9]"));
-        assert(!isGenericGlob(""));
-        assert(!isGenericGlob("Makefile"));
-        assert(!isGenericGlob("*.bmp"));
-    }
 }
 
 /**
@@ -173,9 +54,11 @@ final class MimeType
     }
 
     ///Array of MIME glob patterns applied to this MIME type.
-    @nogc @safe const(MimePattern)[] patterns() nothrow const pure {
-        return _patterns;
+    @nogc @safe const(MimeGlob)[] globs() nothrow const pure {
+        return _globs;
     }
+
+    deprecated("Use globs") alias globs patterns;
 
     ///Aliases to this MIME type.
     @nogc @safe const(string)[] aliases() nothrow const pure {
@@ -324,29 +207,33 @@ final class MimeType
     /**
      * Add glob pattern for this MIME type.
      */
-    @safe void addPattern(string pattern, uint weight = defaultGlobWeight, bool cs = false) nothrow pure {
-        _patterns ~= MimePattern(pattern, weight, cs);
+    @safe void addGlob(string pattern, uint weight = defaultGlobWeight, bool cs = false) nothrow pure {
+        _globs ~= MimeGlob(pattern, weight, cs);
     }
     ///
     unittest
     {
         auto mimeType = new MimeType("image/jpeg");
-        mimeType.addPattern("*.jpg");
-        mimeType.addPattern(MimePattern("*.jpeg"));
-        assert(mimeType.patterns() == [MimePattern("*.jpg"), MimePattern("*.jpeg")]);
-        mimeType.clearPatterns();
-        assert(mimeType.patterns().empty);
+        mimeType.addGlob("*.jpg");
+        mimeType.addGlob(MimeGlob("*.jpeg"));
+        assert(mimeType.globs() == [MimeGlob("*.jpg"), MimeGlob("*.jpeg")]);
+        mimeType.clearGlobs();
+        assert(mimeType.globs().empty);
     }
 
     ///ditto
-    @safe void addPattern(MimePattern mimePattern) nothrow pure {
-        _patterns ~= mimePattern;
+    @safe void addGlob(MimeGlob mimeGlob) nothrow pure {
+        _globs ~= mimeGlob;
     }
 
+    deprecated("Use addGlob") alias addGlob addPattern;
+
     /// Remove all glob patterns.
-    @safe void clearPatterns() nothrow pure {
-        _patterns = null;
+    @safe void clearGlobs() nothrow pure {
+        _globs = null;
     }
+
+    deprecated("Use clearGlobs") alias clearGlobs clearPatterns;
 
     /**
      * Magic rules for this MIME type.
@@ -408,8 +295,8 @@ final class MimeType
             copy.addAlias(aliasName);
         }
 
-        foreach(pattern; this.patterns()) {
-            copy.addPattern(pattern);
+        foreach(glob; this.globs()) {
+            copy.addGlob(glob);
         }
 
         foreach(magic; this.magics()) {
@@ -432,7 +319,7 @@ final class MimeType
         origin.namespaceUri = "namespace";
         origin.addParent("text/plain");
         origin.addAlias("application/xml");
-        origin.addPattern("<?xml");
+        origin.addGlob("<?xml");
 
         auto firstMagic = MimeMagic(50);
         firstMagic.addMatch(MagicMatch(MagicMatch.Type.string_, [0x01, 0x02]));
@@ -451,7 +338,7 @@ final class MimeType
         assert(clone.namespaceUri() == origin.namespaceUri());
         assert(clone.parents() == origin.parents());
         assert(clone.aliases() == origin.aliases());
-        assert(clone.patterns() == origin.patterns());
+        assert(clone.globs() == origin.globs());
         assert(clone.magics().length == origin.magics().length);
 
         clone.clearTreeMagic();
@@ -469,7 +356,7 @@ private:
     string[] _aliases;
     string[] _parents;
     string _namespaceUri;
-    MimePattern[] _patterns;
+    MimeGlob[] _globs;
     MimeMagic[] _magics;
     TreeMagic[] _treemagics;
 }
