@@ -15,10 +15,15 @@ public import mime.magic;
 public import mime.glob;
 public import mime.treemagic;
 
+import std.typecons : Tuple;
+
 private {
-    import std.algorithm;
+    import std.algorithm.searching : canFind;
     import std.range;
 }
+
+///
+alias Tuple!(string, "namespaceURI", string, "localName") XMLnamespace;
 
 /**
  * Represents single MIME type.
@@ -53,6 +58,25 @@ final class MimeType
         return _name;
     }
 
+    ///Descriptive comment of MIME type.
+    @nogc @safe string displayName() nothrow const pure {
+        return _displayName;
+    }
+
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("text/markdown");
+        mimeType.displayName = "Markdown document";
+        assert(mimeType.displayName == "Markdown document");
+    }
+
+    ///Set descriptive comment.
+    @nogc @safe string displayName(string comment) nothrow pure {
+        _displayName = comment;
+        return _displayName;
+    }
+
     ///Array of MIME glob patterns applied to this MIME type.
     @nogc @safe const(MimeGlob)[] globs() nothrow const pure {
         return _globs;
@@ -68,6 +92,11 @@ final class MimeType
     ///First level parents for this MIME type.
     @nogc @safe const(string)[] parents() nothrow const pure {
         return _parents;
+    }
+
+    ///Get XML namespaces associated with this XML-based MIME type.
+    @nogc @safe const(XMLnamespace)[] XMLnamespaces() nothrow const pure {
+        return _XMLnamespaces;
     }
 
     /**
@@ -147,22 +176,38 @@ final class MimeType
         assert(mimeType.genericIcon == "mytype");
     }
 
-    ///Get namespace uri for XML-based types.
-    @nogc @safe string namespaceUri() nothrow const pure{
-        return _namespaceUri;
+    ///Add XML namespace.
+    @safe void addXMLnamespace(string namespaceURI, string localName) nothrow pure {
+        addXMLnamespace(XMLnamespace(namespaceURI, localName));
     }
 
-    ///Set namespace uri.
-    @nogc @safe string namespaceUri(string uri) nothrow pure{
-        _namespaceUri = uri;
-        return _namespaceUri;
+    ///ditto
+    @safe void addXMLnamespace(XMLnamespace namespace) nothrow pure {
+        if (!_XMLnamespaces.canFind(namespace))
+            _XMLnamespaces ~= namespace;
+    }
+
+    ///
+    unittest
+    {
+        auto mimeType = new MimeType("text/html");
+        mimeType.addXMLnamespace("http://www.w3.org/1999/xhtml", "html");
+        assert(mimeType.XMLnamespaces == [XMLnamespace("http://www.w3.org/1999/xhtml", "html")]);
+        mimeType.clearXMLnamespaces();
+        assert(mimeType.XMLnamespaces().empty);
+    }
+
+    /// Remove all XML namespaces.
+    @safe void clearXMLnamespaces() nothrow pure {
+        _XMLnamespaces = null;
     }
 
     /**
-     * Add alias for this MIME type.
+     * Add alias for this MIME type. Adding a duplicate does nothing.
      */
     @safe void addAlias(string alias_) nothrow pure {
-        _aliases ~= alias_;
+        if (!_aliases.canFind(alias_))
+            _aliases ~= alias_;
     }
 
     ///
@@ -171,6 +216,7 @@ final class MimeType
         auto mimeType = new MimeType("text/html");
         mimeType.addAlias("application/html");
         mimeType.addAlias("text/x-html");
+        mimeType.addAlias("application/html");
         assert(mimeType.aliases == ["application/html", "text/x-html"]);
         mimeType.clearAliases();
         assert(mimeType.aliases().empty);
@@ -182,10 +228,11 @@ final class MimeType
     }
 
     /**
-     * Add parent type for this MIME type.
+     * Add parent type for this MIME type. Adding a duplicate does nothing.
      */
     @safe void addParent(string parent) nothrow pure {
-        _parents ~= parent;
+        if (!_parents.canFind(parent))
+            _parents ~= parent;
     }
 
     ///
@@ -194,6 +241,7 @@ final class MimeType
         auto mimeType = new MimeType("text/html");
         mimeType.addParent("text/xml");
         mimeType.addParent("text/plain");
+        mimeType.addParent("text/xml");
         assert(mimeType.parents == ["text/xml", "text/plain"]);
         mimeType.clearParents();
         assert(mimeType.parents().empty);
@@ -205,10 +253,10 @@ final class MimeType
     }
 
     /**
-     * Add glob pattern for this MIME type.
+     * Add glob pattern for this MIME type. Adding a duplicate does nothing.
      */
     @safe void addGlob(string pattern, uint weight = defaultGlobWeight, bool cs = false) nothrow pure {
-        _globs ~= MimeGlob(pattern, weight, cs);
+        addGlob(MimeGlob(pattern, weight, cs));
     }
     ///
     unittest
@@ -216,6 +264,7 @@ final class MimeType
         auto mimeType = new MimeType("image/jpeg");
         mimeType.addGlob("*.jpg");
         mimeType.addGlob(MimeGlob("*.jpeg"));
+        mimeType.addGlob("*.jpg");
         assert(mimeType.globs() == [MimeGlob("*.jpg"), MimeGlob("*.jpeg")]);
         mimeType.clearGlobs();
         assert(mimeType.globs().empty);
@@ -223,7 +272,8 @@ final class MimeType
 
     ///ditto
     @safe void addGlob(MimeGlob mimeGlob) nothrow pure {
-        _globs ~= mimeGlob;
+        if (!_globs.canFind(mimeGlob))
+            _globs ~= mimeGlob;
     }
 
     deprecated("Use addGlob") alias addGlob addPattern;
@@ -285,7 +335,11 @@ final class MimeType
         auto copy = new MimeType(this.name());
         copy.icon = this.icon();
         copy.genericIcon = this.genericIcon();
-        copy.namespaceUri = this.namespaceUri();
+        copy.displayName = this.displayName();
+
+        foreach(namespace; this.XMLnamespaces()) {
+            copy.addXMLnamespace(namespace);
+        }
 
         foreach(parent; this.parents()) {
             copy.addParent(parent);
@@ -316,10 +370,11 @@ final class MimeType
         auto origin = new MimeType("text/xml");
         origin.icon = "xml";
         origin.genericIcon = "text";
-        origin.namespaceUri = "namespace";
+        origin.displayName = "XML document";
+        origin.addXMLnamespace(XMLnamespace("http://www.w3.org/1999/xhtml", "html"));
         origin.addParent("text/plain");
         origin.addAlias("application/xml");
-        origin.addGlob("<?xml");
+        origin.addGlob("*.xml");
 
         auto firstMagic = MimeMagic(50);
         firstMagic.addMatch(MagicMatch(MagicMatch.Type.string_, [0x01, 0x02]));
@@ -335,7 +390,8 @@ final class MimeType
         assert(clone.name() == origin.name());
         assert(clone.icon() == origin.icon());
         assert(clone.genericIcon() == origin.genericIcon());
-        assert(clone.namespaceUri() == origin.namespaceUri());
+        assert(clone.XMLnamespaces() == origin.XMLnamespaces());
+        assert(clone.displayName() == origin.displayName());
         assert(clone.parents() == origin.parents());
         assert(clone.aliases() == origin.aliases());
         assert(clone.globs() == origin.globs());
@@ -355,8 +411,9 @@ private:
     string _genericIcon;
     string[] _aliases;
     string[] _parents;
-    string _namespaceUri;
+    XMLnamespace[] _XMLnamespaces;
     MimeGlob[] _globs;
     MimeMagic[] _magics;
     TreeMagic[] _treemagics;
+    string _displayName;
 }

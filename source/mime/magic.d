@@ -223,20 +223,8 @@ struct MimeMagic
         _matches ~= match;
     }
 
-    /**
-     * Indicates that magic matches read from less preferable paths must be discarded
-     */
-    @nogc @safe bool shouldDeleteMagic() nothrow const pure {
-        return _deleteMagic;
-    }
-
-    @nogc @safe bool shouldDeleteMagic(bool shouldDelete) nothrow pure {
-        return _deleteMagic = shouldDelete;
-    }
-
     package @trusted MimeMagic clone() const nothrow pure {
         auto copy = MimeMagic(this.weight());
-        copy.shouldDeleteMagic = this.shouldDeleteMagic();
         foreach(match; _matches) {
             copy.addMatch(match.clone());
         }
@@ -266,5 +254,4 @@ struct MimeMagic
 private:
     uint _weight = defaultMatchWeight;
     MagicMatch[] _matches;
-    bool _deleteMagic;
 }

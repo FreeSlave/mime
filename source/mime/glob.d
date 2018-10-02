@@ -17,6 +17,7 @@ import mime.common;
  */
 struct MimeGlob
 {
+    ///
     @nogc @safe this(string glob, uint priority = defaultGlobWeight, bool cs = false) nothrow pure {
         pattern = glob;
         weight = priority;

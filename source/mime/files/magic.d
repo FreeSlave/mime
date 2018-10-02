@@ -33,7 +33,7 @@ final class MimeMagicFileException : Exception
 }
 
 ///MIME type name and corresponding magic.
-alias Tuple!(immutable(char)[], "mimeType", MimeMagic, "magic") MagicEntry;
+alias Tuple!(immutable(char)[], "mimeType", MimeMagic, "magic", bool, "deleteMagic") MagicEntry;
 
 private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
 {
@@ -153,17 +153,18 @@ void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutp
 
             auto magic = MimeMagic(priority);
 
+            bool shouldDeleteMagic = false;
             while (current.length && current[0] != '[') {
                 uint indent = parseIndent(current);
 
                 MagicMatch match = parseMagicMatch(current, indent);
                 if (isNoMagic(match.value)) {
-                    magic.shouldDeleteMagic = true;
+                    shouldDeleteMagic = true;
                 } else {
                     magic.addMatch(match);
                 }
             }
-            sink(MagicEntry(mimeType, magic));
+            sink(MagicEntry(mimeType, magic, shouldDeleteMagic));
         }
     } catch (Exception e) {
         throw new MimeMagicFileException(e.msg, e.file, e.line, e.next);
@@ -183,7 +184,7 @@ unittest
         assert(t.mimeType == "text/x-diff");
         assert(t.magic.weight == 60);
         assert(t.magic.matches.length == 1);
-        assert(t.magic.shouldDeleteMagic);
+        assert(t.deleteMagic);
 
         auto match = t.magic.matches[0];
         assert(match.startOffset == 4);

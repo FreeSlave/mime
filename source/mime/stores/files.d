@@ -197,7 +197,7 @@ final class FilesMimeStore : IMimeStore
                     auto namespaces = namespacesFileReader(fileReader(namespacesPath));
                     foreach(namespaceLine; namespaces) {
                         auto mimeType = ensureMimeType(namespaceLine.mimeType);
-                        mimeType.namespaceUri = namespaceLine.namespaceUri;
+                        mimeType.addXMLnamespace(namespaceLine.namespaceUri, namespaceLine.localName);
                     }
                 } catch(Exception e) {
                     handleError(e, options.XMLnamespaces, namespacesPath);
@@ -231,9 +231,10 @@ final class FilesMimeStore : IMimeStore
                 try {
                     void sink(MagicEntry t) {
                         auto mimeType = ensureMimeType(t.mimeType);
-                        if (t.magic.shouldDeleteMagic()) {
+                        if (t.deleteMagic) {
                             mimeType.clearMagic();
-                        } else {
+                        }
+                        if (!t.magic.matches.empty) {
                             mimeType.addMagic(t.magic);
                         }
                     }

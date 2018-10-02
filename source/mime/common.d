@@ -127,9 +127,13 @@ unittest
 
 /// Default glob pattern weight to use when it's not explicitly provided.
 enum uint defaultGlobWeight = 50;
+/// Maximum glob pattern weight as defined by spec.
+enum uint maximumGlobWeight = 100;
 
 /// Default magic rule priority to use when it's not explicitly provided.
 enum uint defaultMatchWeight = 50;
+/// Maximum magic rule priority as defined by spec.
+enum uint maximumMatchWeight = 100;
 
 /**
  * Check is pattern is __NOGLOBS__. This means glob patterns from the less preferable MIME paths should be ignored.
