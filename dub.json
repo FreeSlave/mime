@@ -8,6 +8,7 @@
     "targetPath" : "lib", 
     "targetType" : "library",
     "dependencies": {
-        "xdgpaths" : "~>0.2.5"
+        "xdgpaths" : "~>0.2.5",
+        "dxml" : "~>0.4.0",
     }
 }
