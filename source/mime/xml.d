@@ -253,14 +253,14 @@ private immutable(ubyte)[] unescapeValue(string value)
 
 unittest
 {
-    import std.conv : octal;
     assert(unescapeValue(`\\\n\t\r`) == "\\\n\t\r");
     assert(unescapeValue(`\\xFF`) == "\\xFF");
     assert(unescapeValue(`\x7F`) == [127]);
     assert(unescapeValue(`\177`) == [127]);
     assert(unescapeValue(`\003`) == [3]);
     assert(unescapeValue(`\003vbn`) == [3, 'v', 'b', 'n']);
-    assert(unescapeValue(`\0`) == ['\0']);
+    assert(unescapeValue(`\0`) == "\0");
+    assert(unescapeValue(`no_escape`) == "no_escape");
 }
 
 private T swapEndianIfNeeded(T)(T val, Endian expectedEndian)
@@ -350,7 +350,7 @@ private immutable(ubyte)[] readMatchValue(const(char)[] valueStr, MagicMatch.Typ
     return value;
 }
 
-private MagicMatch readMagicMatch(ref XmlRange range, string mimeTypeName, uint level = 0)
+private MagicMatch readMagicMatch(ref XmlRange range, string mimeTypeName)
 {
     import std.algorithm.searching : findSplit;
     auto elem = expectOpenTag(range, "match");
@@ -358,6 +358,13 @@ private MagicMatch readMagicMatch(ref XmlRange range, string mimeTypeName, uint 
     {
         const(char)[] typeStr, valueStr, offset, maskStr;
         getAttrs(elem.attributes, "type", &typeStr, "value", &valueStr, "offset", &offset, "mask", &maskStr);
+
+        if (!typeStr.length)
+            throw new XMLMimeException("Missing \"type\" attribute", elem.pos);
+        if (!valueStr.length)
+            throw new XMLMimeException("Missing \"value\" attribute", elem.pos);
+        if (!offset.length)
+            throw new XMLMimeException("Missing \"offset\" attribute", elem.pos);
 
         auto splitted = offset.findSplit(":");
         uint startOffset = splitted[0].to!uint;
@@ -378,7 +385,7 @@ private MagicMatch readMagicMatch(ref XmlRange range, string mimeTypeName, uint 
                 range.popFront();
                 break;
             }
-            magicMatch.addSubmatch(readMagicMatch(range, mimeTypeName, level+1));
+            magicMatch.addSubmatch(readMagicMatch(range, mimeTypeName));
         }
         return magicMatch;
     }
@@ -558,6 +565,7 @@ private MimeType readMimeType(ref XmlRange range)
  * Read MIME type from xml formatted data with mime-type root element as defined by spec.
  * Returns: $(D mime.type.MimeType) parsed from xml definition.
  * Throws: $(D XMLMimeException) on format error.
+ * See_Also: $(D mime.xml.readMediaSubtypeFile)
  */
 @trusted MimeType readMediaSubtypeXML(const(char)[] xmlData)
 {
@@ -583,6 +591,7 @@ unittest
   <comment>Markdown document</comment>
   <comment xml:lang="ru">документ Markdown</comment>
   <sub-class-of type="text/plain"/>
+  <x-unknown>Just for a test</x-unknown>
   <glob pattern="*.md"/>
   <glob pattern="*.mkd" weight="40"/>
   <glob pattern="*.markdown" case-sensitive="true"/>
@@ -613,12 +622,23 @@ unittest
     assertThrown(readMediaSubtypeXML(missingName));
 }
 
-struct XmlPackageRange
+struct XMLPackageRange
 {
-    private this(XmlRange range, MmFile mmFile)
+    private this(const(char)[] data)
+    {
+        this.data = data;
+        this(parseXML!simpleXML(this.data));
+    }
+    private this(MmFile mmFile)
+    {
+        assert(mmFile !is null);
+        this.mmFile = mmFile;
+        this(cast(const(char)[])this.mmFile[]);
+    }
+    private this(XmlRange range)
     {
         this.range = range;
-        this.mmFile = mmFile;
+        expectOpenTag(this.range, "mime-info");
     }
     MimeType front()
     {
@@ -633,12 +653,13 @@ struct XmlPackageRange
     }
     bool empty()
     {
-        if (range.empty)
+        if (range.empty || end)
             return true;
         auto elem = range.front;
         if (elem.type == EntityType.elementEnd && elem.name == "mime-info")
         {
             range.popFront();
+            end = true;
             return true;
         }
         return false;
@@ -649,19 +670,111 @@ struct XmlPackageRange
     }
 private:
     MmFile mmFile;
+    const(char)[] data;
     XmlRange range;
     MimeType mimeType;
+    bool end;
 }
 
-auto readMimePackageFile(string filePath)
+/**
+ * Lazily read MIME types from packages/package_name.xml file (e.g. packages/freedesktop.org.xml).
+ * Returns: Forward range of $(D mime.type.MimeType) elements parsed from xml definition.
+ * Throws: $(D XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
+ * See_Also: $(D mime.xml.readMimePackageXML)
+ * Note: Package files are source files. They may be not synced with output files produced by $(B update-mime-database)
+ *  (e.g. if source file had been changed, but the mentioned utility was not called after that)
+ *  Source files however contain the most complete definition of MIME type including globs, magic rules and XML namespaces.
+ */
+XMLPackageRange readMimePackageFile(string filePath)
 {
     auto mmFile = new MmFile(filePath);
-    auto data = cast(const(char)[])mmFile[];
-    auto range = parseXML!simpleXML(data);
-    if (range.empty)
+    try
     {
-        throw new XMLMimeException("No elements in package xml");
+        return XMLPackageRange(mmFile);
     }
-    expectOpenTag(range, "mime-info");
-    return XmlPackageRange(range, mmFile);
+    catch(XMLParsingException e)
+    {
+        throw new XMLMimeException(e.msg, e.pos);
+    }
+}
+
+/**
+ * Read MIME types from xml formatted data with mime-info root element as defined by spec.
+ * Returns: Forward range of $(D mime.type.MimeType) elements parsed from xml definition.
+ * Throws: $(D XMLMimeException) on format error.
+ * See_Also: $(D mime.xml.readMimePackageFile)
+ */
+XMLPackageRange readMimePackageXML(string xmlData)
+{
+    try
+    {
+        return XMLPackageRange(xmlData);
+    }
+    catch(XMLParsingException e)
+    {
+        throw new XMLMimeException(e.msg, e.pos);
+    }
+}
+
+///
+unittest
+{
+    string xmlData = `<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="image/x-sigma-x3f">
+        <comment>Sigma X3F raw image</comment>
+        <sub-class-of type="image/x-dcraw"/>
+        <magic priority="60">
+            <match value="FOVb" type="string" offset="0">
+                <match value="0x00FF00FF" type="little32" offset="4" mask="0xFF00FF00"/>
+            </match>
+        </magic>
+        <glob pattern="*.x3f"/>
+    </mime-type>
+        <mime-type type="image/svg+xml">
+        <comment>SVG image</comment>
+        <sub-class-of type="application/xml"/>
+        <magic priority="80">
+            <match value="&lt;!DOCTYPE svg" type="string" offset="0:256"/>
+            <match value="&lt;svg" type="string" offset="0:256"/>
+        </magic>
+        <glob pattern="*.svg"/>
+        <root-XML namespaceURI="http://www.w3.org/2000/svg" localName="svg"/>
+    </mime-type>
+</mime-info>`;
+    auto range = readMimePackageXML(xmlData);
+    assert(!range.empty);
+    auto mimeType = range.front;
+    assert(mimeType.name == "image/x-sigma-x3f");
+    assert(mimeType.magics.length == 1);
+    auto magic = mimeType.magics[0];
+    assert(magic.weight == 60);
+    assert(magic.matches.length == 1);
+    auto match = magic.matches[0];
+    assert(match.type == MagicMatch.Type.string_);
+    assert(match.value == "FOVb");
+    assert(match.submatches.length == 1);
+    auto submatch = match.submatches[0];
+    assert(submatch.type == MagicMatch.Type.little32);
+    const uint val = 0x00FF00FF;
+    const uint mask = 0xFF00FF00;
+    assert(submatch.value == (cast(ubyte*)&val)[0..uint.sizeof]);
+    assert(submatch.mask == (cast(ubyte*)&mask)[0..uint.sizeof]);
+    range.popFront();
+    assert(!range.empty);
+
+    mimeType = range.front;
+    assert(mimeType.XMLnamespaces == [XMLnamespace("http://www.w3.org/2000/svg", "svg")]);
+    assert(mimeType.name == "image/svg+xml");
+    assert(mimeType.magics.length == 1);
+    auto magic2 = mimeType.magics[0];
+    assert(magic2.weight == 80);
+    assert(magic2.matches.length == 2);
+    auto match2 = magic2.matches[1];
+    assert(match2.type == MagicMatch.Type.string_);
+    assert(match2.value == "<svg");
+
+    range.popFront();
+    assert(range.empty);
+    assert(range.empty);
 }
