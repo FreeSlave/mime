@@ -350,7 +350,7 @@ private immutable(ubyte)[] readMatchValue(const(char)[] valueStr, MagicMatch.Typ
     return value;
 }
 
-private MagicMatch readMagicMatch(ref XmlRange range, string mimeTypeName)
+private MagicMatch readMagicMatch(ref XmlRange range)
 {
     import std.algorithm.searching : findSplit;
     auto elem = expectOpenTag(range, "match");
@@ -385,9 +385,77 @@ private MagicMatch readMagicMatch(ref XmlRange range, string mimeTypeName)
                 range.popFront();
                 break;
             }
-            magicMatch.addSubmatch(readMagicMatch(range, mimeTypeName));
+            magicMatch.addSubmatch(readMagicMatch(range));
         }
         return magicMatch;
+    }
+    catch (ConvException e)
+    {
+        throw new XMLMimeException(e.msg, elem.pos);
+    }
+}
+
+/**
+ * Get symbolic constant of tree match type according to the string.
+ * Returns: $(D mime.treemagic.TreeMatch.Type) for passed string, or $(D mime.treemagic.TreeMatch.Type.any) if type name is unknown.
+ */
+@nogc @safe TreeMatch.Type treeMatchTypeFromString(const(char)[] str) pure nothrow
+{
+    with(TreeMatch.Type) switch(str)
+    {
+        case "file":
+            return file;
+        case "directory":
+            return directory;
+        case "link":
+            return link;
+        default:
+            return any;
+    }
+}
+
+///
+unittest
+{
+    assert(treeMatchTypeFromString("file") == TreeMatch.Type.file);
+    assert(treeMatchTypeFromString("directory") == TreeMatch.Type.directory);
+    assert(treeMatchTypeFromString("link") == TreeMatch.Type.link);
+    assert(treeMatchTypeFromString("") == TreeMatch.Type.any);
+}
+
+private TreeMatch readTreeMagicMatch(ref XmlRange range, string mimeTypeName)
+{
+    import std.algorithm.searching : findSplit;
+    auto elem = expectOpenTag(range, "treematch");
+    try
+    {
+        const(char)[] typeStr, pathStr, matchCaseStr, executableStr, nonEmptyStr, mimeTypeStr;
+        getAttrs(elem.attributes, "type", &typeStr, "path", &pathStr, "match-case", &matchCaseStr,
+                 "executable", &executableStr, "non-empty", &nonEmptyStr, "mimetype", &mimeTypeStr);
+
+        if (!pathStr.length)
+            throw new XMLMimeException("Missing \"path\" attribute", elem.pos);
+
+        string path = cast(string)(pathStr.idup.decodeXML.unescapeValue);
+        auto type = treeMatchTypeFromString(typeStr);
+        auto treeMatch = TreeMatch(path, type);
+        treeMatch.executable = executableStr == "true";
+        treeMatch.matchCase = matchCaseStr == "true";
+        treeMatch.nonEmpty = nonEmptyStr == "true";
+        if (mimeTypeStr.length)
+            treeMatch.mimeType = mimeTypeStr.idup;
+
+        while(!range.empty)
+        {
+            elem = range.front;
+            if (elem.type == EntityType.elementEnd && elem.name == "treematch")
+            {
+                range.popFront();
+                break;
+            }
+            treeMatch.addSubmatch(readTreeMagicMatch(range, mimeTypeName));
+        }
+        return treeMatch;
     }
     catch (ConvException e)
     {
@@ -523,7 +591,25 @@ private MimeType readMimeType(ref XmlRange range)
                         range.popFront();
                         break;
                     }
-                    magic.addMatch(readMagicMatch(range, name));
+                    magic.addMatch(readMagicMatch(range));
+                }
+            }
+            break;
+            case "treemagic":
+            {
+                uint priority = defaultMatchWeight;
+                getAttrs(elem.attributes, "priority", &priority);
+                auto treeMagic = TreeMagic(priority);
+                while (!range.empty)
+                {
+                    elem = range.front;
+                    if (elem.type == EntityType.elementEnd && elem.name == "treemagic")
+                    {
+                        mimeType.addTreeMagic(treeMagic);
+                        range.popFront();
+                        break;
+                    }
+                    treeMagic.addMatch(readTreeMagicMatch(range, name));
                 }
             }
             break;
@@ -550,8 +636,8 @@ private MimeType readMimeType(ref XmlRange range)
  * Returns: $(D mime.type.MimeType) parsed from xml definition.
  * Throws: $(D XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
  * See_Also: $(D mime.xml.readMediaSubtypeXML)
- * Note: According to the spec MEDIA/SUBTYPE.xml files have glob fields removed.
- *  In reality they stay untouched, but this may change in future and this behavior should not be relied on.
+ * Note: According to the spec MEDIA/SUBTYPE.xml files have magic, root-XML and glob fields removed.
+ *  In reality glob fields stay untouched, but this may change in future and this behavior should not be relied on.
  */
 @trusted MimeType readMediaSubtypeFile(string filePath)
 {
@@ -572,8 +658,6 @@ private MimeType readMimeType(ref XmlRange range)
     try
     {
         auto range = parseXML!simpleXML(xmlData);
-        if (range.empty)
-            throw new XMLMimeException("No elements in subtype xml");
         return readMimeType(range);
     }
     catch(XMLParsingException e)
@@ -741,10 +825,18 @@ unittest
         <glob pattern="*.svg"/>
         <root-XML namespaceURI="http://www.w3.org/2000/svg" localName="svg"/>
     </mime-type>
+    <mime-type type="x-content/video-bluray">
+        <comment>Blu-ray video disc</comment>
+        <treemagic>
+        <treematch type="directory" path="BDAV" non-empty="true" match-case="true"/>
+        <treematch type="directory" path="BDMV" non-empty="true"/>
+        </treemagic>
+    </mime-type>
 </mime-info>`;
     auto range = readMimePackageXML(xmlData);
     assert(!range.empty);
     auto mimeType = range.front;
+    assert(mimeType is range.front);
     assert(mimeType.name == "image/x-sigma-x3f");
     assert(mimeType.magics.length == 1);
     auto magic = mimeType.magics[0];
@@ -758,8 +850,12 @@ unittest
     assert(submatch.type == MagicMatch.Type.little32);
     const uint val = 0x00FF00FF;
     const uint mask = 0xFF00FF00;
-    assert(submatch.value == (cast(ubyte*)&val)[0..uint.sizeof]);
-    assert(submatch.mask == (cast(ubyte*)&mask)[0..uint.sizeof]);
+    import std.bitmanip : nativeToLittleEndian;
+    auto valArr = nativeToLittleEndian(val);
+    auto maskArr = nativeToLittleEndian(mask);
+    assert(submatch.value == valArr[]);
+    assert(submatch.mask == maskArr[]);
+
     range.popFront();
     assert(!range.empty);
 
@@ -773,6 +869,19 @@ unittest
     auto match2 = magic2.matches[1];
     assert(match2.type == MagicMatch.Type.string_);
     assert(match2.value == "<svg");
+
+    range.popFront();
+    assert(!range.empty);
+
+    mimeType = range.front;
+    assert(mimeType.name == "x-content/video-bluray");
+    assert(mimeType.treeMagics.length == 1);
+    auto treeMagic = mimeType.treeMagics[0];
+    assert(treeMagic.matches.length == 2);
+    auto treeMatch = treeMagic.matches[0];
+    assert(treeMatch.path == "BDAV");
+    assert(treeMatch.nonEmpty);
+    assert(treeMatch.matchCase);
 
     range.popFront();
     assert(range.empty);

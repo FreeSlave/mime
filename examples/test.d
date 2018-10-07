@@ -91,7 +91,7 @@ void main(string[] args)
         if (me) {
             stderr.writefln("%s: parse error: %s. Bad line: %s", error.fileName, me.msg, me.lineString);
         } else {
-            stderr.writefln("%s", error.e.msg);
+            stderr.writefln("%s: %s", error.fileName, error.e.msg);
         }
     }
 }

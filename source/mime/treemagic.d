@@ -43,15 +43,14 @@ struct TreeMatch
         matchCase = 2,
         ///Directory must non-empty.
         nonEmpty = 4,
-        ///File must be of type mimeType.
-        mimeType = 8
     }
 
     ///
-    @nogc @safe this(string itemPath, Type itemType, Options itemOptions = Options.none) pure nothrow {
-        path = itemPath;
-        type = itemType;
-        options = itemOptions;
+    @nogc @safe this(string path, Type type = Type.any, Options options = Options.none, string mimeType = null) pure nothrow {
+        this.path = path;
+        this.type = type;
+        this.options = options;
+        this.mimeType = mimeType;
     }
 
     ///Path to match.
@@ -63,8 +62,56 @@ struct TreeMatch
     ///Path options.
     Options options;
 
-    ///MIME type name. Set only if $(D options) flags have mimeType.
+    ///MIME type name.
     string mimeType;
+
+    ///
+    @nogc @safe bool executable() nothrow const pure
+    {
+        return (options & Options.executable) != 0;
+    }
+
+    ///
+    @nogc @safe bool executable(bool exec) nothrow pure
+    {
+        if (exec)
+            options |= Options.executable;
+        else
+            options &= ~cast(int)(Options.executable);
+        return exec;
+    }
+
+    ///
+    @nogc @safe bool matchCase() nothrow const pure
+    {
+        return (options & Options.matchCase) != 0;
+    }
+
+    ///
+    @nogc @safe bool matchCase(bool mcase) nothrow pure
+    {
+        if (mcase)
+            options |= Options.matchCase;
+        else
+            options &= ~cast(int)(Options.matchCase);
+        return mcase;
+    }
+
+    ///
+    @nogc @safe bool nonEmpty() nothrow const pure
+    {
+        return (options & Options.nonEmpty) != 0;
+    }
+
+    ///
+    @nogc @safe bool nonEmpty(bool notEmpty) nothrow pure
+    {
+        if (notEmpty)
+            options |= Options.nonEmpty;
+        else
+            options &= ~cast(int)(Options.nonEmpty);
+        return notEmpty;
+    }
 
     ///
     @nogc @safe auto submatches() nothrow const pure {
@@ -113,6 +160,26 @@ struct TreeMatch
 
 private:
     TreeMatch[] _submatches;
+}
+
+unittest
+{
+    auto match = TreeMatch("");
+
+    match.executable = true;
+    assert(match.executable);
+    match.executable = false;
+    assert(!match.executable);
+
+    match.matchCase = true;
+    assert(match.matchCase);
+    match.matchCase = false;
+    assert(!match.matchCase);
+
+    match.nonEmpty = true;
+    assert(match.nonEmpty);
+    match.nonEmpty = false;
+    assert(!match.nonEmpty);
 }
 
 /**
@@ -259,7 +326,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
                 return false;
             }
         }
-        if (ok && (match.options & TreeMatch.Options.mimeType)) {
+        if (ok && match.mimeType.length) {
             //TODO: implement
         }
 

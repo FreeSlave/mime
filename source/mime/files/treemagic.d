@@ -90,7 +90,6 @@ private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint my
                 options |= TreeMatch.Options.nonEmpty;
             } else {
                 if (isValidMimeTypeName(option)) {
-                    options |= TreeMatch.Options.mimeType;
                     mimeType = option;
                 } else {
                     throw new Exception("Unexpected option " ~ option);
@@ -102,9 +101,7 @@ private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint my
     current = endResult[2];
 
     auto match = TreeMatch(path, type, options);
-    if ((options & TreeMatch.Options.mimeType)) {
-        match.mimeType = mimeType;
-    }
+    match.mimeType = mimeType;
 
     //read sub rules
     while (current.length && current[0] != '[') {
@@ -185,20 +182,21 @@ unittest
         auto submatch = t.magic.matches[0];
         assert(submatch.path == "BDAV");
         assert(submatch.type == TreeMatch.Type.directory);
-        assert(submatch.options == TreeMatch.Options.nonEmpty);
+        assert(submatch.nonEmpty);
         assert(submatch.submatches.length == 2);
 
         auto otherSubmatch = t.magic.matches[1];
         assert(otherSubmatch.path == "testfile");
         assert(otherSubmatch.type == TreeMatch.Type.any);
-        assert(otherSubmatch.options == (TreeMatch.Options.executable | TreeMatch.Options.mimeType));
+        assert(otherSubmatch.executable);
         assert(otherSubmatch.mimeType == "application/x-executable");
 
         auto autorun = submatch.submatches[0];
         assert(autorun.path == "autorun");
         assert(autorun.submatches.length == 0);
         assert(autorun.type == TreeMatch.Type.file);
-        assert(autorun.options == (TreeMatch.Options.executable | TreeMatch.Options.matchCase));
+        assert(autorun.executable);
+        assert(autorun.matchCase);
 
         auto testlink = submatch.submatches[1];
         assert(testlink.path == "testlink");
