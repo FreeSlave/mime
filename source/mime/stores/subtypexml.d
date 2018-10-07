@@ -51,7 +51,7 @@ final class MediaSubtypeXmlStore : IMimeStore
 
     /**
      * Find and parse MEDIA/SUBTYPE.xml file for given MIME type name.
-     * Returns: $(D mime.type.MimeType) object parsed from found xml file(s) or null if no file was found.
+     * Returns: $(D mime.type.MimeType) object parsed from found xml file(s) or null if no file was found or name is invalid.
      * Throws: $(D mime.xml.XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
      */
     Rebindable!(const(MimeType)) mimeType(const char[] name)
@@ -164,12 +164,20 @@ unittest
 {
     auto mimePaths = ["./test/mime", "./test/discard", "./test/nonexistent"];
     auto store = new MediaSubtypeXmlStore(mimePaths);
+
+    assert(store.mimeType("invalid") is null);
+    assert(store.mimeType("application/nonexistent") is null);
+
     auto sequenceType = store.mimeType("application/x-hlmdl-sequence");
     assert(sequenceType !is null);
     assert(sequenceType.globs == [MimeGlob("*[0123456789][0123456789].mdl", defaultGlobWeight, false)]);
     assert(sequenceType.genericIcon == "application-x-hlmdl");
     assert(sequenceType is store.mimeType("application/x-hlmdl-sequence"));
+
     auto quakeSprite = store.mimeType("image/x-qsprite");
     assert(quakeSprite !is null);
     assert(quakeSprite.aliases == ["application/x-qsprite"]);
+
+    import std.algorithm.searching : canFind;
+    assert(store.byMimeType.canFind!((const(MimeType) type, string name) { return type.name == name; })("application/x-pak"));
 }
