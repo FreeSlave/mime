@@ -41,6 +41,7 @@ void printInfo(MimeDatabase database, string[] mimeTypes)
             import std.format : format;
             writefln("Information for %s:", type);
             writefln("MIME type: %s", mimeType.name);
+            writefln("Descriptive name: %s", mimeType.displayName);
             writefln("Icon: %s", mimeType.getIcon());
             writefln("Generic-Icon: %s", mimeType.getGenericIcon());
             writefln("Aliases: %s", mimeType.aliases);

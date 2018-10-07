@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="application/x-hl2mdl">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>Source engine model</comment>
+  <glob pattern="*.mdl"/>
+  <alias type="model/vnd.valve.source.model.geometry"/>
+</mime-type>

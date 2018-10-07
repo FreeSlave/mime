@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="image/x-vtf">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>Source engine texture</comment>
+  <glob pattern="*.vtf" type="string"/>
+  <alias type="image/vnd.valve.source.texture"/>
+  <alias type="application/x-vtf"/>
+</mime-type>

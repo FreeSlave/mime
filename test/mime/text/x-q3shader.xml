@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="text/x-q3shader">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>Quake III shader script</comment>
+  <sub-class-of type="text/plain"/>
+  <glob pattern="*.shader" case-sensitive="true"/>
+</mime-type>

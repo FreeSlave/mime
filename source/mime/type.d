@@ -336,6 +336,8 @@ final class MimeType
         copy.icon = this.icon();
         copy.genericIcon = this.genericIcon();
         copy.displayName = this.displayName();
+        copy.deleteGlobs = this.deleteGlobs;
+        copy.deleteMagic = this.deleteMagic;
 
         foreach(namespace; this.XMLnamespaces()) {
             copy.addXMLnamespace(namespace);
@@ -416,4 +418,8 @@ private:
     MimeMagic[] _magics;
     TreeMagic[] _treemagics;
     string _displayName;
+
+package:
+    bool deleteGlobs;
+    bool deleteMagic;
 }

@@ -506,11 +506,13 @@ private MimeType readMimeType(ref XmlRange range)
             break;
             case "glob-deleteall":
             {
+                mimeType.deleteGlobs = true;
                 expectClosingTag(range, tagName);
             }
             break;
             case "magic-deleteall":
             {
+                mimeType.deleteMagic = true;
                 expectClosingTag(range, tagName);
             }
             break;
@@ -634,7 +636,7 @@ private MimeType readMimeType(ref XmlRange range)
 /**
  * Read MIME type from MEDIA/SUBTYPE.xml file (e.g. image/png.xml).
  * Returns: $(D mime.type.MimeType) parsed from xml definition.
- * Throws: $(D XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
+ * Throws: $(D mime.xml.XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
  * See_Also: $(D mime.xml.readMediaSubtypeXML)
  * Note: According to the spec MEDIA/SUBTYPE.xml files have magic, root-XML and glob fields removed.
  *  In reality glob fields stay untouched, but this may change in future and this behavior should not be relied on.
@@ -763,7 +765,7 @@ private:
 /**
  * Lazily read MIME types from packages/package_name.xml file (e.g. packages/freedesktop.org.xml).
  * Returns: Forward range of $(D mime.type.MimeType) elements parsed from xml definition.
- * Throws: $(D XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
+ * Throws: $(D mime.xml.XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
  * See_Also: $(D mime.xml.readMimePackageXML)
  * Note: Package files are source files. They may be not synced with output files produced by $(B update-mime-database)
  *  (e.g. if source file had been changed, but the mentioned utility was not called after that)

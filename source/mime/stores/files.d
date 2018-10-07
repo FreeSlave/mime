@@ -16,11 +16,14 @@ import mime.store;
 
 private {
     import std.algorithm : map;
+    import std.array : empty;
     import std.exception;
-    import std.file;
+    import std.file : isDir, FileException;
     import std.mmfile;
     import std.path;
-    import std.range;
+    import std.range : retro;
+    import std.range.interfaces : inputRangeObject;
+    import std.range.primitives : isInputRange, ElementType;
     import std.stdio;
     import std.typecons;
 
@@ -117,7 +120,7 @@ final class FilesMimeStore : IMimeStore
      *  $(D mime.files.common.MimeFileException) if some info file has errors.
      *  $(D mime.files.magic.MimeMagicFileException) if magic file has errors.
      *  $(D mime.files.treemagic.TreeMagicFileException) if treemagic file has errors.
-     *  ErrnoException or FileException if some important file does not exist or could not be read.
+     *  $(B ErrnoException) or $(B FileException) if some important file does not exist or could not be read.
      * See_Also: $(D mime.paths.mimePaths)
      */
     this(Range)(Range mimePaths, Options options = Options.init) if (isInputRange!Range && is(ElementType!Range : string))
@@ -296,10 +299,12 @@ final class FilesMimeStore : IMimeStore
         assert(store.errors().length == 10);
     }
 
+    ///
     InputRange!(const(MimeType)) byMimeType() {
         return inputRangeObject(_mimeTypes.byValue().map!(val => cast(const(MimeType))val));
     }
 
+    ///
     Rebindable!(const(MimeType)) mimeType(const char[] name) {
         return rebindable(mimeTypeImpl(name));
     }

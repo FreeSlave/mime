@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="image/x-hlsprite">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>Half-Life sprite</comment>
+  <glob pattern="*.spr"/>
+  <alias type="application/x-hlsprite"/>
+</mime-type>

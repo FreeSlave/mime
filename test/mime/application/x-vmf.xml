@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="application/x-vmf">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>VHE2 map source file</comment>
+  <glob pattern="*.vmf"/>
+  <alias type="application/vnd.valve.source.map"/>
+</mime-type>

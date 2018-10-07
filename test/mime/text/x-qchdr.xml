@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="text/x-qchdr">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>QuakeC header</comment>
+  <sub-class-of type="text/x-chdr"/>
+  <generic-icon name="text-x-chdr"/>
+  <glob pattern="*.qh"/>
+</mime-type>

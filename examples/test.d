@@ -13,6 +13,7 @@ import std.stdio;
 import mime.cache;
 import mime.detectors.cache;
 import mime.stores.files;
+import mime.stores.subtypexml;
 import mime.database;
 import mime.paths;
 import mime.files.treemagic;
@@ -94,4 +95,7 @@ void main(string[] args)
             stderr.writefln("%s: %s", error.fileName, error.e.msg);
         }
     }
+
+    auto xmlStore = new MediaSubtypeXmlStore(mimePaths);
+    foreach(mimeType; xmlStore.byMimeType()) {}
 }

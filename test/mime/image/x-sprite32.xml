@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="image/x-sprite32">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>Darkplaces 32bit color sprite</comment>
+  <glob pattern="*.spr32"/>
+  <glob pattern="*.sp2"/>
+  <glob pattern="*.spr"/>
+  <alias type="application/x-sprite32"/>
+</mime-type>

@@ -48,10 +48,10 @@ final class MimeDatabase
      */
     this(Range)(Range mimePaths) if (isInputRange!Range && is(ElementType!Range : string))
     {
-        import mime.stores.files;
+        import mime.stores.subtypexml;
         import mime.detectors.cache;
 
-        _store = new FilesMimeStore(mimePaths);
+        _store = new MediaSubtypeXmlStore(mimePaths);
         _detector = new MimeDetectorFromCache(mimePaths);
     }
 

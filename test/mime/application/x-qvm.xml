@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="application/x-qvm">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>Quake III virtual machine bytecode</comment>
+  <glob pattern="*.qvm"/>
+  <glob-deleteall/>
+</mime-type>

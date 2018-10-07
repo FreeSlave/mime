@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-type xmlns="http://www.freedesktop.org/standards/shared-mime-info" type="text/x-fgd">
+  <!--Created automatically by update-mime-database. DO NOT EDIT!-->
+  <comment>Game entity definitions file</comment>
+  <sub-class-of type="text/plain"/>
+  <glob pattern="*.fgd"/>
+</mime-type>
