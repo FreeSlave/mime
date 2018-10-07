@@ -31,10 +31,6 @@ private {
 
 public import mime.files.common;
 
-private @trusted auto fileReader(string fileName) {
-    return File(fileName, "r").byLineCopy();
-}
-
 /**
  * Implementation of $(D mime.store.IMimeStore) interface that uses MEDIA/SUBTYPE.xml files from mime/ subfolder to read MIME types.
  */
