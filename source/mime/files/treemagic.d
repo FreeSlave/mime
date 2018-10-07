@@ -37,7 +37,7 @@ final class TreeMagicFileException : Exception
 ///MIME type name and corresponding treemagic.
 alias Tuple!(immutable(char)[], "mimeType", TreeMagic, "magic") TreeMagicEntry;
 
-private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint myIndent)
+private @trusted TreeMatch parseTreeMatch(ref const(char)[] current, uint myIndent)
 {
     enforce(current.length && current[0] == '>', "Expected '>' at the start of match rule");
     current = current[1..$];
@@ -90,9 +90,10 @@ private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint my
                 options |= TreeMatch.Options.nonEmpty;
             } else {
                 if (isValidMimeTypeName(option)) {
-                    mimeType = option;
+                    mimeType = option.idup;
                 } else {
-                    throw new Exception("Unexpected option " ~ option);
+                    import std.exception : assumeUnique;
+                    throw new Exception(assumeUnique("Unexpected option " ~ option));
                 }
             }
         }
@@ -100,8 +101,7 @@ private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint my
 
     current = endResult[2];
 
-    auto match = TreeMatch(path, type, options);
-    match.mimeType = mimeType;
+    auto match = TreeMatch(path.idup, type, options, mimeType);
 
     //read sub rules
     while (current.length && current[0] != '[') {
@@ -124,11 +124,11 @@ private @trusted TreeMatch parseTreeMatch(ref immutable(char)[] current, uint my
  * Throws:
  *  $(D TreeMagicFileException) on error.
  */
-void treeMagicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, TreeMagicEntry))
+void treeMagicFileReader(OutRange)(const(void)[] data, OutRange sink) if (isOutputRange!(OutRange, TreeMagicEntry))
 {
     try {
         enum mimeMagic = "MIME-TreeMagic\0\n";
-        auto content = cast(immutable(char)[])data;
+        auto content = cast(const(char)[])data;
         if (!content.startsWith(mimeMagic)) {
             throw new Exception("Not treemagic file");
         }
@@ -157,7 +157,7 @@ void treeMagicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (is
                 TreeMatch match = parseTreeMatch(current, indent);
                 magic.addMatch(match);
             }
-            sink(TreeMagicEntry(mimeType, magic));
+            sink(TreeMagicEntry(mimeType.idup, magic));
         }
     } catch (Exception e) {
         throw new TreeMagicFileException(e.msg, e.file, e.line, e.next);

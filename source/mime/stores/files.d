@@ -18,6 +18,7 @@ private {
     import std.algorithm : map;
     import std.exception;
     import std.file;
+    import std.mmfile;
     import std.path;
     import std.range;
     import std.stdio;
@@ -238,7 +239,8 @@ final class FilesMimeStore : IMimeStore
                             mimeType.addMagic(t.magic);
                         }
                     }
-                    magicFileReader(assumeUnique(std.file.read(magicPath)), &sink);
+                    auto mmFile = new MmFile(magicPath);
+                    magicFileReader(mmFile[], &sink);
                 } catch(Exception e) {
                     handleError(e, options.magic, magicPath);
                 }
@@ -251,7 +253,8 @@ final class FilesMimeStore : IMimeStore
                         auto mimeType = ensureMimeType(t.mimeType);
                         mimeType.addTreeMagic(t.magic);
                     }
-                    treeMagicFileReader(assumeUnique(std.file.read(treemagicPath)), &treeSink);
+                    auto mmFile = new MmFile(treemagicPath);
+                    treeMagicFileReader(mmFile[], &treeSink);
                 } catch(Exception e) {
                     handleError(e, options.treemagic, treemagicPath);
                 }

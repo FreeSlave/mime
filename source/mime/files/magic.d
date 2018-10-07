@@ -35,7 +35,7 @@ final class MimeMagicFileException : Exception
 ///MIME type name and corresponding magic.
 alias Tuple!(immutable(char)[], "mimeType", MimeMagic, "magic", bool, "deleteMagic") MagicEntry;
 
-private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint myIndent)
+private @trusted MagicMatch parseMagicMatch(ref const(char)[] current, uint myIndent)
 {
     enforce(current.length && current[0] == '>', "Expected '>' at the start of match rule");
     current = current[1..$];
@@ -43,7 +43,7 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
     enforce(current.length && current[0] == '=', "Expected '=' after start-offset");
     current = current[1..$];
 
-    immutable(ubyte)[] value;
+    const(ubyte)[] value;
     enum noMagic = "__NOMAGIC__";
     if (current.length >= noMagic.length && current[0..noMagic.length] == noMagic) {
         value = cast(typeof(value))noMagic;
@@ -57,7 +57,7 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
         auto valueLength = bigEndianToNative!ushort(bigEndianLength);
         enforce(current.length >= valueLength, "Value is out of bounds");
 
-        value = cast(immutable(ubyte)[])(current[0..valueLength]);
+        value = cast(typeof(value))(current[0..valueLength]);
     }
 
     current = current[value.length..$];
@@ -103,7 +103,7 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
         type = MagicMatch.Type.host32;
     }
 
-    auto match = MagicMatch(type, value, mask, startOffset, rangeLength);
+    auto match = MagicMatch(type, value.idup, mask.idup, startOffset, rangeLength);
 
     //read sub rules
     while (current.length && current[0] != '[') {
@@ -126,11 +126,11 @@ private @trusted MagicMatch parseMagicMatch(ref immutable(char)[] current, uint 
  * Throws:
  *  $(D MimeMagicFileException) on error.
  */
-void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
+void magicFileReader(OutRange)(const(void)[] data, OutRange sink) if (isOutputRange!(OutRange, MagicEntry))
 {
     try {
         enum mimeMagic = "MIME-Magic\0\n";
-        auto content = cast(immutable(char)[])data;
+        auto content = cast(const(char)[])data;
         if (!content.startsWith(mimeMagic)) {
             throw new Exception("Not mime magic file");
         }
@@ -164,7 +164,7 @@ void magicFileReader(OutRange)(immutable(void)[] data, OutRange sink) if (isOutp
                     magic.addMatch(match);
                 }
             }
-            sink(MagicEntry(mimeType, magic, shouldDeleteMagic));
+            sink(MagicEntry(mimeType.idup, magic, shouldDeleteMagic));
         }
     } catch (Exception e) {
         throw new MimeMagicFileException(e.msg, e.file, e.line, e.next);
