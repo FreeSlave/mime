@@ -61,7 +61,7 @@ interface IMimeDetector
     /**
      * Returns: MIME type name for namespaceUri or null if not found (or feature is not implemented).
      */
-    const(char)[] mimeTypeForNamespaceUri(const(char)[] namespaceUri);
+    const(char)[] mimeTypeForNamespaceURI(const(char)[] namespaceURI);
 
 
     /**

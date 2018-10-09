@@ -1,6 +1,7 @@
 application/x-jmx application/x-jmf
 text/x-qchdr text/x-chdr
 text/x-liblist text/plain
+application/xml text/plain
 text/x-makefile text/plain
 text/x-q3shader text/plain
 text/x-ent text/xml

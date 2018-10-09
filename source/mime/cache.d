@@ -400,9 +400,9 @@ final class MimeCache
                                                readString(readValue!uint(offset+uint.sizeof*2, "mime type offset"), "mime type name")));
     }
 
-    @trusted const(char)[] findMimeTypeByNamespaceUri(const(char)[] namespaceUri) const
+    @trusted const(char)[] findMimeTypeByNamespaceURI(const(char)[] namespaceURI) const
     {
-        auto namespaceEntry = namespaces().equalRange(NamespaceEntry(namespaceUri, null, null));
+        auto namespaceEntry = namespaces().equalRange(NamespaceEntry(namespaceURI, null, null));
         return namespaceEntry.empty ? null : namespaceEntry.front.mimeType;
     }
 
@@ -781,6 +781,6 @@ unittest
     assert(cache.isSubclassOf("text/x-fgd", "text/plain"));
     assert(!cache.isSubclassOf("text/x-fgd", "application/octet-stream"));
 
-    assert(cache.findMimeTypeByNamespaceUri("http://www.w3.org/1999/ent") == "text/x-ent");
+    assert(cache.findMimeTypeByNamespaceURI("http://www.w3.org/1999/ent") == "text/x-ent");
 }
 

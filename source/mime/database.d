@@ -19,6 +19,7 @@ import mime.detector;
 import mime.text;
 import mime.inode;
 
+import mime.common : dataSizeToRead;
 public import mime.type;
 
 /**
@@ -31,12 +32,12 @@ final class MimeDatabase
     {
         globPatterns = 1,   /// Match file name against glob patterns.
         magicRules   = 2,   /// Match file content against magic rules. With MatchOptions.globPatterns flag it's used only in conflicts.
-        //namespaceUri = 4, /// Try to clarify mime type in case it's XML.
+        namespaceURI = 4, /// Try to clarify mime type in case it's XML.
         inodeType = 8, /// Provide inode/* type for files other than regular files.
         textFallback = 16, /// Provide $(D text/plain) fallback if data seems to be textual.
         octetStreamFallback = 32, /// Provide $(D application/octet-stream) fallback if data seems to be binary.
         emptyFileFallback = 64, ///Provide $(B application/x-zerosize) fallback if mime type can't be detected, but data is known to be zero size.
-        all = globPatterns|magicRules|inodeType|textFallback|octetStreamFallback|emptyFileFallback ///Use all recipes to detect MIME type.
+        all = globPatterns|magicRules|namespaceURI|inodeType|textFallback|octetStreamFallback|emptyFileFallback ///Use all recipes to detect MIME type.
     }
 
     /**
@@ -103,10 +104,10 @@ final class MimeDatabase
      * Get MIME type for file and its data using methods describing in options.
      * Params:
      *  fileName = Name of file
-     *  data = Data chunk read from file (it's not necessary to read the whole data)
+     *  data = Data chunk read from the file. It's not necessary to read the whole file.
      *  options = Lookup options
      */
-    Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, const(void)[] data, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
+    Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, const(void)[] data, Match options = Match.all)
     {
         return mimeTypeForFileImpl(fileName, data, options, true);
     }
@@ -115,15 +116,49 @@ final class MimeDatabase
      * Get MIME type for file using methods describing in options.
      * File contents will be read automatically if needed.
      */
-    Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, Match options = Match.globPatterns|Match.magicRules|Match.octetStreamFallback|Match.textFallback)
+    Rebindable!(const(MimeType)) mimeTypeForFile(string fileName, Match options = Match.all)
     {
         return mimeTypeForFileImpl(fileName, null, options, false);
     }
 
-    private auto mimeTypeForFileImpl(string fileName, const(void)[] data, Match options, const bool dataPassed)
+    private auto checkIfXml(string fileName, const(void)[] data, const bool dataPassed)
     {
-        import std.file;
-        import std.exception;
+        static import std.file;
+        import mime.xml : getXMLnamespaceFromData;
+        if (!dataPassed)
+        {
+            try {
+                data = std.file.read(fileName, dataSizeToRead);
+            } catch(Exception e) {
+                return rebindable(const(MimeType).init);
+            }
+        }
+        string namespaceURI = getXMLnamespaceFromData(cast(const(char)[])data);
+        if (namespaceURI.length)
+        {
+            auto name = _detector.mimeTypeForNamespaceURI(namespaceURI);
+            return mimeType(name, No.resolveAlias);
+        }
+        return rebindable(const(MimeType).init);
+    }
+
+    private auto mimeTypeForFileImpl(string fileName, const(void)[] data, Match options, bool dataPassed)
+    {
+        auto type = mimeTypeForFileImplRef(fileName, data, options, dataPassed);
+        if ((options & Match.namespaceURI) != 0 && type && type.name == "application/xml")
+        {
+            auto xmlType = checkIfXml(fileName, data, dataPassed);
+            if (xmlType)
+                return xmlType;
+        }
+        return type;
+    }
+
+    private auto mimeTypeForFileImplRef(string fileName, ref const(void)[] data, Match options, ref bool dataPassed)
+    {
+        static import std.file;
+        import std.file : getSize;
+        import std.exception : collectException;
 
         if (data is null && (options & Match.inodeType)) {
             string inodeType = inodeMimeType(fileName);
@@ -159,7 +194,7 @@ final class MimeDatabase
 
         if (!dataPassed && (options & (Match.magicRules|Match.textFallback|Match.octetStreamFallback))) {
             try {
-                data = std.file.read(fileName, 256);
+                data = std.file.read(fileName, dataSizeToRead);
             } catch(Exception e) {
                 //pass
             }
@@ -261,8 +296,8 @@ unittest
     assert(detector.mimeTypeForData("IDSP\x02\x00\x00\x00") == "image/x-hlsprite");
     assert(detector.resolveAlias("application/nonexistent") is null);
 
-    assert(detector.mimeTypeForNamespaceUri("http://www.w3.org/1999/ent") == "text/x-ent");
-    assert(detector.mimeTypeForNamespaceUri("nonexistent").empty);
+    assert(detector.mimeTypeForNamespaceURI("http://www.w3.org/1999/ent") == "text/x-ent");
+    assert(detector.mimeTypeForNamespaceURI("nonexistent").empty);
 
     auto database = new MimeDatabase(store, detector);
     assert(database.detector() is detector);
@@ -379,4 +414,9 @@ unittest
     //conflicts
     assert(database.mimeTypeForFileName("file.jmf"));
     assert(database.mimeTypeForData("PACK"));
+
+    //xml
+    assert(database.mimeTypeForFileName("file.xml").name == "application/xml");
+    assert(database.mimeTypeForData("<?xml").name == "application/xml");
+    assert(database.mimeTypeForFile("file.xml", `<start-element xmlns="http://www.w3.org/1999/ent">`).name == "text/x-ent");
 }

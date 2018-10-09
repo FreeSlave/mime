@@ -19,7 +19,7 @@ void detectTypes(MimeDatabase database, string[] filePaths)
         auto mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.globPatterns);
         writefln("\tglob patterns:\t%s", mimeType ? mimeType.name : "unknown");
 
-        mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.magicRules);
+        mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.magicRules|MimeDatabase.Match.namespaceURI);
         writefln("\tmagic rules:\t%s", mimeType ? mimeType.name : "unknown");
 
         mimeType = database.mimeTypeForFile(filePath, MimeDatabase.Match.textFallback | MimeDatabase.Match.octetStreamFallback | MimeDatabase.Match.emptyFileFallback);

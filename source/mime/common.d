@@ -10,6 +10,9 @@
 
 module mime.common;
 
+// should be enough for magic rules
+package enum dataSizeToRead = 1024 * 4;
+
 private {
     import std.typecons;
     import std.traits;

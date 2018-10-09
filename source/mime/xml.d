@@ -889,3 +889,51 @@ unittest
     assert(range.empty);
     assert(range.empty);
 }
+
+/**
+ * Get XML namespace from text data. The text is not required to be a data of the whole file.
+ * Note however that some xml files may contain a big portion of DOCTYPE declaration at the start.
+ * Returns: xmlns attribute of the root xml element or null if text is not xml-formatted or does not have a namespace.
+ * See_Also: $(D mime.xml.getXMLnamespaceFromFile)
+ */
+string getXMLnamespaceFromData(const(char)[] xmlData)
+{
+    import std.utf : UTFException;
+    try
+    {
+        auto range = parseXML!simpleXML(xmlData);
+        checkXmlRange(range);
+        auto root = range.front;
+        string xmlns;
+        getAttrs(root.attributes, "xmlns", &xmlns);
+        return xmlns;
+    }
+    catch(XMLParsingException e)
+    {
+        return null;
+    }
+    catch(UTFException e)
+    {
+        return null;
+    }
+}
+
+///
+unittest
+{
+    auto xmlData = `<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">`;
+    assert(getXMLnamespaceFromData(xmlData) == "http://www.freedesktop.org/standards/shared-mime-info");
+    assert(getXMLnamespaceFromData("<start-element>") == string.init);
+    assert(getXMLnamespaceFromData("") == string.init);
+}
+
+/**
+ * Get XML namespace of file.
+ * See_Also: $(D mime.xml.getXMLnamespaceFromData)
+ */
+string getXMLnamespaceFromFile(string fileName, size_t upTo = dataSizeToRead)
+{
+    import std.file : read;
+    auto xmlData = cast(const(char)[])read(fileName, upTo);
+    return getXMLnamespaceFromData(xmlData);
+}

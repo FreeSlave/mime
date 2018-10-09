@@ -285,10 +285,10 @@ final class MimeDetectorFromCache : IMimeDetector
         return false;
     }
 
-    const(char)[] mimeTypeForNamespaceUri(const(char)[] namespaceUri)
+    const(char)[] mimeTypeForNamespaceURI(const(char)[] namespaceURI)
     {
         foreach(mimeCache; _mimeCaches) {
-            const(char)[] mimeType = mimeCache.findMimeTypeByNamespaceUri(namespaceUri);
+            const(char)[] mimeType = mimeCache.findMimeTypeByNamespaceURI(namespaceURI);
             if (mimeType.length) {
                 return mimeType;
             }

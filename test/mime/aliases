@@ -8,3 +8,4 @@ application/x-sprite32 image/x-sprite32
 application/x-vtf image/x-vtf
 image/vnd.valve.source.texture image/x-vtf
 model/vnd.valve.source.model.geometry application/x-hl2mdl
+text/xml application/xml
