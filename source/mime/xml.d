@@ -356,15 +356,17 @@ private MagicMatch readMagicMatch(ref XmlRange range)
     auto elem = expectOpenTag(range, "match");
     try
     {
+        static void checkValue(const(char)[] value, string name, TextPos pos)
+        {
+            if (!value)
+                throw new XMLMimeException("Missing \"" ~ name ~ "\" attribute", pos);
+        }
         const(char)[] typeStr, valueStr, offset, maskStr;
         getAttrs(elem.attributes, "type", &typeStr, "value", &valueStr, "offset", &offset, "mask", &maskStr);
 
-        if (!typeStr.length)
-            throw new XMLMimeException("Missing \"type\" attribute", elem.pos);
-        if (!valueStr.length)
-            throw new XMLMimeException("Missing \"value\" attribute", elem.pos);
-        if (!offset.length)
-            throw new XMLMimeException("Missing \"offset\" attribute", elem.pos);
+        checkValue(typeStr, "type", elem.pos);
+        checkValue(valueStr, "value", elem.pos);
+        checkValue(offset, "offset", elem.pos);
 
         auto splitted = offset.findSplit(":");
         uint startOffset = splitted[0].to!uint;
@@ -706,6 +708,10 @@ unittest
 
     auto missingName = `<mime-type></mime-type>`;
     assertThrown(readMediaSubtypeXML(missingName));
+
+    auto noPattern = `<mime-type type="text/markdown">
+  <glob pattern=""/></mime-type>`;
+    assertThrown!XMLMimeException(readMediaSubtypeXML(noPattern));
 }
 
 struct XMLPackageRange
@@ -730,7 +736,14 @@ struct XMLPackageRange
     {
         if (mimeType)
             return mimeType;
-        mimeType = readMimeType(range);
+        try
+        {
+            mimeType = readMimeType(range);
+        }
+        catch(XMLParsingException e)
+        {
+            throw new XMLMimeException(e.msg, e.pos);
+        }
         return mimeType;
     }
     void popFront()
@@ -739,6 +752,8 @@ struct XMLPackageRange
     }
     bool empty()
     {
+        if (mimeType !is null)
+            return false;
         if (range.empty || end)
             return true;
         auto elem = range.front;
@@ -834,6 +849,11 @@ unittest
         <treematch type="directory" path="BDMV" non-empty="true"/>
         </treemagic>
     </mime-type>
+    <mime-type type="application/x-sharedlib">
+        <magic priority="50">
+            <match value="\177ELF            \003" type="string" offset="0" mask="0xffffffff000000000000000000000000ff"/>
+        </magic>
+    </mime-type>
 </mime-info>`;
     auto range = readMimePackageXML(xmlData);
     assert(!range.empty);
@@ -886,8 +906,33 @@ unittest
     assert(treeMatch.matchCase);
 
     range.popFront();
+
+    mimeType = range.front;
+    assert(mimeType);
+    assert(mimeType.magics.length == 1);
+    auto magic3 = mimeType.magics[0];
+    assert(magic3.matches.length == 1);
+    auto match3 = magic3.matches[0];
+    assert(match3.mask == "\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff");
+
+    range.popFront();
     assert(range.empty);
     assert(range.empty);
+
+    import std.exception : collectException;
+    xmlData = `<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/x-sharedlib">
+        <magic priority="50">
+            <match value="\177ELF            \003" type="string" offset="0" mask="wrong_format"/>
+        </magic>
+    </mime-type>
+</mime-info>`;
+    range = readMimePackageXML(xmlData);
+    assert(!range.empty);
+    auto e = collectException!XMLMimeException(range.front);
+    assert(e !is null);
+    assert(e.lineNum == 5);
 }
 
 /**
