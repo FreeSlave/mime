@@ -33,22 +33,28 @@ public import mime.files.common;
 
 /**
  * Implementation of $(D mime.store.IMimeStore) interface that uses MEDIA/SUBTYPE.xml files from mime/ subfolder to read MIME types.
+ * It does not read any MIME type definitions at the construction time.
+ * Instead MediaSubtypeXmlStore performs parsing of separate files on demand when calling $(D mimeType) or $(D byMimeType).
+ * All parsed definitions are getting cached to avoid re-parsing on every demand.
+ * See_Also: $(D mime.xml.readMediaSubtypeFile)
  */
 final class MediaSubtypeXmlStore : IMimeStore
 {
     /**
      * Params:
-     *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
+     *  mimePaths = Range of paths to base mime/ directories in order from more preferable to less preferable.
      */
-    this(string[] mimePaths)
+    @safe this(const(string)[] mimePaths) nothrow pure
     {
         _mimePaths = mimePaths.dup;
     }
 
     /**
-     * Find and parse MEDIA/SUBTYPE.xml file for given MIME type name.
+     * Find and parse MEDIA/SUBTYPE.xml file(s) for given MIME type name.
+     * If it finds more then one file for the MIME type, merging operation is performed.
      * Returns: $(D mime.type.MimeType) object parsed from found xml file(s) or null if no file was found or name is invalid.
      * Throws: $(D mime.xml.XMLMimeException) on format error or $(B std.file.FileException) on file reading error.
+     * See_Also: $(D mime.type.mergeMimeTypes)
      */
     Rebindable!(const(MimeType)) mimeType(const char[] name)
     {
@@ -73,7 +79,7 @@ final class MediaSubtypeXmlStore : IMimeStore
                 pmimeType = name in _mimeTypes;
                 if (pmimeType)
                 {
-                    mergeMimeTypes(*pmimeType, mimeType);
+                    mergeMimeTypesInPlace(*pmimeType, mimeType);
                 }
                 else
                 {
@@ -96,7 +102,7 @@ final class MediaSubtypeXmlStore : IMimeStore
      *  $(D mime.xml.XMLMimeException) on xml format error.
      *  $(B std.file.FileException) on file reading error.
      * Note: The resulted range may contain duplicates, if some MIME type has multiple definitions across base mime paths.
-     *  The duplicates in this case refer to the same object, i.e. is-equal.
+     *  The duplicates in this case refer to the same object, i.e. $(B is)-equal.
      */
     InputRange!(const(MimeType)) byMimeType() {
         auto typesPaths = _mimePaths.retro.map!(mimePath => buildPath(mimePath, "types")).filter!(delegate(string typesPath) {
@@ -117,39 +123,6 @@ private:
             mimeType.icon = defaultIconName(mimeType.name);
         if (!mimeType.genericIcon)
             mimeType.genericIcon = defaultGenericIconName(mimeType.name);
-    }
-    @safe void mergeMimeTypes(MimeType origin, const(MimeType) additive)
-    {
-        assert(origin.name == additive.name);
-        if (additive.displayName.length)
-            origin.displayName = additive.displayName;
-        if (additive.icon.length)
-            origin.icon = additive.icon;
-        if (additive.genericIcon.length)
-            origin.genericIcon = additive.genericIcon;
-        if (additive.deleteGlobs)
-            origin.clearGlobs();
-        if (additive.deleteMagic)
-            origin.clearMagic();
-
-        foreach(namespace; additive.XMLnamespaces()) {
-            origin.addXMLnamespace(namespace);
-        }
-        foreach(parent; additive.parents()) {
-            origin.addParent(parent);
-        }
-        foreach(aliasName; additive.aliases()) {
-            origin.addAlias(aliasName);
-        }
-        foreach(glob; additive.globs()) {
-            origin.addGlob(glob);
-        }
-        foreach(magic; additive.magics()) {
-            origin.addMagic(magic.clone());
-        }
-        foreach(magic; additive.treeMagics()) {
-            origin.addTreeMagic(magic.clone());
-        }
     }
 
     string[] _mimePaths;

@@ -114,7 +114,7 @@ final class FilesMimeStore : IMimeStore
     /**
      * Constructor based on MIME paths.
      * Params:
-     *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
+     *  mimePaths = Range of paths to base mime/ directories in order from more preferable to less preferable.
      *  options = Options for file reading and error reporting.
      * Throws:
      *  $(D mime.files.common.MimeFileException) if some info file has errors.

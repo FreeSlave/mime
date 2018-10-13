@@ -407,6 +407,36 @@ final class MimeType
         assert(clone.parents() == ["text/plain"]);
     }
 
+    /**
+     * Whether to discard globs parsed from a less preferable directory. Used in merges.
+     * See_Also: $(D mime.type.mergeMimeTypes)
+     */
+    @nogc @safe bool deleteGlobs() nothrow const pure
+    {
+        return _deleteGlobs;
+    }
+    ///Setter
+    @nogc @safe bool deleteGlobs(bool clearGlobs) nothrow pure
+    {
+        _deleteGlobs = clearGlobs;
+        return clearGlobs;
+    }
+
+    /**
+     * Whether to discard magic matches parsed from a less preferable directory. Used in merges.
+     * See_Also: $(D mime.type.mergeMimeTypes)
+     */
+    @nogc @safe bool deleteMagic() nothrow const pure
+    {
+        return _deleteMagic;
+    }
+    ///Setter
+    @nogc @safe bool deleteMagic(bool clearMagic) nothrow pure
+    {
+        _deleteMagic = clearMagic;
+        return clearMagic;
+    }
+
 private:
     string _name;
     string _icon;
@@ -418,8 +448,107 @@ private:
     MimeMagic[] _magics;
     TreeMagic[] _treemagics;
     string _displayName;
+    bool _deleteGlobs;
+    bool _deleteMagic;
+}
 
-package:
-    bool deleteGlobs;
-    bool deleteMagic;
+private @safe void checkNamesEqual(const(MimeType) origin, const(MimeType) additive) pure
+{
+    import std.exception : enforce;
+    enforce(origin.name == additive.name, "Can't merge MIME types with different names");
+}
+
+/**
+ * In-place version of $(D mime.type.mergeMimeTypes)
+ * See_Also: $(D mime.type.mergeMimeTypes)
+ */
+@safe void mergeMimeTypesInPlace(MimeType origin, const(MimeType) additive) pure
+{
+    checkNamesEqual(origin, additive);
+    if (additive.displayName.length)
+        origin.displayName = additive.displayName;
+    if (additive.icon.length)
+        origin.icon = additive.icon;
+    if (additive.genericIcon.length)
+        origin.genericIcon = additive.genericIcon;
+    if (additive.deleteGlobs)
+        origin.clearGlobs();
+    if (additive.deleteMagic)
+        origin.clearMagic();
+
+    foreach(namespace; additive.XMLnamespaces()) {
+        origin.addXMLnamespace(namespace);
+    }
+    foreach(parent; additive.parents()) {
+        origin.addParent(parent);
+    }
+    foreach(aliasName; additive.aliases()) {
+        origin.addAlias(aliasName);
+    }
+    foreach(glob; additive.globs()) {
+        origin.addGlob(glob);
+    }
+    foreach(magic; additive.magics()) {
+        origin.addMagic(magic.clone());
+    }
+    foreach(magic; additive.treeMagics()) {
+        origin.addTreeMagic(magic.clone());
+    }
+}
+
+/**
+ * Merge MIME types definitions parsed from different mime/ directories.
+ * Params:
+ *  origin = MIME type definition that was read from a less preferable mime/ directory.
+ *  additive = MIME type definition override from a more preferable mime/ directory.
+ * Throws: $(B Exception) when trying to merge MIME types with different names.
+ * See_Also: $(D mime.type.mergeMimeTypesInPlace)
+ */
+@safe MimeType mergeMimeTypes(const(MimeType) origin, const(MimeType) additive) pure
+{
+    checkNamesEqual(origin, additive);
+    MimeType clone = origin.clone();
+    mergeMimeTypesInPlace(clone, additive);
+    return clone;
+}
+
+///
+unittest
+{
+    import std.string : representation;
+    import std.exception : assertThrown;
+
+    MimeType mimeType1 = new MimeType("text/plain");
+    MimeType mimeType2 = new MimeType("text/xml");
+
+    assertThrown(mergeMimeTypes(mimeType1, mimeType2));
+
+    mimeType1.name = "text/html";
+    mimeType2.name = mimeType1.name;
+
+    mimeType1.addGlob("*.htm");
+    MimeMagic magic1;
+    magic1.addMatch(MagicMatch(MagicMatch.Type.string_, "<HTML".representation));
+    mimeType1.addMagic(magic1);
+
+    mimeType2.addAlias("application/html");
+    mimeType2.addParent("text/xml");
+    mimeType2.addXMLnamespace("http://www.w3.org/1999/xhtml", "html");
+    mimeType2.deleteGlobs = true;
+    mimeType2.deleteMagic = true;
+    mimeType2.icon = "application-html";
+    mimeType2.addGlob("*.html");
+    MimeMagic magic2;
+    magic2.addMatch(MagicMatch(MagicMatch.Type.string_, "<html".representation));
+    mimeType2.addMagic(magic2);
+
+    auto mimeType = mergeMimeTypes(mimeType1, mimeType2);
+    assert(mimeType.name == mimeType1.name);
+    assert(mimeType.aliases == ["application/html"]);
+    assert(mimeType.parents == ["text/xml"]);
+    assert(mimeType.XMLnamespaces == [XMLnamespace("http://www.w3.org/1999/xhtml", "html")]);
+    assert(mimeType.globs == [MimeGlob("*.html")]);
+    assert(mimeType.icon == "application-html");
+    assert(mimeType.magics.length == 1);
+    assert(mimeType.magics[0].matches[0].value == "<html");
 }

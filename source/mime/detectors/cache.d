@@ -42,7 +42,7 @@ final class MimeDetectorFromCache : IMimeDetector
     /**
      * Constructor based on MIME paths. It automatically load mime.cache files from given paths.
      * Params:
-     *  mimePaths = Range of paths to base mime directories where mime.cache is usually stored.
+     *  mimePaths = Range of paths to base mime/ directories in order from more preferable to less preferable.
      * Throws:
      *  FileException if some existing mime.cache could not be memory mapped.
      *  $(D mime.cache.MimeCacheException) if some existing mime.cache file is invalid.

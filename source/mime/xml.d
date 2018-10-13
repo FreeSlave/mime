@@ -825,11 +825,13 @@ unittest
     <mime-type type="image/x-sigma-x3f">
         <comment>Sigma X3F raw image</comment>
         <sub-class-of type="image/x-dcraw"/>
+        <magic-deleteall/>
         <magic priority="60">
             <match value="FOVb" type="string" offset="0">
                 <match value="0x00FF00FF" type="little32" offset="4" mask="0xFF00FF00"/>
             </match>
         </magic>
+        <glob-deleteall/>
         <glob pattern="*.x3f"/>
     </mime-type>
         <mime-type type="image/svg+xml">
@@ -860,6 +862,8 @@ unittest
     auto mimeType = range.front;
     assert(mimeType is range.front);
     assert(mimeType.name == "image/x-sigma-x3f");
+    assert(mimeType.deleteMagic);
+    assert(mimeType.deleteGlobs);
     assert(mimeType.magics.length == 1);
     auto magic = mimeType.magics[0];
     assert(magic.weight == 60);
@@ -974,6 +978,7 @@ unittest
 
 /**
  * Get XML namespace of file.
+ * Throws: $(B std.file.FileException) on file reading error.
  * See_Also: $(D mime.xml.getXMLnamespaceFromData)
  */
 string getXMLnamespaceFromFile(string fileName, size_t upTo = dataSizeToRead)
