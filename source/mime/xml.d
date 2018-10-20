@@ -799,6 +799,18 @@ XMLPackageRange readMimePackageFile(string filePath)
     }
 }
 
+unittest
+{
+    string filePath = "./test/mime/packages/base.xml";
+    auto range = readMimePackageFile(filePath);
+    assert(!range.empty);
+    auto mimeType = range.front;
+    auto range2 = range.save;
+    range.popFront();
+    assert(range2.front is mimeType);
+    assert(range2.front !is range.front);
+}
+
 /**
  * Read MIME types from xml formatted data with mime-info root element as defined by spec.
  * Returns: Forward range of $(D mime.type.MimeType) elements parsed from xml definition.
@@ -986,4 +998,10 @@ string getXMLnamespaceFromFile(string fileName, size_t upTo = dataSizeToRead)
     import std.file : read;
     auto xmlData = cast(const(char)[])read(fileName, upTo);
     return getXMLnamespaceFromData(xmlData);
+}
+
+unittest
+{
+    string filePath = "./test/mime/packages/base.xml";
+    assert(getXMLnamespaceFromFile(filePath).length);
 }
