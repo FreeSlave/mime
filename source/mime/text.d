@@ -10,7 +10,7 @@
 
 module mime.text;
 
-private @safe bool isValidUnicodeTail(const(char)[] tail) nothrow pure
+private @safe bool isValidUnicodeTail(scope const(char)[] tail) nothrow pure
 {
     for (size_t i=0; i<tail.length; ++i) {
         if ( !(0b1000_0000 & tail[i]) || !(0b0100_0000 & ~cast(int)(tail[i])) ) {
@@ -25,7 +25,7 @@ private @safe bool isValidUnicodeTail(const(char)[] tail) nothrow pure
  * Returns: True if data seems to be textual, false otherwise.
  * Note: Empty data is not considered to be textual.
  */
-@trusted bool isTextualData(const(void)[] data) nothrow pure
+@trusted bool isTextualData(scope const(void)[] data) nothrow pure
 {
     import std.utf;
     import std.uni;

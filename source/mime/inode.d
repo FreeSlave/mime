@@ -59,7 +59,7 @@ version(Posix)
  * Returns: inode/* mime type name for stated path or null if type is unknown or filePath targets regular file.
  * Note: On non-posix platforms it only cheks if filePath targets directory and returns inode/directory if so.
  */
-@trusted string inodeMimeType(string filePath) nothrow
+@trusted string inodeMimeType(scope const(char)[] filePath) nothrow
 {
     version(Posix) {
         import core.sys.posix.sys.stat;

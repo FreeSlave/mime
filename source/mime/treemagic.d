@@ -261,7 +261,7 @@ private:
     TreeMatch[] _matches;
 }
 
-private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch match) nothrow
+private @trusted bool matchTreeMatch(string mountPoint, ref scope const TreeMatch match) nothrow
 {
     import std.stdio;
     string path;
@@ -348,7 +348,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
  * Note: This function does not check if mountPoint is actually mount point.
  * See_Also: $(D mime.inode.inodeMimeType)
  */
-@safe bool matchTreeMagic(string mountPoint, ref const TreeMagic treeMagic) nothrow
+@safe bool matchTreeMagic(string mountPoint, ref scope const TreeMagic treeMagic) nothrow
 {
     foreach(match; treeMagic.matches) {
         if (matchTreeMatch(mountPoint, match)) {
@@ -366,7 +366,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
  * Returns: MIME type name or null if could not detect.
  * See_Also: $(D mime.files.treeMagicFileReader)
  */
-@trusted string treeMimeType(string mountPoint, string treemagicPath)
+@trusted string treeMimeType(string mountPoint, scope string treemagicPath)
 {
     auto data = assumeUnique(read(treemagicPath));
 
@@ -388,7 +388,7 @@ private @trusted bool matchTreeMatch(string mountPoint, ref const TreeMatch matc
  * Returns: MIME type name or null if could not detect.
  * See_Also: $(D mime.paths.mimePaths)
  */
-@safe string treeMimeType(string mountPoint, in string[] mimePaths) nothrow
+@safe string treeMimeType(string mountPoint, scope const(string)[] mimePaths) nothrow
 {
     foreach(mimePath; mimePaths) {
         try {

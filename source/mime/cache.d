@@ -267,7 +267,7 @@ final class MimeCache
      * Resolve MIME type name by aliasName.
      * Returns: resolved MIME type name or null if could not found any mime type for this aliasName.
      */
-    @trusted const(char)[] resolveAlias(const(char)[] aliasName) const {
+    @trusted const(char)[] resolveAlias(scope const(char)[] aliasName) const {
         auto aliasEntry = aliases().equalRange(AliasEntry(aliasName, null));
         return aliasEntry.empty ? null : aliasEntry.front.mimeType;
     }
@@ -287,7 +287,7 @@ final class MimeCache
      * Get direct parents of given mimeType.
      * Returns: Range of first level parents for given mimeType.
      */
-    @trusted auto parents(const(char)[] mimeType) const {
+    @trusted auto parents(scope const(char)[] mimeType) const {
         auto parentEntry = parentEntries().equalRange(ParentEntry(mimeType, 0));
         uint parentsOffset, parentCount;
 
@@ -306,14 +306,14 @@ final class MimeCache
      * Note: Mime type is not considered to be subclass of itself.
      * Returns: true if mimeType is subclass of parent. False otherwise.
      */
-    @trusted bool isSubclassOf(const(char)[] mimeType, const(char)[] parent) const {
+    @trusted bool isSubclassOf(scope const(char)[] mimeType, scope const(char)[] parent) const {
         return isSubclassOfHelper(mimeType, parent, 0);
     }
 
     // Just some number to protect from stack overflow or circular subclassing (in specially crafted files).
     // Could not find any real limit in spec.
     private static immutable maxSubclassDepth = 8;
-    private @trusted bool isSubclassOfHelper(const(char)[] mimeType, const(char)[] parent, uint depth) const {
+    private @trusted bool isSubclassOfHelper(scope const(char)[] mimeType, scope const(char)[] parent, uint depth) const {
         if (depth > maxSubclassDepth) {
             return false;
         }
@@ -410,7 +410,7 @@ final class MimeCache
      * Find icon name for mime type.
      * Returns: Icon name for given mimeType or null string if not found.
      */
-    @trusted const(char)[] findIcon(const(char)[] mimeType) const {
+    @trusted const(char)[] findIcon(scope const(char)[] mimeType) const {
         auto icon = icons().equalRange(IconEntry(mimeType, null));
         return icon.empty ? null : icon.front.iconName;
     }
@@ -419,7 +419,7 @@ final class MimeCache
      * Find generic icon name for mime type.
      * Returns: Generic icon name for given mimeType or null string if not found.
      */
-    @trusted const(char)[] findGenericIcon(const(char)[] mimeType) const {
+    @trusted const(char)[] findGenericIcon(scope const(char)[] mimeType) const {
         auto icon = genericIcons().equalRange(IconEntry(mimeType, null));
         return icon.empty ? null : icon.front.iconName;
     }
@@ -453,14 +453,14 @@ final class MimeCache
      *  data = data to check against magic.
      * Returns: Range of $(D MimeTypeAlternative) tuples matching given data sorted by weight descending.
      */
-    @trusted auto findMimeTypesByData(const(void)[] data) const
+    @trusted auto findMimeTypesByData(scope const(void)[] data) const
     {
         return magicMatches()
             .filter!(match => testAgainstMatchlets(data, match.matchletCount, match.firstMatchletOffset))
             .map!(match => MimeTypeAlternative(match.mimeType, match.weight));
     }
 
-    private bool testAgainstMatchlets(const(void)[] data, uint matchletCount, uint firstMatchletOffset) const
+    private bool testAgainstMatchlets(scope const(void)[] data, uint matchletCount, uint firstMatchletOffset) const
     {
         auto content = cast(const(char)[])data;
         foreach(matchlet; magicMatchlets(matchletCount, firstMatchletOffset))
@@ -482,7 +482,7 @@ final class MimeCache
      *  fileName = name to match against glob patterns.
      * Returns: Range of $(D MimeTypeAlternativeByName) with pattern set to glob pattern matching fileName.
      */
-    @trusted auto findMimeTypesByGlob(const(char)[] fileName) const {
+    @trusted auto findMimeTypesByGlob(scope const(char)[] fileName) const {
         fileName = fileName.baseName;
         return globs().filter!(delegate(GlobEntry glob) {
             if (glob.cs) {
@@ -500,11 +500,11 @@ final class MimeCache
      * Returns: Range of $(D MimeTypeAlternativeByName) with pattern set to literal matching fileName.
      * Note: Depending on whether found literal is case sensitive or not literal can be equal to base fileName or not.
      */
-    @trusted auto findMimeTypesByLiteral(const(char)[] fileName) const {
+    @trusted auto findMimeTypesByLiteral(scope const(char)[] fileName) const {
         return findMimeTypesByLiteralHelper(fileName).map!(literal => MimeTypeAlternativeByName(literal.mimeType, literal.weight, literal.cs, literal.literal));
     }
 
-    private @trusted auto findMimeTypesByLiteralHelper(const(char)[] name) const {
+    private @trusted auto findMimeTypesByLiteralHelper(scope const(char)[] name) const {
         name = name.baseName;
         //Case-sensitive match is always preferred
         auto csLiteral = literals().equalRange(LiteralEntry(name, null, 0, false));
@@ -524,7 +524,7 @@ final class MimeCache
      *  sink = output range where $(D MimeTypeAlternativeByName) objects with pattern set to suffix matching fileName will be put.
      * Note: pattern property of $(D MimeTypeAlternativeByName) objects will not have leading "*" to avoid allocating.
      */
-    @trusted void findMimeTypesBySuffix(OutRange)(const(char)[] fileName, OutRange sink) const if (isOutputRange!(OutRange, MimeTypeAlternativeByName))
+    @trusted void findMimeTypesBySuffix(OutRange)(scope const(char)[] fileName, OutRange sink) const if (isOutputRange!(OutRange, MimeTypeAlternativeByName))
     {
         auto rootCount = readValue!uint(_header.reverseSuffixTreeOffset, "root count");
         auto firstRootOffset = readValue!uint(_header.reverseSuffixTreeOffset + rootCount.sizeof, "first root offset");
@@ -607,7 +607,7 @@ final class MimeCache
     private enum magicToDeleteCmp = "a < b";
 
 private:
-    @trusted void lookupLeaf(OutRange)(const uint startOffset, const uint count, const(char[]) originalName, const(char[]) name, OutRange sink, const(char[]) suffix = null, const bool wasCaseMismatch = false) const {
+    @trusted void lookupLeaf(OutRange)(const uint startOffset, const uint count, scope const(char[]) originalName, scope const(char[]) name, OutRange sink, scope const(char[]) suffix = null, const bool wasCaseMismatch = false) const {
 
         for (uint i=0; i<count; ++i) {
             const size_t offset = startOffset + i * uint.sizeof * 3;
@@ -673,7 +673,7 @@ private:
                 ));
     }
 
-    private @trusted static T readValue(T)(const(void)[] data, size_t offset, string context = null) pure
+    private @trusted static T readValue(T)(scope const(void)[] data, size_t offset, string context = null) pure
     {
         if (data.length >= offset + T.sizeof) {
             T value = *(cast(const(T)*)data[offset..(offset+T.sizeof)].ptr);
@@ -699,7 +699,7 @@ private:
         return readValue!T(_data, offset, context);
     }
 
-    private @trusted static auto readString(const(void)[] data, size_t offset, string context = null) pure
+    private @trusted static auto readString(scope return const(void)[] data, size_t offset, string context = null) pure
     {
         if (offset > data.length) {
             throw new MimeCacheException("Beginning of string is out of bounds", context);
@@ -732,7 +732,7 @@ private:
     }
 
 
-    private @trusted static auto readString(const(void)[] data, size_t offset, uint length, string context = null) pure
+    private @trusted static auto readString(scope return const(void)[] data, size_t offset, uint length, string context = null) pure
     {
         if (offset + length <= data.length) {
             return cast(const(char)[])data[offset..offset+length];

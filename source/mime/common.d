@@ -23,7 +23,7 @@ private {
  * Parse MIME type name into pair of media and subtype strings.
  * Returns: Tuple of media and subtype strings or pair of empty strings if could not parse name.
  */
-@nogc @trusted auto parseMimeTypeName(String)(String name) pure nothrow if (isSomeString!String && is(ElementEncodingType!String : char))
+@nogc @trusted auto parseMimeTypeName(String)(scope return String name) pure nothrow if (isSomeString!String && is(ElementEncodingType!String : char))
 {
     alias Tuple!(String, "media", String, "subtype") MimeTypeName;
 
@@ -52,7 +52,7 @@ unittest
     assert(t.media == string.init && t.subtype == string.init);
 }
 
-private @nogc @trusted bool allSymbolsAreValid(const(char)[] name) nothrow pure
+private @nogc @trusted bool allSymbolsAreValid(scope const(char)[] name) nothrow pure
 {
     import std.ascii : isAlpha, isDigit;
     for (size_t i=0; i<name.length; ++i) {
@@ -67,7 +67,7 @@ private @nogc @trusted bool allSymbolsAreValid(const(char)[] name) nothrow pure
 /**
  * Check if name is valid MIME type name.
  */
-@nogc @safe bool isValidMimeTypeName(const(char)[] name) nothrow pure
+@nogc @safe bool isValidMimeTypeName(scope const(char)[] name) nothrow pure
 {
     auto t = parseMimeTypeName(name);
     return t.media.length && t.subtype.length && allSymbolsAreValid(t.media) && allSymbolsAreValid(t.subtype);
@@ -92,7 +92,7 @@ unittest
  * Default icon for MIME type.
  * Returns: mimeType with '/' replaces with '-' or null if mimeType is not valid MIME type name.
  */
-@trusted string defaultIconName(string mimeType) nothrow pure
+@safe string defaultIconName(scope string mimeType) nothrow pure
 {
     auto t = parseMimeTypeName(mimeType);
     if (t.media.length && t.subtype.length) {
@@ -112,7 +112,7 @@ unittest
  * Default generic icon for MIME type.
  * Returns: media-x-generic where media is parsed from mimeType or null if mimeType is not valid MIME type name.
  */
-@trusted string defaultGenericIconName(string mimeType) nothrow pure
+@trusted string defaultGenericIconName(scope string mimeType) nothrow pure
 {
     auto t = parseMimeTypeName(mimeType);
     if (t.media.length) {
@@ -141,7 +141,7 @@ enum uint maximumMatchWeight = 100;
 /**
  * Check is pattern is __NOGLOBS__. This means glob patterns from the less preferable MIME paths should be ignored.
  */
-@nogc @safe bool isNoGlobs(T)(const(T)[] pattern) pure nothrow if (is(T == char) || is(T == ubyte) || is(T == byte) || is(T == void)) {
+@nogc @safe bool isNoGlobs(T)(scope const(T)[] pattern) pure nothrow if (is(T == char) || is(T == ubyte) || is(T == byte) || is(T == void)) {
     return cast(const(ubyte)[])pattern == cast(const(ubyte)[])"__NOGLOBS__";
 }
 
@@ -155,7 +155,7 @@ unittest
 /**
  * Check if value is __NOMAGIC__. This means magic rules from the less preferable MIME paths should be ignored.
  */
-@nogc @trusted bool isNoMagic(T)(const(T)[] value) pure nothrow if (is(T == char) || is(T == ubyte) || is(T == byte) || is(T == void)) {
+@nogc @trusted bool isNoMagic(T)(scope const(T)[] value) pure nothrow if (is(T == char) || is(T == ubyte) || is(T == byte) || is(T == void)) {
     return cast(const(ubyte)[])value == cast(const(ubyte)[])"__NOMAGIC__";
 }
 
@@ -172,7 +172,7 @@ unittest
  * Returns: text/plain for text-based types, application/octet-stream for streamable types, null otherwise.
  * Note: text/plain and application/octet-stream are not considered as parents of their own.
  */
-@safe string implicitParent(const(char)[] mimeType) nothrow pure
+@safe string implicitParent(scope const(char)[] mimeType) nothrow pure
 {
     if (mimeType == "text/plain" || mimeType == "application/octet-stream") {
         return null;

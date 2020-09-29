@@ -452,7 +452,7 @@ private:
     bool _deleteMagic;
 }
 
-private @safe void checkNamesEqual(const(MimeType) origin, const(MimeType) additive) pure
+private @safe void checkNamesEqual(scope const(MimeType) origin, scope const(MimeType) additive) pure
 {
     import std.exception : enforce;
     enforce(origin.name == additive.name, "Can't merge MIME types with different names");

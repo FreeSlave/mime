@@ -84,7 +84,7 @@ struct MimeGlob
     /**
      * Check if glob pattern is literal, i.e. does not have special glob match characters.
      */
-    @nogc @safe static bool isLiteral(string pattern) nothrow pure {
+    @nogc @safe static bool isLiteral(scope string pattern) nothrow pure {
         if (pattern.length == 0) {
             return false;
         }
@@ -107,7 +107,7 @@ struct MimeGlob
     /**
      * Check if glob pattern is suffix, i.e. starts with '*' and does not have special glob match characters in the rest of pattern.
      */
-    @nogc @safe static bool isSuffix(string pattern) nothrow pure {
+    @nogc @safe static bool isSuffix(scope string pattern) nothrow pure {
         if (pattern.length > 1 && pattern[0] == '*') {
             for (size_t i=1; i<pattern.length; ++i) {
                 if (isGlobSymbol(pattern[i])) {
@@ -131,7 +131,7 @@ struct MimeGlob
     /**
      * Check if glob pattern is something else besides literal and suffix.
      */
-    @nogc @safe static bool isGenericGlob(string pattern) nothrow pure {
+    @nogc @safe static bool isGenericGlob(scope string pattern) nothrow pure {
         return pattern.length > 0 && !isLiteral(pattern) && !isSuffix(pattern);
     }
 
