@@ -2,7 +2,7 @@
 
 [Shared MIME-info database](https://www.freedesktop.org/wiki/Specifications/shared-mime-info-spec/) specification implementation in D programming language. Shared MIME-info database helps to determine media type of file by its name or contents.
 
-[![Build Status](https://travis-ci.org/FreeSlave/mime.svg?branch=master)](https://travis-ci.org/FreeSlave/mime) [![Coverage Status](https://coveralls.io/repos/github/FreeSlave/mime/badge.svg?branch=master)](https://coveralls.io/github/FreeSlave/mime?branch=master)
+[![Build Status](https://github.com/FreeSlave/mime/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/FreeSlave/mime/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/FreeSlave/mime/badge.svg?branch=master)](https://coveralls.io/github/FreeSlave/mime?branch=master)
 
 [Online documentation](https://freeslave.github.io/d-freedesktop/docs/mime.html)
 
